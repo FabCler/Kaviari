@@ -85,6 +85,28 @@ promo shortcut.
 > price points (see `EUR_PER_KG` in `data/extract_kaviari.py`). Replace
 > them via Import & Analyze or the product editor.
 
+## Deploying to Railway
+
+The repo ships Railway-ready (`railway.json` + a `start:railway` script
+that applies the schema and seeds the demo data on first boot only).
+
+1. Sign in at [railway.com](https://railway.com) with GitHub and create a
+   **New Project → Deploy from GitHub repo → FabCler/Kaviari**.
+2. In the service **Settings → Source**, set the branch to deploy.
+3. Right-click the service → **Attach Volume**, mount path **`/data`**
+   (this is where the SQLite database lives, so it survives restarts).
+4. In **Variables**, add:
+   - `DATABASE_URL` = `file:/data/kaviari.db`
+   - `APP_PIN` = your staff PIN (don't keep 1234)
+   - `APP_SECRET` = a long random string
+   - `ANTHROPIC_API_KEY` = your key (optional — enables the AI features)
+5. Deploy, then **Settings → Networking → Generate Domain** for your
+   public URL.
+
+First boot seeds the demo data automatically; your own data is never
+overwritten on redeploys. To start from a clean slate, delete
+`/data/kaviari.db` (or the volume) and redeploy.
+
 ## Switching to Postgres
 
 The schema avoids SQLite-only features (enums are validated strings — see
