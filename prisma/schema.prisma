@@ -1,0 +1,151 @@
+// Kaviari Cellar — caviar inventory, purchasing & marketing.
+//
+// SQLite for local dev. To switch to Postgres: change `provider` to
+// "postgresql", point DATABASE_URL at the server, and re-run migrations.
+// SQLite has no native enums, so status/type columns are strings validated
+// by the zod schemas in lib/domain.ts — this also keeps the Postgres
+// switch trivial.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                    String   @id @default(cuid())
+  kaviariCode           String   @unique
+  name                  String
+  species               String?
+  grade                 String?
+  tinSizeGrams          Int
+  unitCost              Float
+  currency              String   @default("EUR")
+  category              String   @default("caviar") // caviar | other
+  imageUrl              String?
+  active                Boolean  @default(true)
+  isPlaceholder         Boolean  @default(false)
+  // Manual ADU override (grams/day) for seasonality or new products.
+  aduOverrideGramsPerDay Float?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  lots      StockLot[]
+  movements StockMovement[]
+  poLines   PurchaseOrderLine[]
+  campaigns CampaignProduct[]
+}
+
+model StockLot {
+  id           String    @id @default(cuid())
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  lotNumber    String
+  // Tins remaining in the lot (receipts add, consumption subtracts).
+  quantityTins Float
+  receivedTins Float
+  receivedDate DateTime
+  expiryDate   DateTime // DLC
+  status       String    @default("in_stock") // in_stock | consumed | expired | written_off
+  createdAt    DateTime  @default(now())
+
+  movements StockMovement[]
+
+  @@index([productId, expiryDate])
+}
+
+model StockMovement {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  lotId           String?
+  lot             StockLot? @relation(fields: [lotId], references: [id], onDelete: SetNull)
+  // receipt | consumption | sale | waste | adjustment | marketing_sample
+  type            String
+  // Signed: receipts positive, consumption/sales/waste negative,
+  // adjustments either way.
+  quantityTins    Float
+  gramsEquivalent Float
+  date            DateTime  @default(now())
+  note            String?
+  channel         String? // restaurant | retail | event | staff
+  createdAt       DateTime  @default(now())
+
+  @@index([productId, date])
+  @@index([date])
+}
+
+model PurchaseOrder {
+  id                   String    @id @default(cuid())
+  reference            String    @unique
+  // draft | sent | confirmed | received | cancelled
+  status               String    @default("draft")
+  orderDate            DateTime  @default(now())
+  expectedDeliveryDate DateTime
+  receivedDate         DateTime?
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  lines PurchaseOrderLine[]
+}
+
+model PurchaseOrderLine {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantityTins    Float
+  unitCost        Float
+
+  @@index([purchaseOrderId])
+}
+
+model Campaign {
+  id            String    @id @default(cuid())
+  name          String
+  // social | email | event | promo | tasting
+  type          String
+  startDate     DateTime
+  endDate       DateTime?
+  // planned | active | completed | cancelled
+  status        String    @default("planned")
+  budget        Float?
+  notes         String?
+  results       String?
+  resultRevenue Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products CampaignProduct[]
+  assets   ContentAsset[]
+}
+
+model CampaignProduct {
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId])
+}
+
+model ContentAsset {
+  id          String    @id @default(cuid())
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  // caption | email | menu_description | event_invite
+  type        String
+  text        String
+  createdByAI Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
