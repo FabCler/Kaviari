@@ -1,0 +1,155 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Brand palette — Thammachart deep-ocean navy × Kaviari Parisian gold */
+  --navy-deep: #0f192b;
+  --navy-800: #16233c;
+  --navy-700: #1e2f4f;
+  --caviar-black: #101010;
+  --charcoal: #1c1c1e;
+  --gold: #c9a227;
+  --gold-deep: #a9861c;
+  --champagne: #e8d5a3;
+  --pearl: #f7f5f0;
+  --seafoam: #7fa8a0;
+  --seafoam-deep: #4f7a71;
+
+  /* Semantic tokens (light data surfaces framed by dark chrome) */
+  --background: var(--pearl);
+  --foreground: #171a20;
+  --card: #fffefb;
+  --card-foreground: #171a20;
+  --popover: #fffefb;
+  --popover-foreground: #171a20;
+  --primary: var(--navy-deep);
+  --primary-foreground: #f7f5f0;
+  --secondary: #ece8dc;
+  --secondary-foreground: #1e2f4f;
+  --muted: #efece3;
+  --muted-foreground: #6d6f74;
+  --accent: #f3ead3;
+  --accent-foreground: #5c4a10;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --success: #2f7d5c;
+  --warning: #b97e10;
+  --border: #e3dfd2;
+  --input: #d8d3c4;
+  --ring: #c9a227;
+  --radius: 0.5rem;
+
+  --chart-1: #c9a227;
+  --chart-2: #0f192b;
+  --chart-3: #7fa8a0;
+  --chart-4: #e8d5a3;
+  --chart-5: #8a6d1d;
+
+  --sidebar: var(--navy-deep);
+  --sidebar-foreground: #d6d2c6;
+  --sidebar-accent: rgba(201, 162, 39, 0.12);
+  --sidebar-accent-foreground: #e8d5a3;
+  --sidebar-border: rgba(232, 213, 163, 0.14);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-navy: var(--navy-deep);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-caviar: var(--caviar-black);
+  --color-charcoal: var(--charcoal);
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-champagne: var(--champagne);
+  --color-pearl: var(--pearl);
+  --color-seafoam: var(--seafoam);
+  --color-seafoam-deep: var(--seafoam-deep);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1,
+  h2 {
+    text-wrap: balance;
+  }
+}
+
+@layer utilities {
+  /* Tabular numerals for all quantities and money */
+  .tnum {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .font-display {
+    font-family: var(--font-display);
+  }
+  /* Fine gold rule — decorative separator, Kaviari-style */
+  .gold-rule {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--gold) 18%,
+      var(--champagne) 50%,
+      var(--gold) 82%,
+      transparent
+    );
+    height: 1px;
+  }
+  /* Caviar pearl dot motif for dark hero surfaces */
+  .pearl-dots {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgb(232 213 163 / 0.14) 1px,
+      transparent 0
+    );
+    background-size: 14px 14px;
+  }
+}
