@@ -110,6 +110,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
         { status: 409 }
       );
     }
+    if (body.action === "send") {
+      // An order with no lines (after any replace-all edit in this same
+      // request) must not enter the pipeline.
+      const lineCount =
+        body.lines !== undefined
+          ? body.lines.length
+          : await prisma.purchaseOrderLine.count({
+              where: { purchaseOrderId: id },
+            });
+      if (lineCount === 0) {
+        return Response.json(
+          { error: "Add at least one line before sending the order." },
+          { status: 422 }
+        );
+      }
+    }
     newStatus = transition.to;
   }
 

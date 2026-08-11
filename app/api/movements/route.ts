@@ -69,61 +69,72 @@ export async function POST(request: Request) {
     );
   }
 
-  const lots = await prisma.stockLot.findMany({
-    where: { productId, status: "in_stock", quantityTins: { gt: 0 } },
-    orderBy: { expiryDate: "asc" },
-  });
-
-  const { allocations, shortfallTins } = allocateFefo(lots, tinsRequested);
-  if (shortfallTins > 0) {
-    const availableTins = round2(
-      lots.reduce((sum, lot) => sum + lot.quantityTins, 0)
-    );
-    return Response.json(
-      {
-        error: `Not enough stock: only ${availableTins} tins of ${product.name} available`,
-        availableTins,
-      },
-      { status: 409 }
-    );
-  }
-
-  const lotById = new Map(lots.map((lot) => [lot.id, lot]));
   const now = new Date();
 
-  const result = await prisma.$transaction(async (tx) => {
-    const movements = [];
-    const allocatedLots: { lotNumber: string; tins: number }[] = [];
-    for (const alloc of allocations) {
-      const lot = lotById.get(alloc.lotId);
-      if (!lot) continue; // cannot happen: allocations come from `lots`
-      const movement = await tx.stockMovement.create({
-        data: {
-          productId,
-          lotId: lot.id,
-          type,
-          channel,
-          note: note?.trim() ? note.trim() : null,
-          quantityTins: -alloc.tins,
-          gramsEquivalent: -round2(alloc.tins * product.tinSizeGrams),
-          date: now,
-        },
-      });
-      const remaining = round2(lot.quantityTins - alloc.tins);
-      await tx.stockLot.update({
-        where: { id: lot.id },
-        data: {
-          quantityTins: Math.max(0, remaining),
-          status: remaining <= 0 ? "consumed" : "in_stock",
-        },
-      });
-      movements.push(movement);
-      allocatedLots.push({ lotNumber: lot.lotNumber, tins: alloc.tins });
+  // Lots are read and allocated INSIDE the transaction so two simultaneous
+  // logs cannot both draw down the same lot.
+  class ShortfallError extends Error {
+    constructor(public availableTins: number) {
+      super("shortfall");
     }
-    return { movements, allocatedLots };
-  });
+  }
 
-  return Response.json(result, { status: 201 });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const lots = await tx.stockLot.findMany({
+        where: { productId, status: "in_stock", quantityTins: { gt: 0 } },
+        orderBy: { expiryDate: "asc" },
+      });
+      const { allocations, shortfallTins } = allocateFefo(lots, tinsRequested);
+      if (shortfallTins > 0) {
+        throw new ShortfallError(
+          round2(lots.reduce((sum, lot) => sum + lot.quantityTins, 0))
+        );
+      }
+      const lotById = new Map(lots.map((lot) => [lot.id, lot]));
+      const movements = [];
+      const allocatedLots: { lotNumber: string; tins: number }[] = [];
+      for (const alloc of allocations) {
+        const lot = lotById.get(alloc.lotId);
+        if (!lot) continue; // cannot happen: allocations come from `lots`
+        const movement = await tx.stockMovement.create({
+          data: {
+            productId,
+            lotId: lot.id,
+            type,
+            channel,
+            note: note?.trim() ? note.trim() : null,
+            quantityTins: -alloc.tins,
+            gramsEquivalent: -round2(alloc.tins * product.tinSizeGrams),
+            date: now,
+          },
+        });
+        const remaining = round2(lot.quantityTins - alloc.tins);
+        await tx.stockLot.update({
+          where: { id: lot.id },
+          data: {
+            quantityTins: Math.max(0, remaining),
+            status: remaining <= 0 ? "consumed" : "in_stock",
+          },
+        });
+        movements.push(movement);
+        allocatedLots.push({ lotNumber: lot.lotNumber, tins: alloc.tins });
+      }
+      return { movements, allocatedLots };
+    });
+    return Response.json(result, { status: 201 });
+  } catch (error) {
+    if (error instanceof ShortfallError) {
+      return Response.json(
+        {
+          error: `Not enough stock: only ${error.availableTins} tins of ${product.name} available`,
+          availableTins: error.availableTins,
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 }
 
 /**
