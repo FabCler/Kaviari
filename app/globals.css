@@ -41,11 +41,14 @@
   --ring: #c9a227;
   --radius: 0.5rem;
 
-  --chart-1: #c9a227;
-  --chart-2: #0f192b;
-  --chart-3: #7fa8a0;
-  --chart-4: #e8d5a3;
-  --chart-5: #8a6d1d;
+  /* Categorical data series — validated for CVD separation, chroma and
+     contrast on the pearl surface (gold-led, brand-adjacent). Use in this
+     fixed order, never cycled. */
+  --chart-1: #b07e00;
+  --chart-2: #2a78d6;
+  --chart-3: #1b9e8f;
+  --chart-4: #c2452f;
+  --chart-5: #6d5bd0;
 
   --sidebar: var(--navy-deep);
   --sidebar-foreground: #d6d2c6;

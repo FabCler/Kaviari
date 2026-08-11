@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kaviari Cellar
 
-## Getting Started
+Inventory, consumption, purchasing and marketing for a premium seafood
+business sourcing caviar from [Kaviari, Paris](https://www.kaviari.fr).
+Built with Next.js (App Router), TypeScript, Tailwind CSS, Prisma + SQLite,
+Recharts and the Anthropic API.
 
-First, run the development server:
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env        # then edit if needed
+npm run setup               # prisma db push + seed demo data
+npm run dev                 # http://localhost:3000 — PIN 1234
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The seed loads the real Kaviari catalog extracted from
+`data/Import_Review_Kaviari.xlsx` (47 SKUs) plus **nine weeks of real
+weekly consumption rates** laid out over the 63 days before "now", current
+stock lots (including a short-dated unpasteurized Oscietra lot that
+triggers the expiry alerts) and two overlapping open purchase orders so
+the order engine demonstrates pipeline-aware behaviour out of the box.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Default | Purpose |
+|---|---|---|
+| `DATABASE_URL` | `file:./dev.db` | SQLite database file (Prisma) |
+| `APP_PIN` | `1234` | Staff login PIN |
+| `APP_SECRET` | dev fallback | HMAC key for the session cookie — change in production |
+| `ANTHROPIC_API_KEY` | _empty_ | Enables the assistant, import analysis and content studio. **The app fully works without it** — AI surfaces show a friendly notice instead. |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-5-20250929` | Optional model override |
 
-## Learn More
+## How the ordering formula works
 
-To learn more about Next.js, take a look at the following resources:
+The Order Planner implements a **periodic-review (R, S) policy** — the
+standard replenishment model for a fixed ordering rhythm with a long lead
+time. All parameters are editable in **Settings**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Parameter | Default | Meaning |
+|---|---|---|
+| Review period **R** | 15 days | One order is placed every R days |
+| Lead time **L** | 21 days | Order → goods received |
+| Safety stock | 15 days | Extra coverage against demand spikes / delays |
+| ADU window | 42 days | Trailing window for average daily usage |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For each product:
 
-## Deploy on Vercel
+```
+ADU  = grams consumed in the last 42 days / 42     (or the manual override)
+S    = ADU × (L + R + safety) = ADU × 51 days      (order-up-to level)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+suggested grams = max(0, S − on-hand grams − on-order grams)
+suggested tins  = ceil(suggested grams / tin size)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**On-order includes every open PO (status sent or confirmed).** Because
+the lead time (21 d) is longer than the review period (15 d), there is
+always at least one order still in transit when the next review comes
+around; counting that pipeline stock in the inventory position is what
+prevents systematic double-ordering. `tests/replenishment.test.ts` covers
+exactly this case.
+
+Marking a PO **sent** stamps `lastOrderDate`, which starts the next
+15-day countdown shown on the dashboard and planner.
+
+Consumption is drawn **FEFO** (first-expired-first-out): logging usage
+allocates tins from the lot with the soonest DLC automatically, and lots
+expiring within 14 days raise alerts with a one-click "push to marketing"
+promo shortcut.
+
+## Replacing the demo data
+
+1. Put your own price file in `data/` and re-run
+   `python3 data/extract_kaviari.py <file.xlsx>` (adjust the script's
+   sheet/column mapping to your file), or simply edit
+   `data/kaviari_products.json` / `data/consumption_history.json` by hand.
+2. Re-seed: `npm run db:seed` (wipes and reloads everything).
+3. Or skip seeding and import a supplier price list through
+   **Import & Analyze** — the AI maps your columns to the catalog and asks
+   for confirmation before writing.
+
+> **Note on prices:** the source workbook contains no unit costs, so the
+> seeded `unitCost` values are estimates from typical Kaviari wholesale
+> price points (see `EUR_PER_KG` in `data/extract_kaviari.py`). Replace
+> them via Import & Analyze or the product editor.
+
+## Switching to Postgres
+
+The schema avoids SQLite-only features (enums are validated strings — see
+`lib/domain.ts`):
+
+1. In `prisma/schema.prisma` set `provider = "postgresql"`.
+2. Point `DATABASE_URL` at your server.
+3. `npx prisma db push && npm run db:seed`.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` / `start` | Production build / serve |
+| `npm test` | Vitest unit tests (replenishment math, FEFO) |
+| `npm run db:push` | Apply schema to the database |
+| `npm run db:seed` | Wipe + reseed demo data |
+| `npm run setup` | push + seed in one go |
+
+## Project layout
+
+```
+app/(app)/          screens (dashboard, inventory, consume, planner,
+                    purchase-orders, import, marketing, assistant, settings)
+app/api/            route handlers (zod-validated, PIN-gated)
+components/ui/      shadcn-style primitives (Radix + Tailwind v4)
+lib/                domain logic: replenishment.ts (R,S math), fefo.ts,
+                    stock.ts, planner.ts, settings.ts, ai.ts, auth.ts
+prisma/             schema + seed
+data/               Kaviari catalog + consumption history + extractor
+tests/              vitest unit tests
+```
