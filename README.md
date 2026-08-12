@@ -24,11 +24,11 @@ from **Settings → Users**.
 The seed loads the product database extracted from
 `data/Data_base_products.xlsx` (85 products: caviar, marketing tools,
 fish roe, crab and fish — each with its PR code, category, unit, packing
-per box and tin size) plus **nine weeks of real weekly consumption
-rates** laid out over the 63 days before "now", current stock lots
-(including a short-dated unpasteurized Oscietra lot that triggers the
-expiry alerts) and two overlapping open purchase orders so the order
-engine demonstrates pipeline-aware behaviour out of the box.
+per box, tin size and **real purchase cost** from the workbook's Cost
+sheet) plus one opening stock lot per product matching the current
+on-hand. **There is no demo data**: consumption, purchase orders,
+forecasts and campaigns all start empty and fill up as the team logs
+real activity.
 
 ## Units: tins first, kg as reference
 
@@ -107,10 +107,23 @@ promo shortcut.
   tools…), shows suggested quantities in units **and** boxes, and
   exports a draft PO as a styled Excel file (product code, description,
   number of tins — box-rounded).
+- **AI order recommendation**: one click produces a prioritized order
+  plan — references to order now, references to order soon, references
+  to monitor — with PR codes, descriptions, box-rounded quantities and
+  a short reason per line, based on stock, pipeline, consumption and
+  the team's forecasts.
 - On the **Purchase Orders** page you can **upload the PO you actually
-  sent to the supplier** (drag & drop, Excel or PDF): the AI reads it and
-  pre-fills the reference, lines and quantities, which you can edit
-  before saving.
+  sent to the supplier** (drag & drop, Excel or PDF): the AI reads it
+  **line by line** (duplicates are never merged) and pre-fills the
+  reference, lines and quantities, which you can edit before saving.
+
+## Assistant & reports
+
+Each user has their **own private chats** with the Caviar Assistant
+(create, rename, keep or delete conversations — history is stored per
+account). The **Reports** button generates a detailed professional
+report (inventory status, consumption & forecasts, or order planning)
+as a themed, print-ready HTML document.
 
 ## Consumption analysis & forecasts
 
