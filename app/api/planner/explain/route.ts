@@ -6,7 +6,7 @@ import {
   completeText,
   isAiConfigured,
 } from "@/lib/ai";
-import { formatGrams, formatNumber, shortProductName } from "@/lib/format";
+import { formatNumber, shortProductName } from "@/lib/format";
 
 const bodySchema = z.object({ productId: z.string().min(1) });
 

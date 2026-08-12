@@ -47,7 +47,7 @@ const thinBottom: Partial<ExcelJS.Borders> = {
 /** Build a styled single-sheet workbook and return its .xlsx bytes. */
 export async function buildStyledWorkbook(
   spec: PoExcelSpec
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Kaviari Cellar";
   workbook.created = new Date();
@@ -141,7 +141,10 @@ export async function buildStyledWorkbook(
 }
 
 /** Standard download headers for a generated .xlsx file. */
-export function xlsxResponse(bytes: Uint8Array, filename: string): Response {
+export function xlsxResponse(
+  bytes: Uint8Array<ArrayBuffer>,
+  filename: string
+): Response {
   const safe = filename.replace(/[^\w.-]+/g, "-");
   return new Response(bytes, {
     headers: {
