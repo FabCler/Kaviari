@@ -62,7 +62,7 @@ async function askAi<T>(
       fileContent: renderContentForPrompt(parsed),
       filename,
     }),
-    maxTokens: 8192,
+    maxTokens: 32_000,
   });
   const validated = schema.safeParse(raw);
   if (!validated.success) {
@@ -193,22 +193,33 @@ async function analyzeStockTake(
   );
 
   const byId = new Map(products.map((p) => [p.id, p]));
+  const byCode = new Map(
+    products.map((p) => [p.prCode.trim().toLowerCase(), p])
+  );
   const unmatched: UnmatchedRow[] = [...ai.unmatched];
 
-  // Sum duplicate product rows (counted in several locations) and drop
-  // any productId the AI invented.
+  // Server-side matching: the product code from the FILE is authoritative;
+  // the AI's productId claim is only a fallback for rows without a code.
+  // Duplicate product rows (counted in several locations) are summed.
   const countedByProduct = new Map<string, number>();
   for (const row of ai.rows) {
-    if (!byId.has(row.productId)) {
+    const codeMatch = row.prCode
+      ? byCode.get(row.prCode.trim().toLowerCase())
+      : undefined;
+    const product =
+      codeMatch ?? (row.productId ? byId.get(row.productId) : undefined);
+    if (!product) {
       unmatched.push({
-        label: `Counted ${row.countedTins} tins (product id ${row.productId})`,
-        reason: "Not a known product in the catalog",
+        label: `Counted ${row.countedTins} tins (${row.prCode ? `code ${row.prCode}` : `product id ${row.productId ?? "?"}`})`,
+        reason: row.prCode
+          ? "Product code not found in the catalog"
+          : "Not a known product in the catalog",
       });
       continue;
     }
     countedByProduct.set(
-      row.productId,
-      (countedByProduct.get(row.productId) ?? 0) + row.countedTins
+      product.id,
+      (countedByProduct.get(product.id) ?? 0) + row.countedTins
     );
   }
 

@@ -13,7 +13,8 @@ Rules:
 - Ignore header rows, subtotal rows, footers, page numbers, legal text and blank separators.
 - Numbers may use European formats ("1 234,50", "12,5") — normalise them to plain JSON numbers.
 - Tin/jar sizes may be written as "30g", "0.03 kg", "125 gr" etc. — normalise to integer grams.
-- Product matching: prefer an exact prCode match; otherwise match on product name plus tin size. Names may be abbreviated or reworded — match on species/grade/size when clearly the same product.`;
+- Product matching: prefer an exact prCode (product code) match; otherwise match on product name plus tin size. Names may be abbreviated or reworded — match on species/grade/size when clearly the same product.
+- Process the file in its ENTIRETY: every data row must end up either in "rows" or in "unmatched". Never stop early, sample, or skip rows.`;
 
 export function priceListSystemPrompt(): string {
   return `${COMMON_RULES}
@@ -46,24 +47,27 @@ Notes:
 export function stockTakeSystemPrompt(): string {
   return `${COMMON_RULES}
 
-TASK: The file is a PHYSICAL INVENTORY COUNT (stock take). Extract the counted quantity of tins per catalog product.
+TASK: The file is a PHYSICAL INVENTORY COUNT (stock take). Extract EVERY counted line, keyed by the product code.
 
 Respond with exactly this JSON shape:
 {
   "rows": [
     {
-      "productId": string,   // id copied verbatim from the catalog below — REQUIRED
-      "countedTins": number  // counted tins, >= 0 (fractional allowed, e.g. an open tin = 0.5)
+      "prCode": string | null,   // the product code EXACTLY as written in the FILE (e.g. "3193") — the primary key; null only if the file has no code column
+      "productId": string | null, // catalog id (copied verbatim from the catalog below) — fill it when you can, REQUIRED when prCode is null
+      "countedTins": number       // counted units, >= 0 (fractional allowed, e.g. an open tin = 0.5)
     }
   ],
   "unmatched": [ { "label": string, "reason": string } ]
 }
 
 Notes:
-- Counts may be expressed in grams or kilograms — convert to tins using the product's tin size.
+- Matching is done by PRODUCT CODE first: copy the code from the file's code column verbatim into "prCode". The server matches it against the catalog's prCode.
+- Only fall back to name+size matching (via "productId") when the file has no code for that row.
+- Counts may be expressed in grams or kilograms — convert to units using the product's tin size.
 - If the same product appears multiple times (e.g. counted in two locations), output one row per occurrence; they will be summed.
 - A product listed with an explicit count of zero IS a valid row (countedTins: 0).
-- Rows that do not correspond to any catalog product go to "unmatched" — never invent a productId.`;
+- Rows with a code that is not in the catalog still go in "rows" with their prCode — the server will report them as unmatched. Never invent a productId.`;
 }
 
 export function salesExportSystemPrompt(todayIso: string): string {
@@ -78,7 +82,7 @@ Respond with exactly this JSON shape:
       "productId": string,          // id copied verbatim from the catalog below — REQUIRED
       "date": string,               // "yyyy-mm-dd"; if the file has no date use "${todayIso}"
       "tins": number,               // tins sold/consumed, > 0 (convert grams using the tin size)
-      "channel": "restaurant" | "retail" | "event" | "staff",  // infer from context, default "retail"
+      "channel": "food_service" | "event" | "training",  // infer from context, default "food_service"
       "note": string | null         // short context from the row (e.g. table/order ref), or null
     }
   ],

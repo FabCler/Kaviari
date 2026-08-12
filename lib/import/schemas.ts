@@ -44,12 +44,15 @@ export const aiStockTakeSchema = z.object({
   rows: z
     .array(
       z.object({
-        productId: z.string().min(1).max(60),
+        // Product code copied verbatim from the FILE — the primary match key.
+        prCode: z.string().max(60).nullable().default(null),
+        // Catalog id fallback for files without a code column.
+        productId: z.string().max(60).nullable().default(null),
         countedTins: z.number().nonnegative().max(100_000),
       })
     )
-    .max(500),
-  unmatched: z.array(unmatchedSchema).max(200).default([]),
+    .max(2000),
+  unmatched: z.array(unmatchedSchema).max(500).default([]),
 });
 
 export type AiStockTakeResult = z.infer<typeof aiStockTakeSchema>;

@@ -6,8 +6,10 @@ import * as XLSX from "xlsx";
  * size the AI can reason about. Interpretation is lib/import/analyze.ts.
  */
 
-export const MAX_ROWS_PER_SHEET = 300;
-export const MAX_PDF_CHARS = 50_000;
+// Generous caps: the model reads the file in full (1M-token context); these
+// only guard against absurdly large uploads.
+export const MAX_ROWS_PER_SHEET = 5000;
+export const MAX_PDF_CHARS = 300_000;
 
 export type ParsedSheet = {
   name: string;
