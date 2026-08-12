@@ -91,7 +91,7 @@ export default async function MarketingPage({
         productIds: [lot.productId],
         notes:
           `Move lot ${lot.lotNumber} before its DLC: ${lot.quantityTins} tins of ` +
-          `${lot.product.name} (${lot.product.tinSizeGrams} g) expiring ${formatDate(lot.expiryDate)}.`,
+          `${lot.product.name}${lot.product.gramsPerUnit ? ` (${lot.product.gramsPerUnit} g)` : ""} expiring ${formatDate(lot.expiryDate)}.`,
         aiHint:
           `A short, tasteful last-days promotion for ${lot.product.name} — ` +
           `limited tins available until ${formatDate(lot.expiryDate)}. ` +
