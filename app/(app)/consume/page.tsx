@@ -1,21 +1,30 @@
-import Link from "next/link";
 import { startOfDay } from "date-fns";
-import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getStockOverview } from "@/lib/stock";
 import { OUTBOUND_MOVEMENT_TYPES } from "@/lib/domain";
 import { shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { ConsumeFlow } from "@/components/consume/consume-flow";
+import { AnalysisView } from "@/components/consume-analysis/analysis-view";
+import { loadAnalysisData } from "@/components/consume-analysis/data";
+import { LogConsumption } from "@/components/consume/log-consumption";
 import type {
   ConsumableProduct,
   RecentMovementRow,
 } from "@/components/consume/types";
 
-export default async function ConsumePage() {
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Consumption & Forecasts — Kaviari Cellar" };
+
+export default async function ConsumePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ log?: string }>;
+}) {
+  const { log } = await searchParams;
   const now = new Date();
-  const [overview, recentMovements] = await Promise.all([
+  const [data, overview, recentMovements] = await Promise.all([
+    loadAnalysisData(now),
     getStockOverview({ now }),
     prisma.stockMovement.findMany({
       where: {
@@ -64,18 +73,17 @@ export default async function ConsumePage() {
   return (
     <div>
       <PageHeader
-        title="Log Consumption"
-        description="Tap a product, set the quantity, confirm — done."
+        title="Consumption & Forecasts"
+        description="How the cellar is being consumed — weekly or monthly, in total or by caviar type — compared against everyone's forecasts."
         actions={
-          <Button variant="outline" asChild>
-            <Link href="/consume/analysis">
-              Analysis &amp; forecasts
-              <ArrowRight />
-            </Link>
-          </Button>
+          <LogConsumption
+            products={products}
+            recent={recent}
+            autoOpen={log != null}
+          />
         }
       />
-      <ConsumeFlow products={products} recent={recent} />
+      <AnalysisView data={data} now={now.toISOString()} />
     </div>
   );
 }

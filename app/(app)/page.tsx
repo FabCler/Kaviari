@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { format, startOfDay, subDays } from "date-fns";
 import {
-  AlertTriangle,
   ArrowRight,
   CalendarClock,
   FileUp,
@@ -9,7 +8,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getStockOverview, getExpiringLots } from "@/lib/stock";
+import { getStockOverview } from "@/lib/stock";
 import { getPlannerData } from "@/lib/planner";
 import {
   CHANNELS,
@@ -39,6 +38,7 @@ import {
 import {
   ConsumptionTrendChart,
   type DailyDemandPoint,
+  type ForecastMonthPoint,
 } from "@/components/dashboard/consumption-trend-chart";
 import {
   StockByProductChart,
@@ -104,12 +104,20 @@ export default async function DashboardPage() {
   const now = new Date();
   const trendStart = startOfDay(subDays(now, TREND_DAYS - 1));
   const channelStart = subDays(now, 30);
+  // Forecast months are stored as UTC midnight on the 1st. Fetch one month of
+  // slack on each side of the 6-month trend window so local/UTC month
+  // boundaries never drop a bucket; the chart picks what each view needs.
+  const forecastMonthGte = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 6, 1)
+  );
+  const forecastMonthLte = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  );
 
-  const [overview, planner, expiring, openPoLines, demandMovements] =
+  const [overview, planner, openPoLines, demandMovements, forecastMonths] =
     await Promise.all([
       getStockOverview({ now }),
       getPlannerData(now),
-      getExpiringLots({ now }),
       prisma.purchaseOrderLine.findMany({
         where: { purchaseOrder: { status: { in: [...OPEN_PO_STATUSES] } } },
         select: { quantityTins: true, unitCost: true },
@@ -120,6 +128,11 @@ export default async function DashboardPage() {
           date: { gte: trendStart, lte: now },
         },
         select: { date: true, quantityTins: true, channel: true },
+      }),
+      prisma.forecast.groupBy({
+        by: ["month"],
+        where: { month: { gte: forecastMonthGte, lte: forecastMonthLte } },
+        _sum: { quantity: true },
       }),
     ]);
 
@@ -135,6 +148,16 @@ export default async function DashboardPage() {
   const trend: DailyDemandPoint[] = [...unitsByDay.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, units]) => ({ date, units: Math.round(units * 100) / 100 }));
+
+  // --- Forecast: monthly totals summed across ALL users ---------------------
+  const forecast: ForecastMonthPoint[] = forecastMonths
+    .map((row) => ({
+      month: `${row.month.getUTCFullYear()}-${String(
+        row.month.getUTCMonth() + 1
+      ).padStart(2, "0")}`,
+      units: Math.round((row._sum.quantity ?? 0) * 100) / 100,
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
 
   // --- Consumption by channel, last 30 days, units --------------------------
   const channelTotals = new Map<Channel, number>();
@@ -204,7 +227,7 @@ export default async function DashboardPage() {
       {/* Quick actions */}
       <div className="mb-6 flex flex-wrap gap-2">
         <Button variant="gold" size="lg" asChild>
-          <Link href="/consume">
+          <Link href="/consume?log=1">
             <UtensilsCrossed />
             Log consumption
           </Link>
@@ -224,54 +247,31 @@ export default async function DashboardPage() {
       </div>
 
       {/* Alerts */}
-      {(planner.orderDue || expiring.length > 0) && (
-        <div className="mb-6 space-y-3">
-          {planner.orderDue && (
-            <Alert variant="gold">
-              <CalendarClock className="size-4" />
-              <AlertTitle>Order review is due</AlertTitle>
-              <AlertDescription>
-                <span>
-                  {planner.daysUntilOrder != null && planner.daysUntilOrder < 0
-                    ? `The ${settings.reviewPeriodDays}-day order cycle is ${Math.abs(planner.daysUntilOrder)} day${Math.abs(planner.daysUntilOrder) === 1 ? "" : "s"} overdue.`
-                    : "It is time to review stock and place the next Kaviari order."}{" "}
-                  <Link
-                    href="/planner"
-                    className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
-                  >
-                    Open the order planner
-                    <ArrowRight className="size-3" />
-                  </Link>
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-          {expiring.length > 0 && (
-            <Alert variant="warning">
-              <AlertTriangle className="size-4" />
-              <AlertTitle>
-                {expiring.length} lot{expiring.length === 1 ? "" : "s"} expiring
-                within {settings.expiryAlertDays} days
-              </AlertTitle>
-              <AlertDescription>
-                <span>
-                  Prioritise these tins on the menu or push them to marketing.{" "}
-                  <Link
-                    href="/inventory?filter=expiring"
-                    className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
-                  >
-                    View expiring lots
-                    <ArrowRight className="size-3" />
-                  </Link>
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
+      {planner.orderDue && (
+        <div className="mb-6">
+          <Alert variant="gold">
+            <CalendarClock className="size-4" />
+            <AlertTitle>Order review is due</AlertTitle>
+            <AlertDescription>
+              <span>
+                {planner.daysUntilOrder != null && planner.daysUntilOrder < 0
+                  ? `The ${settings.reviewPeriodDays}-day order cycle is ${Math.abs(planner.daysUntilOrder)} day${Math.abs(planner.daysUntilOrder) === 1 ? "" : "s"} overdue.`
+                  : "It is time to review stock and place the next Kaviari order."}{" "}
+                <Link
+                  href="/planner"
+                  className="inline-flex items-center gap-1 font-medium underline underline-offset-4"
+                >
+                  Open the order planner
+                  <ArrowRight className="size-3" />
+                </Link>
+              </span>
+            </AlertDescription>
+          </Alert>
         </div>
       )}
 
       {/* KPI row */}
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Total stock"
           value={`${formatNumber(totals.units, 0)} units`}
@@ -301,13 +301,6 @@ export default async function DashboardPage() {
           href="/planner"
         />
         <StatCard
-          label="Expiring lots"
-          value={expiring.length}
-          sub={`within ${settings.expiryAlertDays} days`}
-          tone={expiring.length > 0 ? "warning" : "default"}
-          href="/inventory?filter=expiring"
-        />
-        <StatCard
           label="Open POs"
           value={planner.openPoCount}
           sub={formatMoney(openPoValue, currency)}
@@ -319,14 +312,15 @@ export default async function DashboardPage() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Consumption trend</CardTitle>
+            <CardTitle>Consumption vs forecast</CardTitle>
             <CardDescription>
-              Tins consumed per period, with a 4-period average
+              Units consumed per period against the team forecast
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ConsumptionTrendChart
               data={trend}
+              forecast={forecast}
               endDate={format(now, "yyyy-MM-dd")}
             />
           </CardContent>

@@ -22,6 +22,37 @@ export interface StockBarPoint {
 }
 
 const AXIS_TICK = { fontSize: 12, fill: "var(--muted-foreground)" } as const;
+const LABEL_WIDTH = 172;
+const LABEL_MAX_CHARS = 24;
+
+// Truncated tick labels — the tooltip carries the full name.
+const truncate = (name: string) =>
+  name.length > LABEL_MAX_CHARS ? `${name.slice(0, LABEL_MAX_CHARS - 1)}…` : name;
+
+/** Plain single-line <text> tick. Recharts' default tick wraps long category
+ *  labels onto multiple lines inside the axis width; this never wraps. */
+function ProductTick({
+  x,
+  y,
+  payload,
+}: {
+  x?: number;
+  y?: number;
+  payload?: { value?: string | number };
+}) {
+  return (
+    <text
+      x={x}
+      y={y}
+      dy={4}
+      textAnchor="end"
+      fontSize={11}
+      fill="var(--foreground)"
+    >
+      {truncate(String(payload?.value ?? ""))}
+    </text>
+  );
+}
 
 export function StockByProductChart({ data }: { data: StockBarPoint[] }) {
   if (data.length === 0) {
@@ -32,9 +63,6 @@ export function StockByProductChart({ data }: { data: StockBarPoint[] }) {
     );
   }
   const height = Math.max(220, data.length * 34 + 40);
-  // Single-line truncated tick labels — the tooltip carries the full name.
-  const truncate = (name: string) =>
-    name.length > 26 ? `${name.slice(0, 25)}…` : name;
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">

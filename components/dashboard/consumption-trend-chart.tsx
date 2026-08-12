@@ -13,9 +13,11 @@ import {
   YAxis,
 } from "recharts";
 import {
+  addDays,
   addMonths,
   addWeeks,
   format,
+  getDaysInMonth,
   parseISO,
   startOfISOWeek,
   startOfMonth,
@@ -33,21 +35,54 @@ export interface DailyDemandPoint {
   units: number;
 }
 
+/** Monthly forecast total summed across ALL users, computed server-side. */
+export interface ForecastMonthPoint {
+  /** yyyy-MM */
+  month: string;
+  units: number;
+}
+
 type Grouping = "weekly" | "monthly";
 
 interface PeriodPoint {
   label: string;
   units: number;
-  avg: number;
+  forecast: number;
 }
 
 const WEEKS = 13;
 const MONTHS = 6;
-const AVG_WINDOW = 4;
 const AXIS_TICK = { fontSize: 12, fill: "var(--muted-foreground)" } as const;
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * Forecast for one period. Monthly buckets read the month total directly;
+ * weekly buckets prorate per day — a monthly forecast M covering days d1..dN
+ * contributes M/N for each of the week's days falling inside that month.
+ * (Same proration as the consumption analysis page, kept local because the
+ * dashboard buckets in local time while the analysis module buckets in UTC.)
+ */
+function periodForecast(
+  byMonth: Map<string, number>,
+  periodStart: Date,
+  grouping: Grouping
+): number {
+  if (grouping === "monthly") {
+    return byMonth.get(format(periodStart, "yyyy-MM")) ?? 0;
+  }
+  let total = 0;
+  for (let i = 0; i < 7; i++) {
+    const day = addDays(periodStart, i);
+    const monthly = byMonth.get(format(day, "yyyy-MM")) ?? 0;
+    if (monthly > 0) total += monthly / getDaysInMonth(day);
+  }
+  return total;
+}
 
 function groupByPeriod(
   data: DailyDemandPoint[],
+  forecastByMonth: Map<string, number>,
   grouping: Grouping,
   end: Date
 ): PeriodPoint[] {
@@ -71,34 +106,35 @@ function groupByPeriod(
     const key = format(periodStart, "yyyy-MM-dd");
     points.push({
       label: format(periodStart, grouping === "weekly" ? "d MMM" : "MMM"),
-      units: Math.round((buckets.get(key) ?? 0) * 10) / 10,
-      avg: 0,
+      units: round1(buckets.get(key) ?? 0),
+      forecast: round1(periodForecast(forecastByMonth, periodStart, grouping)),
     });
-  }
-  for (let i = 0; i < points.length; i++) {
-    const window = points.slice(Math.max(0, i - (AVG_WINDOW - 1)), i + 1);
-    const mean = window.reduce((sum, p) => sum + p.units, 0) / window.length;
-    points[i].avg = Math.round(mean * 10) / 10;
   }
   return points;
 }
 
 export function ConsumptionTrendChart({
   data,
+  forecast,
   endDate,
 }: {
   data: DailyDemandPoint[];
+  /** Per-month forecast totals (all users summed), yyyy-MM keys. */
+  forecast: ForecastMonthPoint[];
   /** yyyy-MM-dd for "today" from the server, so grouping is deterministic. */
   endDate: string;
 }) {
   const [grouping, setGrouping] = React.useState<Grouping>("weekly");
 
-  const points = React.useMemo(
-    () => groupByPeriod(data, grouping, parseISO(endDate)),
-    [data, grouping, endDate]
+  const forecastByMonth = React.useMemo(
+    () => new Map(forecast.map((f) => [f.month, f.units])),
+    [forecast]
   );
-  const hasAny = points.some((p) => p.units > 0);
-  const avgName = grouping === "weekly" ? "4-week average" : "4-month average";
+  const points = React.useMemo(
+    () => groupByPeriod(data, forecastByMonth, grouping, parseISO(endDate)),
+    [data, forecastByMonth, grouping, endDate]
+  );
+  const hasAny = points.some((p) => p.units > 0 || p.forecast > 0);
 
   return (
     <div>
@@ -130,8 +166,9 @@ export function ConsumptionTrendChart({
 
       {!hasAny ? (
         <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-          No consumption recorded in the last{" "}
-          {grouping === "weekly" ? `${WEEKS} weeks` : `${MONTHS} months`}.
+          No consumption or forecast in the last{" "}
+          {grouping === "weekly" ? `${WEEKS} weeks` : `${MONTHS} months`} — log
+          usage or add a forecast to see the trend.
         </div>
       ) : (
         <div className="h-64 w-full sm:h-72">
@@ -169,7 +206,7 @@ export function ConsumptionTrendChart({
               />
               <Bar
                 dataKey="units"
-                name={grouping === "weekly" ? "Tins per week" : "Tins per month"}
+                name="Consumption"
                 fill="var(--chart-1)"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={18}
@@ -177,10 +214,11 @@ export function ConsumptionTrendChart({
               />
               <Line
                 type="monotone"
-                dataKey="avg"
-                name={avgName}
+                dataKey="forecast"
+                name="Forecast"
                 stroke="var(--chart-2)"
                 strokeWidth={2}
+                strokeDasharray="6 4"
                 dot={false}
                 isAnimationActive={false}
               />
