@@ -12,22 +12,11 @@ export interface InventoryRow {
   unitCost: number;
   onHandUnits: number;
   onOrderUnits: number;
+  /** Units consumed over the last 30 days (demand movements, positive). */
+  consumed30dUnits: number;
   aduUnitsPerDay: number;
   aduIsOverride: boolean;
   aduOverrideUnitsPerDay: number | null;
   weeksOfCover: number | null;
   stockValue: number;
-}
-
-export interface ExpiringLotRow {
-  lotId: string;
-  lotNumber: string;
-  productId: string;
-  productName: string;
-  unit: string;
-  gramsPerUnit: number | null;
-  quantityTins: number;
-  /** ISO string */
-  expiryDate: string;
-  daysLeft: number;
 }

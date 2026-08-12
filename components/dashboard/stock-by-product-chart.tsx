@@ -83,12 +83,11 @@ export function StockByProductChart({ data }: { data: StockBarPoint[] }) {
           <YAxis
             type="category"
             dataKey="name"
-            width={170}
+            width={LABEL_WIDTH}
             axisLine={false}
             tickLine={false}
-            tickFormatter={truncate}
             interval={0}
-            tick={{ fontSize: 12, fill: "var(--foreground)" }}
+            tick={<ProductTick />}
           />
           <Tooltip
             formatter={(value, _name, item) =>

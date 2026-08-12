@@ -45,6 +45,7 @@ const SYSTEM_PROMPT = [
   "You extract purchase-order data from supplier order files for Kaviari Cellar, a caviar inventory app.",
   "You receive the PRODUCT CATALOG as JSON and the raw content of an uploaded order file.",
   "Match every order line in the file to exactly one catalog product: match by PR code first, then by product name (and tin size / weight when names are ambiguous).",
+  "Extract EVERY line item, in the exact order it appears in the document. Do NOT merge, deduplicate or aggregate lines: if the same product appears on several document lines, output one entry per document line, each with that line's quantity exactly as written.",
   "Reply with ONLY strict JSON — no markdown, no commentary — in exactly this shape:",
   '{"reference": string|null, "orderDate": "YYYY-MM-DD"|null, "expectedDeliveryDate": "YYYY-MM-DD"|null, "lines": [{"productId": string, "quantityTins": number, "unitCost": number|null}], "unmatched": [{"description": string, "quantity": number|null}]}',
   "Rules:",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, FileDown } from "lucide-react";
 import { getPlannerData } from "@/lib/planner";
+import { AI_UNAVAILABLE_MESSAGE, isAiConfigured } from "@/lib/ai";
 import { formatDate, shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateDraftPoButton } from "@/components/planner/create-po-button";
+import { AiOrderCard } from "@/components/planner/ai-order-card";
 import {
   PlannerTable,
   type PlannerRowDto,
@@ -165,6 +167,11 @@ export default async function PlannerPage() {
           <PlannerTable rows={rows} currency={settings.currency} />
         </CardContent>
       </Card>
+
+      <AiOrderCard
+        aiConfigured={isAiConfigured()}
+        aiMessage={AI_UNAVAILABLE_MESSAGE}
+      />
     </div>
   );
 }
