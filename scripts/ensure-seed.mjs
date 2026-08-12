@@ -7,7 +7,7 @@
 import { spawnSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 
-const CATALOG_VERSION = 3;
+const CATALOG_VERSION = 4;
 
 const prisma = new PrismaClient();
 

@@ -18,8 +18,7 @@ import { join } from "path";
 
 const prisma = new PrismaClient();
 
-const DAY = 86_400_000;
-export const CATALOG_VERSION = "3";
+export const CATALOG_VERSION = "4";
 
 interface CatalogProduct {
   prCode: string;
@@ -40,9 +39,6 @@ async function main() {
   const catalog: CatalogProduct[] = JSON.parse(
     readFileSync(join(dataDir, "products_db.json"), "utf8")
   );
-
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
 
   console.log("Clearing existing data (user accounts and chats are kept)…");
   await prisma.contentAsset.deleteMany();
@@ -80,40 +76,9 @@ async function main() {
     });
   }
 
-  // ---- Opening stock: one lot per product from the workbook's on-hand ----
-  // The DLC of the opening stock is unknown, so it defaults to +12 months;
-  // real DLCs are captured when receiving future purchase orders.
-  console.log("Seeding opening stock lots…");
-  let lots = 0;
-  const openingMovements = [];
-  for (const entry of catalog) {
-    const stock = entry.stockOnHand ?? 0;
-    if (stock <= 0) continue;
-    const product = productByCode.get(entry.prCode)!;
-    const lot = await prisma.stockLot.create({
-      data: {
-        productId: product.id,
-        lotNumber: `INIT-${entry.prCode}`,
-        quantityTins: stock,
-        receivedTins: stock,
-        receivedDate: today,
-        expiryDate: new Date(today.getTime() + 365 * DAY),
-        status: "in_stock",
-      },
-    });
-    openingMovements.push({
-      productId: product.id,
-      lotId: lot.id,
-      type: "receipt",
-      quantityTins: stock,
-      gramsEquivalent: stock * (product.gramsPerUnit ?? 0),
-      date: today,
-      channel: null as string | null,
-      note: "Opening stock",
-    });
-    lots += 1;
-  }
-  await prisma.stockMovement.createMany({ data: openingMovements });
+  // ---- No opening stock ----
+  // Stock starts at zero on purpose: it is set by uploading a stock file
+  // through Import & Analyze (stock take mode) or by receiving POs.
 
   // ---- Settings ----
   console.log("Seeding settings…");
@@ -132,7 +97,6 @@ async function main() {
 
   console.log("Seed complete:", {
     products: await prisma.product.count(),
-    lots,
     users: await prisma.user.count(),
   });
 }
