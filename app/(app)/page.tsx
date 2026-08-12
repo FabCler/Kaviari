@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { addDays, format, startOfDay, subDays } from "date-fns";
+import { format, startOfDay, subDays } from "date-fns";
 import {
   AlertTriangle,
   ArrowRight,
@@ -13,6 +13,7 @@ import { getStockOverview, getExpiringLots } from "@/lib/stock";
 import { getPlannerData } from "@/lib/planner";
 import {
   CHANNELS,
+  CHANNEL_LABELS,
   DEMAND_MOVEMENT_TYPES,
   OPEN_PO_STATUSES,
   type Channel,
@@ -22,7 +23,7 @@ import {
   formatGrams,
   formatMoney,
   formatNumber,
-  formatTins,
+  formatWeeks,
   shortProductName,
 } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -37,22 +38,19 @@ import {
 } from "@/components/ui/card";
 import {
   ConsumptionTrendChart,
-  type TrendPoint,
+  type DailyDemandPoint,
 } from "@/components/dashboard/consumption-trend-chart";
-import { StockByProductChart } from "@/components/dashboard/stock-by-product-chart";
+import {
+  StockByProductChart,
+  type StockBarPoint,
+} from "@/components/dashboard/stock-by-product-chart";
 import {
   ChannelDonutChart,
   type ChannelSlice,
 } from "@/components/dashboard/channel-donut-chart";
 
-const CHANNEL_LABELS: Record<Channel, string> = {
-  restaurant: "Restaurant",
-  retail: "Retail",
-  event: "Event",
-  staff: "Staff",
-};
-
-const TREND_DAYS = 90;
+// ~185 days covers 13 full ISO weeks and 6 full months for the trend chart.
+const TREND_DAYS = 185;
 
 function StatCard({
   label,
@@ -91,7 +89,10 @@ function StatCard({
     </Card>
   );
   return href ? (
-    <Link href={href} className="block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring/60 outline-none">
+    <Link
+      href={href}
+      className="block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring/60 outline-none"
+    >
       {body}
     </Link>
   ) : (
@@ -118,31 +119,24 @@ export default async function DashboardPage() {
           type: { in: [...DEMAND_MOVEMENT_TYPES] },
           date: { gte: trendStart, lte: now },
         },
-        select: { date: true, gramsEquivalent: true, channel: true },
+        select: { date: true, quantityTins: true, channel: true },
       }),
     ]);
 
   const { settings, totals } = overview;
   const currency = settings.currency;
 
-  // --- Consumption trend: daily grams + 7-day rolling average -------------
-  const gramsByDay = new Map<string, number>();
+  // --- Consumption trend: daily unit aggregates, grouped client-side --------
+  const unitsByDay = new Map<string, number>();
   for (const m of demandMovements) {
     const key = format(m.date, "yyyy-MM-dd");
-    gramsByDay.set(key, (gramsByDay.get(key) ?? 0) + Math.abs(m.gramsEquivalent));
+    unitsByDay.set(key, (unitsByDay.get(key) ?? 0) + Math.abs(m.quantityTins));
   }
-  const trend: TrendPoint[] = [];
-  for (let i = 0; i < TREND_DAYS; i++) {
-    const key = format(addDays(trendStart, i), "yyyy-MM-dd");
-    trend.push({ date: key, grams: Math.round(gramsByDay.get(key) ?? 0), avg7: 0 });
-  }
-  for (let i = 0; i < trend.length; i++) {
-    const window = trend.slice(Math.max(0, i - 6), i + 1);
-    const mean = window.reduce((s, p) => s + p.grams, 0) / window.length;
-    trend[i].avg7 = Math.round(mean * 10) / 10;
-  }
+  const trend: DailyDemandPoint[] = [...unitsByDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, units]) => ({ date, units: Math.round(units * 100) / 100 }));
 
-  // --- Consumption by channel, last 30 days --------------------------------
+  // --- Consumption by channel, last 30 days, units --------------------------
   const channelTotals = new Map<Channel, number>();
   for (const m of demandMovements) {
     if (m.date < channelStart) continue;
@@ -150,17 +144,17 @@ export default async function DashboardPage() {
     if (!channel || !CHANNELS.includes(channel)) continue;
     channelTotals.set(
       channel,
-      (channelTotals.get(channel) ?? 0) + Math.abs(m.gramsEquivalent)
+      (channelTotals.get(channel) ?? 0) + Math.abs(m.quantityTins)
     );
   }
   const channelData: ChannelSlice[] = CHANNELS.map((channel) => ({
     channel,
     label: CHANNEL_LABELS[channel],
-    grams: Math.round(channelTotals.get(channel) ?? 0),
+    units: Math.round((channelTotals.get(channel) ?? 0) * 10) / 10,
   }));
 
-  // --- Stock by product (top 10 by grams) ----------------------------------
-  // Compact single-line labels for axis ticks (the tooltip shows values).
+  // --- Stock by product (top 10 by on-hand units) ----------------------------
+  // Compact single-line labels for axis ticks (the tooltip shows the full name).
   const chartLabel = (name: string) =>
     shortProductName(name)
       .replace(/\((\d+)\s*g(?:r|m)?\s*\/\s*tin\)/i, "· $1 g")
@@ -169,20 +163,23 @@ export default async function DashboardPage() {
       .replace(/\((?:le bua|zuma|villa)[^)]*\)/i, "")
       .replace(/\s{2,}/g, " ")
       .trim();
-  const stockBars = overview.rows
-    .filter((row) => row.onHandGrams > 0)
-    .sort((a, b) => b.onHandGrams - a.onHandGrams)
+  const stockBars: StockBarPoint[] = overview.rows
+    .filter((row) => row.onHandUnits > 0)
+    .sort((a, b) => b.onHandUnits - a.onHandUnits)
     .slice(0, 10)
     .map((row) => ({
       name: chartLabel(row.product.name),
-      grams: Math.round(row.onHandGrams),
+      fullName: row.product.name,
+      unit: row.product.unit,
+      units: Math.round(row.onHandUnits * 10) / 10,
     }));
 
-  // --- KPIs -----------------------------------------------------------------
+  // --- KPIs -------------------------------------------------------------------
   const openPoValue = openPoLines.reduce(
     (sum, line) => sum + line.quantityTins * line.unitCost,
     0
   );
+  const coverWeeks = totals.daysOfCover == null ? null : totals.daysOfCover / 7;
   const nextOrderValue =
     planner.daysUntilOrder == null
       ? "Due now"
@@ -277,20 +274,16 @@ export default async function DashboardPage() {
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard
           label="Total stock"
-          value={formatGrams(totals.grams)}
-          sub={`${formatTins(totals.tins)} · ${formatMoney(totals.value, currency)}`}
+          value={`${formatNumber(totals.units, 0)} units`}
+          sub={`${formatGrams(totals.grams)} · ${formatMoney(totals.value, currency)}`}
         />
         <StatCard
-          label="Days of cover"
-          value={
-            totals.daysOfCover != null
-              ? `${formatNumber(totals.daysOfCover, 0)}d`
-              : "—"
-          }
+          label="Cover"
+          value={formatWeeks(coverWeeks)}
           sub="at current usage"
           tone={
-            totals.daysOfCover != null && totals.daysOfCover < 15
-              ? totals.daysOfCover < 7
+            coverWeeks != null && coverWeeks < 2
+              ? coverWeeks < 1
                 ? "danger"
                 : "warning"
               : "default"
@@ -328,11 +321,14 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Consumption trend</CardTitle>
             <CardDescription>
-              Daily grams consumed over the last 90 days, with 7-day average
+              Tins consumed per period, with a 4-period average
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ConsumptionTrendChart data={trend} />
+            <ConsumptionTrendChart
+              data={trend}
+              endDate={format(now, "yyyy-MM-dd")}
+            />
           </CardContent>
         </Card>
 
@@ -341,7 +337,7 @@ export default async function DashboardPage() {
             <CardHeader>
               <CardTitle>Stock by product</CardTitle>
               <CardDescription>
-                On-hand grams, top {Math.min(10, stockBars.length) || 10}{" "}
+                On-hand units, top {Math.min(10, stockBars.length) || 10}{" "}
                 products
               </CardDescription>
             </CardHeader>
@@ -352,7 +348,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Consumption by channel</CardTitle>
-              <CardDescription>Last 30 days, grams by channel</CardDescription>
+              <CardDescription>Last 30 days, units by channel</CardDescription>
             </CardHeader>
             <CardContent>
               <ChannelDonutChart data={channelData} />

@@ -3,16 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { Megaphone } from "lucide-react";
-import {
-  formatDate,
-  formatGrams,
-  formatMoney,
-  formatNumber,
-  formatTins,
-} from "@/lib/format";
+import { CAVIAR_TYPES, PRODUCT_CATEGORIES } from "@/lib/domain";
+import { formatDate, formatUnits } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -27,10 +29,14 @@ import { ProductDetailSheet } from "@/components/inventory/product-detail-sheet"
 import { CoverBadge, DaysLeftBadge } from "@/components/inventory/badges";
 import type { ExpiringLotRow, InventoryRow } from "@/components/inventory/types";
 
-type View = "caviar" | "other" | "all" | "expiring";
+type View = "products" | "expiring";
+
+const ALL = "all";
 
 function isDormant(row: InventoryRow): boolean {
-  return row.onHandTins <= 0 && row.aduGramsPerDay <= 0 && row.onOrderTins <= 0;
+  return (
+    row.onHandUnits <= 0 && row.aduUnitsPerDay <= 0 && row.onOrderUnits <= 0
+  );
 }
 
 export function InventoryTable({
@@ -47,14 +53,22 @@ export function InventoryTable({
   initialView: View;
 }) {
   const [view, setView] = React.useState<View>(initialView);
+  const [category, setCategory] = React.useState<string>(ALL);
+  const [caviarType, setCaviarType] = React.useState<string>(ALL);
   const [showDormant, setShowDormant] = React.useState(false);
   const [selected, setSelected] = React.useState<InventoryRow | null>(null);
 
-  const categoryFiltered = rows.filter((row) =>
-    view === "all" ? true : row.category === view
-  );
-  const activeRows = categoryFiltered.filter((row) => !isDormant(row));
-  const dormantRows = categoryFiltered.filter(isDormant);
+  // Caviar type only applies when the category filter can contain caviar.
+  const typeFilterEnabled = category === ALL || category === "Caviar";
+
+  const filtered = rows.filter((row) => {
+    if (category !== ALL && row.category !== category) return false;
+    if (typeFilterEnabled && caviarType !== ALL && row.caviarType !== caviarType)
+      return false;
+    return true;
+  });
+  const activeRows = filtered.filter((row) => !isDormant(row));
+  const dormantRows = filtered.filter(isDormant);
   const visibleRows = showDormant
     ? [...activeRows, ...dormantRows]
     : activeRows;
@@ -62,22 +76,70 @@ export function InventoryTable({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={view} onValueChange={(v) => setView(v as View)}>
-          <TabsList>
-            <TabsTrigger value="caviar">Caviar</TabsTrigger>
-            <TabsTrigger value="other">Other</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="expiring">
-              Expiring
-              {expiring.length > 0 ? (
-                <Badge variant="warning" className="tnum ml-1.5 px-1.5">
-                  {expiring.length}
-                </Badge>
-              ) : null}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {view !== "expiring" && dormantRows.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+            <TabsList>
+              <TabsTrigger value="products">Products</TabsTrigger>
+              <TabsTrigger value="expiring">
+                Expiring
+                {expiring.length > 0 ? (
+                  <Badge variant="warning" className="tnum ml-1.5 px-1.5">
+                    {expiring.length}
+                  </Badge>
+                ) : null}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {view === "products" ? (
+            <>
+              <Label htmlFor="category-filter" className="sr-only">
+                Filter by category
+              </Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger
+                  id="category-filter"
+                  size="sm"
+                  aria-label="Filter by category"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All categories</SelectItem>
+                  {PRODUCT_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Label htmlFor="caviar-type-filter" className="sr-only">
+                Filter by caviar type
+              </Label>
+              <Select
+                value={typeFilterEnabled ? caviarType : ALL}
+                onValueChange={setCaviarType}
+                disabled={!typeFilterEnabled}
+              >
+                <SelectTrigger
+                  id="caviar-type-filter"
+                  size="sm"
+                  aria-label="Filter by caviar type"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All caviar types</SelectItem>
+                  {CAVIAR_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          ) : null}
+        </div>
+        {view === "products" && dormantRows.length > 0 ? (
           <div className="flex items-center gap-2">
             <Switch
               id="show-dormant"
@@ -97,11 +159,7 @@ export function InventoryTable({
       {view === "expiring" ? (
         <ExpiringLotsTable expiring={expiring} expiryAlertDays={expiryAlertDays} />
       ) : (
-        <ProductsTable
-          rows={visibleRows}
-          currency={currency}
-          onSelect={setSelected}
-        />
+        <ProductsTable rows={visibleRows} onSelect={setSelected} />
       )}
 
       <ProductDetailSheet
@@ -117,32 +175,30 @@ export function InventoryTable({
 
 function ProductsTable({
   rows,
-  currency,
   onSelect,
 }: {
   rows: InventoryRow[];
-  currency: string;
   onSelect: (row: InventoryRow) => void;
 }) {
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-        No products in this view. Receive a delivery or switch category tabs.
+        No products match these filters. Adjust the category or type, or
+        receive a delivery.
       </div>
     );
   }
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="overflow-x-auto rounded-xl border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Code</TableHead>
             <TableHead>Product</TableHead>
-            <TableHead className="text-right">Tin</TableHead>
-            <TableHead className="text-right">On hand</TableHead>
-            <TableHead className="text-right">On order</TableHead>
-            <TableHead className="text-right">ADU</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Unit</TableHead>
+            <TableHead className="text-right">Stock on hand</TableHead>
             <TableHead className="text-right">Cover</TableHead>
-            <TableHead className="text-right">Value</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -160,41 +216,27 @@ function ProductsTable({
               }}
               aria-label={`Open details for ${row.shortName}`}
             >
+              <TableCell className="tnum text-muted-foreground">
+                {row.prCode}
+              </TableCell>
+              <TableCell className="max-w-72 whitespace-normal">
+                <span className="font-medium">{row.name}</span>
+              </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{row.shortName}</span>
-                  {row.grade ? (
-                    <Badge variant="gold" className="hidden sm:inline-flex">
-                      {row.grade}
-                    </Badge>
-                  ) : null}
-                </div>
+                {row.caviarType ? (
+                  <Badge variant="gold">{row.caviarType}</Badge>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
               </TableCell>
-              <TableCell className="tnum text-right text-muted-foreground">
-                {formatGrams(row.tinSizeGrams)}
+              <TableCell className="text-muted-foreground">
+                {row.unit}
               </TableCell>
-              <TableCell className="tnum text-right">
-                <span className="font-medium">{formatTins(row.onHandTins)}</span>
-                <span className="ml-1 hidden text-xs text-muted-foreground md:inline">
-                  {formatGrams(row.onHandGrams)}
-                </span>
-              </TableCell>
-              <TableCell className="tnum text-right text-muted-foreground">
-                {row.onOrderTins > 0 ? formatTins(row.onOrderTins) : "—"}
-              </TableCell>
-              <TableCell className="tnum text-right text-muted-foreground">
-                {row.aduGramsPerDay > 0
-                  ? `${formatNumber(row.aduGramsPerDay, 1)} g/d`
-                  : "—"}
-                {row.aduIsOverride ? (
-                  <span className="ml-1 text-xs text-gold-deep">(manual)</span>
-                ) : null}
+              <TableCell className="tnum text-right font-medium">
+                {formatUnits(row.onHandUnits, row.unit)}
               </TableCell>
               <TableCell className="text-right">
-                <CoverBadge days={row.daysOfCover} />
-              </TableCell>
-              <TableCell className="tnum text-right">
-                {formatMoney(row.stockValue, currency)}
+                <CoverBadge weeks={row.weeksOfCover} />
               </TableCell>
             </TableRow>
           ))}
@@ -219,7 +261,7 @@ function ExpiringLotsTable({
     );
   }
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="overflow-x-auto rounded-xl border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -238,10 +280,7 @@ function ExpiringLotsTable({
                 {lot.lotNumber}
               </TableCell>
               <TableCell className="tnum text-right">
-                {formatTins(lot.quantityTins)}
-                <span className="ml-1 hidden text-xs text-muted-foreground md:inline">
-                  {formatGrams(lot.quantityTins * lot.tinSizeGrams)}
-                </span>
+                {formatUnits(lot.quantityTins, lot.unit)}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">

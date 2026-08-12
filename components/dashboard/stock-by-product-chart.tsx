@@ -9,11 +9,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatGrams } from "@/lib/format";
+import { formatNumber, formatUnits } from "@/lib/format";
 
 export interface StockBarPoint {
+  /** Compact single-line label, e.g. "Kristal · 125 g". */
   name: string;
-  grams: number;
+  /** Full product name, shown in the tooltip. */
+  fullName: string;
+  /** Stock-keeping unit ("Tin" | "PC" | "KG" | "PK"). */
+  unit: string;
+  units: number;
 }
 
 const AXIS_TICK = { fontSize: 12, fill: "var(--muted-foreground)" } as const;
@@ -41,15 +46,16 @@ export function StockByProductChart({ data }: { data: StockBarPoint[] }) {
           <CartesianGrid horizontal={false} stroke="#E3DFD2" />
           <XAxis
             type="number"
-            tickFormatter={(v: number) => formatGrams(v)}
+            tickFormatter={(v: number) => formatNumber(v, 0)}
             axisLine={false}
             tickLine={false}
             tick={AXIS_TICK}
+            allowDecimals={false}
           />
           <YAxis
             type="category"
             dataKey="name"
-            width={168}
+            width={170}
             axisLine={false}
             tickLine={false}
             tickFormatter={truncate}
@@ -57,12 +63,21 @@ export function StockByProductChart({ data }: { data: StockBarPoint[] }) {
             tick={{ fontSize: 12, fill: "var(--foreground)" }}
           />
           <Tooltip
-            formatter={(value) => formatGrams(Number(value))}
+            formatter={(value, _name, item) =>
+              formatUnits(
+                Number(value),
+                (item?.payload as StockBarPoint | undefined)?.unit ?? "Tin"
+              )
+            }
+            labelFormatter={(label, payload) =>
+              (payload?.[0]?.payload as StockBarPoint | undefined)?.fullName ??
+              String(label)
+            }
             cursor={{ fill: "rgba(15, 25, 43, 0.04)" }}
             contentStyle={{ fontSize: 12, borderRadius: 8 }}
           />
           <Bar
-            dataKey="grams"
+            dataKey="units"
             name="On hand"
             fill="var(--chart-1)"
             radius={[0, 4, 4, 0]}

@@ -2,21 +2,20 @@
 
 export interface InventoryRow {
   productId: string;
-  kaviariCode: string;
+  prCode: string;
   name: string;
   shortName: string;
-  grade: string | null;
+  caviarType: string | null;
   category: string;
-  tinSizeGrams: number;
+  unit: string;
+  gramsPerUnit: number | null;
   unitCost: number;
-  onHandTins: number;
-  onHandGrams: number;
-  onOrderTins: number;
-  onOrderGrams: number;
-  aduGramsPerDay: number;
+  onHandUnits: number;
+  onOrderUnits: number;
+  aduUnitsPerDay: number;
   aduIsOverride: boolean;
-  aduOverrideGramsPerDay: number | null;
-  daysOfCover: number | null;
+  aduOverrideUnitsPerDay: number | null;
+  weeksOfCover: number | null;
   stockValue: number;
 }
 
@@ -25,7 +24,8 @@ export interface ExpiringLotRow {
   lotNumber: string;
   productId: string;
   productName: string;
-  tinSizeGrams: number;
+  unit: string;
+  gramsPerUnit: number | null;
   quantityTins: number;
   /** ISO string */
   expiryDate: string;

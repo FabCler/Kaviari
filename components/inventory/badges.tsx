@@ -1,23 +1,25 @@
-import { formatNumber } from "@/lib/format";
+import { formatWeeks } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 
-export function CoverBadge({ days }: { days: number | null }) {
-  if (days == null) {
+/** Weeks-of-cover badge: destructive under 1 week, warning under 2, "∞" when
+ *  there is no measurable demand. */
+export function CoverBadge({ weeks }: { weeks: number | null }) {
+  if (weeks == null) {
     return (
       <Badge variant="outline" className="text-muted-foreground">
-        —
+        ∞
       </Badge>
     );
   }
-  const label = `${formatNumber(days, 0)}d`;
-  if (days < 7) {
+  const label = formatWeeks(weeks);
+  if (weeks < 1) {
     return (
       <Badge variant="destructive" className="tnum">
         {label}
       </Badge>
     );
   }
-  if (days < 15) {
+  if (weeks < 2) {
     return (
       <Badge variant="warning" className="tnum">
         {label}

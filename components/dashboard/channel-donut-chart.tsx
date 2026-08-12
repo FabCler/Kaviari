@@ -1,31 +1,25 @@
 "use client";
 
-import {
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
-import { formatGrams } from "@/lib/format";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { formatTins } from "@/lib/format";
 import type { Channel } from "@/lib/domain";
 
 export interface ChannelSlice {
   channel: Channel;
   label: string;
-  grams: number;
+  /** Units (tins) consumed through this channel over the window. */
+  units: number;
 }
 
-/** Fixed channel -> color mapping (chart-1..4 in channel order). */
+/** Fixed channel -> color mapping (chart-1..3 in CHANNELS order, never cycled). */
 const CHANNEL_COLORS: Record<Channel, string> = {
-  restaurant: "var(--chart-1)",
-  retail: "var(--chart-2)",
-  event: "var(--chart-3)",
-  staff: "var(--chart-4)",
+  food_service: "var(--chart-1)",
+  event: "var(--chart-2)",
+  training: "var(--chart-3)",
 };
 
 export function ChannelDonutChart({ data }: { data: ChannelSlice[] }) {
-  const total = data.reduce((sum, s) => sum + s.grams, 0);
+  const total = data.reduce((sum, s) => sum + s.units, 0);
   if (total <= 0) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
@@ -33,7 +27,7 @@ export function ChannelDonutChart({ data }: { data: ChannelSlice[] }) {
       </div>
     );
   }
-  const slices = data.filter((s) => s.grams > 0);
+  const slices = data.filter((s) => s.units > 0);
   return (
     <div>
       <div className="relative h-56 w-full sm:h-64">
@@ -41,7 +35,7 @@ export function ChannelDonutChart({ data }: { data: ChannelSlice[] }) {
           <PieChart>
             <Pie
               data={slices}
-              dataKey="grams"
+              dataKey="units"
               nameKey="label"
               innerRadius="62%"
               outerRadius="88%"
@@ -50,14 +44,11 @@ export function ChannelDonutChart({ data }: { data: ChannelSlice[] }) {
               isAnimationActive={false}
             >
               {slices.map((slice) => (
-                <Cell
-                  key={slice.channel}
-                  fill={CHANNEL_COLORS[slice.channel]}
-                />
+                <Cell key={slice.channel} fill={CHANNEL_COLORS[slice.channel]} />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value) => formatGrams(Number(value))}
+              formatter={(value) => formatTins(Number(value))}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
           </PieChart>
@@ -67,7 +58,7 @@ export function ChannelDonutChart({ data }: { data: ChannelSlice[] }) {
           aria-hidden="true"
         >
           <span className="font-display tnum text-2xl font-medium text-foreground">
-            {formatGrams(total)}
+            {formatTins(total)}
           </span>
           <span className="text-xs text-muted-foreground">last 30 days</span>
         </div>
@@ -84,7 +75,7 @@ export function ChannelDonutChart({ data }: { data: ChannelSlice[] }) {
             />
             <span className="text-foreground">{slice.label}</span>
             <span className="tnum text-muted-foreground">
-              {formatGrams(slice.grams)}
+              {formatTins(slice.units)}
             </span>
           </li>
         ))}
