@@ -166,12 +166,15 @@ export async function POST(request: Request) {
   const ai = validated.data;
 
   // ---- Server-side verification: never trust invented product ids ---------
+  // The source document is respected line by line: one PurchaseOrderLine per
+  // document line, in file order, quantities exactly as written — no merging.
   const byId = new Map(products.map((p) => [p.id, p]));
   const unmatched = [...ai.unmatched];
-  const quantityByProduct = new Map<
-    string,
-    { quantityTins: number; unitCost: number }
-  >();
+  const lines: {
+    productId: string;
+    quantityTins: number;
+    unitCost: number;
+  }[] = [];
   for (const line of ai.lines) {
     const product = byId.get(line.productId);
     if (!product) {
@@ -181,18 +184,12 @@ export async function POST(request: Request) {
       });
       continue;
     }
-    const existing = quantityByProduct.get(product.id);
-    quantityByProduct.set(product.id, {
-      quantityTins: (existing?.quantityTins ?? 0) + line.quantityTins,
-      unitCost: line.unitCost ?? existing?.unitCost ?? product.unitCost,
+    lines.push({
+      productId: product.id,
+      quantityTins: line.quantityTins,
+      unitCost: line.unitCost ?? product.unitCost,
     });
   }
-
-  const lines = [...quantityByProduct.entries()].map(([productId, v]) => ({
-    productId,
-    quantityTins: v.quantityTins,
-    unitCost: v.unitCost,
-  }));
 
   if (lines.length === 0) {
     const detail = describeUnmatched(unmatched);

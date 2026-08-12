@@ -12,8 +12,8 @@ export default function DashboardLoading() {
         <Skeleton className="h-11 w-40" />
         <Skeleton className="hidden h-11 w-36 sm:block" />
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-28 rounded-xl" />
         ))}
       </div>

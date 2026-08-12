@@ -1,22 +1,35 @@
-import { getExpiringLots, getStockOverview } from "@/lib/stock";
+import { subDays } from "date-fns";
+import { prisma } from "@/lib/db";
+import { getStockOverview } from "@/lib/stock";
+import { DEMAND_MOVEMENT_TYPES } from "@/lib/domain";
 import { shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { InventoryTable } from "@/components/inventory/inventory-table";
-import type {
-  ExpiringLotRow,
-  InventoryRow,
-} from "@/components/inventory/types";
+import type { InventoryRow } from "@/components/inventory/types";
 
-export default async function InventoryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
-  const { filter } = await searchParams;
-  const [overview, expiringLots] = await Promise.all([
-    getStockOverview(),
-    getExpiringLots(),
+export default async function InventoryPage() {
+  const now = new Date();
+  const [overview, consumedGroups] = await Promise.all([
+    getStockOverview({ now }),
+    // Units consumed over the last 30 days per product: demand movements are
+    // recorded with negative quantities, so sum and flip the sign.
+    prisma.stockMovement.groupBy({
+      by: ["productId"],
+      where: {
+        type: { in: [...DEMAND_MOVEMENT_TYPES] },
+        quantityTins: { lt: 0 },
+        date: { gte: subDays(now, 30), lte: now },
+      },
+      _sum: { quantityTins: true },
+    }),
   ]);
+
+  const consumedByProduct = new Map(
+    consumedGroups.map((g) => [
+      g.productId,
+      Math.abs(g._sum.quantityTins ?? 0),
+    ])
+  );
 
   const rows: InventoryRow[] = overview.rows.map((row) => ({
     productId: row.product.id,
@@ -30,23 +43,12 @@ export default async function InventoryPage({
     unitCost: row.product.unitCost,
     onHandUnits: row.onHandUnits,
     onOrderUnits: row.onOrderUnits,
+    consumed30dUnits: consumedByProduct.get(row.product.id) ?? 0,
     aduUnitsPerDay: row.aduUnitsPerDay,
     aduIsOverride: row.aduIsOverride,
     aduOverrideUnitsPerDay: row.product.aduOverrideUnitsPerDay,
     weeksOfCover: row.weeksOfCover,
     stockValue: row.stockValue,
-  }));
-
-  const expiring: ExpiringLotRow[] = expiringLots.map((lot) => ({
-    lotId: lot.lotId,
-    lotNumber: lot.lotNumber,
-    productId: lot.productId,
-    productName: shortProductName(lot.productName),
-    unit: lot.unit,
-    gramsPerUnit: lot.gramsPerUnit,
-    quantityTins: lot.quantityTins,
-    expiryDate: lot.expiryDate.toISOString(),
-    daysLeft: lot.daysLeft,
   }));
 
   return (
@@ -55,13 +57,7 @@ export default async function InventoryPage({
         title="Inventory"
         description="On-hand stock, lots and weekly cover across the cellar"
       />
-      <InventoryTable
-        rows={rows}
-        expiring={expiring}
-        currency={overview.settings.currency}
-        expiryAlertDays={overview.settings.expiryAlertDays}
-        initialView={filter === "expiring" ? "expiring" : "products"}
-      />
+      <InventoryTable rows={rows} currency={overview.settings.currency} />
     </div>
   );
 }

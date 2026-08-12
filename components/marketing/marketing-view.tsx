@@ -143,8 +143,8 @@ export function MarketingView({
                 No campaigns yet
               </p>
               <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                Plan tastings, promotions and social pushes — then log results
-                to learn what sells caviar.
+                Plan events, promotions and tastings — then log results to
+                learn what sells caviar.
               </p>
               <Button variant="gold" className="mt-4" onClick={openCreate}>
                 <Plus aria-hidden /> Plan your first campaign
