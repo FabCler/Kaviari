@@ -35,17 +35,20 @@ export function UsersCard() {
   const [users, setUsers] = React.useState<UserRow[] | null>(null);
   const [busy, setBusy] = React.useState<string | null>(null);
 
-  const load = React.useCallback(async () => {
-    try {
-      const res = await fetch("/api/users");
-      if (!res.ok) throw new Error();
-      const body = await res.json();
-      setUsers(body.users);
-    } catch {
-      toast.error("Could not load users.");
-      setUsers([]);
-    }
-  }, []);
+  const load = React.useCallback(
+    () =>
+      fetch("/api/users")
+        .then(async (res) => {
+          if (!res.ok) throw new Error();
+          const body = await res.json();
+          setUsers(body.users);
+        })
+        .catch(() => {
+          toast.error("Could not load users.");
+          setUsers([]);
+        }),
+    []
+  );
 
   React.useEffect(() => {
     void load();
