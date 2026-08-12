@@ -47,8 +47,6 @@ export interface CampaignPrefill {
 }
 
 export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
-  social: "Social",
-  email: "Email",
   event: "Event",
   promo: "Promo",
   tasting: "Tasting",
@@ -73,8 +71,6 @@ export const CAMPAIGN_TYPE_COLORS: Record<
   CampaignType,
   { pill: string; dot: string }
 > = {
-  social: { pill: "bg-chart-2 text-white", dot: "bg-chart-2" },
-  email: { pill: "bg-chart-5 text-white", dot: "bg-chart-5" },
   event: { pill: "bg-chart-3 text-white", dot: "bg-chart-3" },
   promo: { pill: "bg-chart-4 text-white", dot: "bg-chart-4" },
   tasting: { pill: "bg-chart-1 text-white", dot: "bg-chart-1" },

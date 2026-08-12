@@ -7,10 +7,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 131.25,
-    "costIsEstimate": true,
+    "unitCost": 95.62,
     "currency": "EUR",
-    "stockOnHand": 200.0
+    "stockOnHand": 200.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "3134",
@@ -20,10 +20,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 156.25,
-    "costIsEstimate": true,
+    "unitCost": 103.75,
     "currency": "EUR",
-    "stockOnHand": 140.0
+    "stockOnHand": 140.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "3126",
@@ -33,10 +33,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 37.5,
-    "costIsEstimate": true,
+    "unitCost": 24.9,
     "currency": "EUR",
-    "stockOnHand": 121.0
+    "stockOnHand": 121.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "3343",
@@ -46,10 +46,10 @@
     "unit": "Tin",
     "packingPerBox": 40,
     "gramsPerUnit": 20,
-    "unitCost": 25.0,
-    "costIsEstimate": true,
+    "unitCost": 16.6,
     "currency": "EUR",
-    "stockOnHand": 63.0
+    "stockOnHand": 63.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "1216",
@@ -59,10 +59,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 31.5,
-    "costIsEstimate": true,
+    "unitCost": 22.95,
     "currency": "EUR",
-    "stockOnHand": 60.0
+    "stockOnHand": 60.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "7715",
@@ -72,10 +72,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 187.5,
-    "costIsEstimate": true,
+    "unitCost": 150.0,
     "currency": "EUR",
-    "stockOnHand": 58.0
+    "stockOnHand": 58.0,
+    "costPerKg": 1200.0
   },
   {
     "prCode": "3127",
@@ -85,10 +85,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 50,
-    "unitCost": 62.5,
-    "costIsEstimate": true,
+    "unitCost": 41.5,
     "currency": "EUR",
-    "stockOnHand": 48.0
+    "stockOnHand": 48.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "9416",
@@ -98,10 +98,10 @@
     "unit": "Tin",
     "packingPerBox": null,
     "gramsPerUnit": 50,
-    "unitCost": 12.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 43.0
+    "stockOnHand": 43.0,
+    "costPerKg": null
   },
   {
     "prCode": "3148",
@@ -111,10 +111,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 24.0,
-    "costIsEstimate": true,
+    "unitCost": 15.75,
     "currency": "EUR",
-    "stockOnHand": 37.0
+    "stockOnHand": 37.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "8579",
@@ -124,10 +124,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 30.0
+    "stockOnHand": 30.0,
+    "costPerKg": null
   },
   {
     "prCode": "9295",
@@ -137,10 +137,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 30.0
+    "stockOnHand": 30.0,
+    "costPerKg": null
   },
   {
     "prCode": "9011",
@@ -150,10 +150,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 156.25,
-    "costIsEstimate": true,
+    "unitCost": 103.75,
     "currency": "EUR",
-    "stockOnHand": 28.0
+    "stockOnHand": 28.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "3133",
@@ -163,10 +163,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 50,
-    "unitCost": 52.5,
-    "costIsEstimate": true,
+    "unitCost": 38.25,
     "currency": "EUR",
-    "stockOnHand": 28.0
+    "stockOnHand": 28.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "8576",
@@ -176,10 +176,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 23.0
+    "stockOnHand": 23.0,
+    "costPerKg": null
   },
   {
     "prCode": "8580",
@@ -189,10 +189,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 17.0
+    "stockOnHand": 17.0,
+    "costPerKg": null
   },
   {
     "prCode": "9396",
@@ -202,10 +202,10 @@
     "unit": "Tin",
     "packingPerBox": null,
     "gramsPerUnit": 50,
-    "unitCost": 12.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 12.0
+    "stockOnHand": 12.0,
+    "costPerKg": null
   },
   {
     "prCode": "8577",
@@ -215,10 +215,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 8.0
+    "stockOnHand": 8.0,
+    "costPerKg": null
   },
   {
     "prCode": "7881",
@@ -228,10 +228,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 102.0,
-    "costIsEstimate": true,
+    "unitCost": 87.0,
     "currency": "EUR",
-    "stockOnHand": 5.0
+    "stockOnHand": 5.0,
+    "costPerKg": 2900.0
   },
   {
     "prCode": "8574",
@@ -241,10 +241,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 5.0
+    "stockOnHand": 5.0,
+    "costPerKg": null
   },
   {
     "prCode": "8575",
@@ -254,10 +254,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 5.0
+    "stockOnHand": 5.0,
+    "costPerKg": null
   },
   {
     "prCode": "8581",
@@ -267,10 +267,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 5.0
+    "stockOnHand": 5.0,
+    "costPerKg": null
   },
   {
     "prCode": "8919",
@@ -280,10 +280,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 4.0
+    "stockOnHand": 4.0,
+    "costPerKg": null
   },
   {
     "prCode": "8920",
@@ -293,10 +293,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 3.0
+    "stockOnHand": 3.0,
+    "costPerKg": null
   },
   {
     "prCode": "3220",
@@ -306,10 +306,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 50,
-    "unitCost": 170.0,
-    "costIsEstimate": true,
+    "unitCost": 145.0,
     "currency": "EUR",
-    "stockOnHand": 1.0
+    "stockOnHand": 1.0,
+    "costPerKg": 2900.0
   },
   {
     "prCode": "9201",
@@ -319,10 +319,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 1.0
+    "stockOnHand": 1.0,
+    "costPerKg": null
   },
   {
     "prCode": "9202",
@@ -332,10 +332,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 1.0
+    "stockOnHand": 1.0,
+    "costPerKg": null
   },
   {
     "prCode": "3342",
@@ -345,10 +345,10 @@
     "unit": "Tin",
     "packingPerBox": 40,
     "gramsPerUnit": 20,
-    "unitCost": 21.0,
-    "costIsEstimate": true,
+    "unitCost": 17.3,
     "currency": "EUR",
-    "stockOnHand": 1.0
+    "stockOnHand": 1.0,
+    "costPerKg": 865.0
   },
   {
     "prCode": "1215",
@@ -358,10 +358,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 24.0,
-    "costIsEstimate": true,
+    "unitCost": 15.75,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "3119",
@@ -371,10 +371,10 @@
     "unit": "Tin",
     "packingPerBox": 10,
     "gramsPerUnit": 15,
-    "unitCost": 18.75,
-    "costIsEstimate": true,
+    "unitCost": 14.8,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 986.67
   },
   {
     "prCode": "3120",
@@ -384,10 +384,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 37.5,
-    "costIsEstimate": true,
+    "unitCost": 24.9,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "3123",
@@ -397,10 +397,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 100,
-    "unitCost": 105.0,
-    "costIsEstimate": true,
+    "unitCost": 76.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "3124",
@@ -410,10 +410,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 100,
-    "unitCost": 125.0,
-    "costIsEstimate": true,
+    "unitCost": 83.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "3135",
@@ -423,10 +423,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 50,
-    "unitCost": 40.0,
-    "costIsEstimate": true,
+    "unitCost": 26.25,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "3168",
@@ -436,10 +436,10 @@
     "unit": "KG",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 60.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "3169",
@@ -449,10 +449,10 @@
     "unit": "Tin",
     "packingPerBox": 5,
     "gramsPerUnit": 250,
-    "unitCost": 312.5,
-    "costIsEstimate": true,
+    "unitCost": 207.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "3192",
@@ -462,10 +462,10 @@
     "unit": "Tin",
     "packingPerBox": 5,
     "gramsPerUnit": 250,
-    "unitCost": 262.5,
-    "costIsEstimate": true,
+    "unitCost": 191.25,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "3202",
@@ -475,10 +475,10 @@
     "unit": "KG",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 85.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "3208",
@@ -488,10 +488,10 @@
     "unit": "KG",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 85.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "3227",
@@ -501,10 +501,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 425.0,
-    "costIsEstimate": true,
+    "unitCost": 362.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 2900.0
   },
   {
     "prCode": "3254",
@@ -514,10 +514,10 @@
     "unit": "KG",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 85.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "3274",
@@ -527,10 +527,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 102.0,
-    "costIsEstimate": true,
+    "unitCost": 87.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 2900.0
   },
   {
     "prCode": "3916",
@@ -540,10 +540,10 @@
     "unit": "KG",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 60.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "4062",
@@ -553,10 +553,10 @@
     "unit": "PK",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 12.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "4160",
@@ -566,10 +566,10 @@
     "unit": "Tin",
     "packingPerBox": 2,
     "gramsPerUnit": 500,
-    "unitCost": 525.0,
-    "costIsEstimate": true,
+    "unitCost": 382.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "4291",
@@ -579,10 +579,10 @@
     "unit": "Tin",
     "packingPerBox": 2,
     "gramsPerUnit": 500,
-    "unitCost": 400.0,
-    "costIsEstimate": true,
+    "unitCost": 262.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "4298",
@@ -592,10 +592,10 @@
     "unit": "Tin",
     "packingPerBox": 2,
     "gramsPerUnit": 500,
-    "unitCost": 625.0,
-    "costIsEstimate": true,
+    "unitCost": 415.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "4403",
@@ -605,10 +605,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 30.0,
-    "costIsEstimate": true,
+    "unitCost": 20.4,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 680.0
   },
   {
     "prCode": "4404",
@@ -618,10 +618,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 50,
-    "unitCost": 50.0,
-    "costIsEstimate": true,
+    "unitCost": 34.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 680.0
   },
   {
     "prCode": "5917",
@@ -631,10 +631,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "5918",
@@ -644,10 +644,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "5919",
@@ -657,10 +657,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "6181",
@@ -670,10 +670,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "6345",
@@ -683,10 +683,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "6346",
@@ -696,10 +696,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "6863",
@@ -709,10 +709,10 @@
     "unit": "Tin",
     "packingPerBox": 5,
     "gramsPerUnit": 250,
-    "unitCost": 312.5,
-    "costIsEstimate": true,
+    "unitCost": 207.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "6913",
@@ -722,10 +722,10 @@
     "unit": "Tin",
     "packingPerBox": 10,
     "gramsPerUnit": 10,
-    "unitCost": 12.5,
-    "costIsEstimate": true,
+    "unitCost": 8.3,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "6914",
@@ -735,10 +735,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "6988",
@@ -748,10 +748,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 156.25,
-    "costIsEstimate": true,
+    "unitCost": 150.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 1200.0
   },
   {
     "prCode": "6989",
@@ -761,10 +761,10 @@
     "unit": "Tin",
     "packingPerBox": 5,
     "gramsPerUnit": 250,
-    "unitCost": 312.5,
-    "costIsEstimate": true,
+    "unitCost": 300.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 1200.0
   },
   {
     "prCode": "7580",
@@ -774,10 +774,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "7581",
@@ -787,10 +787,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "7592",
@@ -800,10 +800,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "7605",
@@ -813,10 +813,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "7714",
@@ -826,10 +826,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 125,
-    "unitCost": 156.25,
-    "costIsEstimate": true,
+    "unitCost": 103.75,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "7764",
@@ -839,10 +839,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "7767",
@@ -852,10 +852,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "7883",
@@ -865,10 +865,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "8173",
@@ -878,10 +878,10 @@
     "unit": "Tin",
     "packingPerBox": 10,
     "gramsPerUnit": 15,
-    "unitCost": 18.75,
-    "costIsEstimate": true,
+    "unitCost": 14.8,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 986.67
   },
   {
     "prCode": "8384",
@@ -891,10 +891,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "8510",
@@ -904,10 +904,10 @@
     "unit": "Tin",
     "packingPerBox": 5,
     "gramsPerUnit": 250,
-    "unitCost": 375.0,
-    "costIsEstimate": true,
+    "unitCost": 300.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 1200.0
   },
   {
     "prCode": "8559",
@@ -917,10 +917,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": null,
-    "unitCost": 24.0,
-    "costIsEstimate": true,
+    "unitCost": 26.25,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "8669",
@@ -930,10 +930,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 24.0,
-    "costIsEstimate": true,
+    "unitCost": 15.75,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "8756",
@@ -943,10 +943,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "8992",
@@ -956,10 +956,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 50,
-    "unitCost": 42.5,
-    "costIsEstimate": true,
+    "unitCost": 26.25,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 525.0
   },
   {
     "prCode": "8993",
@@ -969,10 +969,10 @@
     "unit": "Tin",
     "packingPerBox": 12,
     "gramsPerUnit": 100,
-    "unitCost": 125.0,
-    "costIsEstimate": true,
+    "unitCost": 83.0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "9088",
@@ -982,10 +982,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "9089",
@@ -995,10 +995,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "9101",
@@ -1008,10 +1008,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "9296",
@@ -1021,10 +1021,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "9428",
@@ -1034,10 +1034,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "4186",
@@ -1047,10 +1047,10 @@
     "unit": "Tin",
     "packingPerBox": 10,
     "gramsPerUnit": 15,
-    "unitCost": 18.75,
-    "costIsEstimate": true,
+    "unitCost": 14.8,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 986.67
   },
   {
     "prCode": "7712",
@@ -1060,10 +1060,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 31.5,
-    "costIsEstimate": true,
+    "unitCost": 22.95,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 765.0
   },
   {
     "prCode": "7713",
@@ -1073,10 +1073,10 @@
     "unit": "Tin",
     "packingPerBox": 24,
     "gramsPerUnit": 30,
-    "unitCost": 37.5,
-    "costIsEstimate": true,
+    "unitCost": 24.9,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 830.0
   },
   {
     "prCode": "9017",
@@ -1086,10 +1086,10 @@
     "unit": "PC",
     "packingPerBox": null,
     "gramsPerUnit": null,
-    "unitCost": 5.0,
-    "costIsEstimate": true,
+    "unitCost": 0,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": null
   },
   {
     "prCode": "3344",
@@ -1099,9 +1099,9 @@
     "unit": "Tin",
     "packingPerBox": 40,
     "gramsPerUnit": 20,
-    "unitCost": 16.0,
-    "costIsEstimate": true,
+    "unitCost": 12.5,
     "currency": "EUR",
-    "stockOnHand": 0.0
+    "stockOnHand": 0.0,
+    "costPerKg": 625.0
   }
 ]

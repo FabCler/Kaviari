@@ -77,7 +77,7 @@ function initialForm(
   }
   return {
     name: "",
-    type: "social",
+    type: "event",
     status: "planned",
     startDate: new Date().toISOString().slice(0, 10),
     endDate: "",

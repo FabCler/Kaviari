@@ -58,6 +58,32 @@ model User {
   updatedAt    DateTime @updatedAt
 
   forecasts Forecast[]
+  chats     ChatSession[]
+}
+
+// One assistant conversation, private to its user.
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("New chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String // user | assistant
+  content   String
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId, createdAt])
 }
 
 model Forecast {
@@ -147,7 +173,7 @@ model PurchaseOrderLine {
 model Campaign {
   id            String    @id @default(cuid())
   name          String
-  // social | email | event | promo | tasting
+  // event | promo | tasting
   type          String
   startDate     DateTime
   endDate       DateTime?

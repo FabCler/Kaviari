@@ -57,13 +57,7 @@ export type PoStatus = (typeof PO_STATUSES)[number];
 /** PO statuses that count as pipeline (on-order) stock. */
 export const OPEN_PO_STATUSES: readonly PoStatus[] = ["sent", "confirmed"];
 
-export const CAMPAIGN_TYPES = [
-  "social",
-  "email",
-  "event",
-  "promo",
-  "tasting",
-] as const;
+export const CAMPAIGN_TYPES = ["event", "promo", "tasting"] as const;
 export type CampaignType = (typeof CAMPAIGN_TYPES)[number];
 
 export const CAMPAIGN_STATUSES = [
