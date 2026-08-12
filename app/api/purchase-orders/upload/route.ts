@@ -4,7 +4,12 @@ import { requireAuth } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { nextPoReference } from "@/lib/planner";
 import { expectedDeliveryDate } from "@/lib/replenishment";
-import { AI_UNAVAILABLE_MESSAGE, completeJson, isAiConfigured } from "@/lib/ai";
+import {
+  AI_UNAVAILABLE_MESSAGE,
+  AiRequestError,
+  completeJson,
+  isAiConfigured,
+} from "@/lib/ai";
 import {
   ImportParseError,
   parseUpload,
@@ -144,9 +149,13 @@ export async function POST(request: Request) {
         `UPLOADED FILE: ${file.name}`,
         renderContentForPrompt(parsed.content),
       ].join("\n\n"),
-      maxTokens: 8192,
+      maxTokens: 32_000,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof AiRequestError) {
+      return Response.json({ error: error.message }, { status: 502 });
+    }
+    console.error("PO upload analysis failed", error);
     return Response.json(
       { error: "The file could not be analyzed. Please try again." },
       { status: 502 }

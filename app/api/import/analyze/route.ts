@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
-import { AI_UNAVAILABLE_MESSAGE, isAiConfigured } from "@/lib/ai";
+import { AI_UNAVAILABLE_MESSAGE, AiRequestError, isAiConfigured } from "@/lib/ai";
 import { ImportParseError, parseUpload } from "@/lib/import/parse";
 import { analyzeImport, ImportAnalysisError } from "@/lib/import/analyze";
 import {
@@ -82,6 +82,10 @@ export async function POST(request: Request) {
         { error: error.message, issues: error.issues },
         { status: 422 }
       );
+    }
+    if (error instanceof AiRequestError) {
+      console.error("Import analysis AI error", error.message);
+      return Response.json({ error: error.message }, { status: 502 });
     }
     console.error("Import analysis failed", error);
     return Response.json(
