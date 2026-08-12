@@ -4,84 +4,54 @@ import * as React from "react";
 import { RotateCcw, Send, Sparkles } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MiniMarkdown } from "@/components/assistant/markdown";
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
+import type { ChatMessageView } from "@/components/assistant/types";
 
 const STARTER_PROMPTS = [
   "What should I order next cycle?",
   "Which products are slow-moving?",
   "Summarize this month's consumption",
-  "Draft an Instagram caption for the Kristal promotion",
+  "Draft a caption for the Kristal promotion",
 ];
 
-export function AssistantChat({
+/**
+ * Controlled chat pane: renders the conversation and the composer.
+ * Session/list state lives in AssistantView.
+ */
+export function ChatPane({
+  messages,
+  thinking,
+  loading,
+  error,
   aiConfigured,
   aiUnavailableMessage,
+  onSend,
+  onRetry,
 }: {
+  messages: ChatMessageView[];
+  thinking: boolean;
+  /** True while an existing chat's history is being fetched. */
+  loading: boolean;
+  error: string | null;
   aiConfigured: boolean;
   aiUnavailableMessage: string;
+  onSend: (text: string) => void;
+  onRetry: () => void;
 }) {
-  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState("");
-  const [thinking, setThinking] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  const inputRef = React.useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, thinking]);
 
-  const send = React.useCallback(
-    async (history: ChatMessage[]) => {
-      setThinking(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/assistant", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // Keep the payload within the API's 20-message cap.
-          body: JSON.stringify({ messages: history.slice(-20) }),
-        });
-        const data = (await res.json().catch(() => null)) as {
-          reply?: string;
-          error?: string;
-        } | null;
-        if (!res.ok || !data?.reply) {
-          throw new Error(data?.error ?? "The assistant request failed.");
-        }
-        setMessages([...history, { role: "assistant", content: data.reply }]);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "The assistant request failed."
-        );
-      } finally {
-        setThinking(false);
-      }
-    },
-    []
-  );
-
   function submit(text: string) {
     const content = text.trim();
-    if (!content || thinking || !aiConfigured) return;
-    const history: ChatMessage[] = [
-      ...messages,
-      { role: "user", content: content.slice(0, 4000) },
-    ];
-    setMessages(history);
+    if (!content || thinking || loading || !aiConfigured) return;
     setInput("");
-    void send(history);
-  }
-
-  function retry() {
-    if (messages.length === 0) return;
-    void send(messages);
+    onSend(content.slice(0, 4000));
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -92,7 +62,7 @@ export function AssistantChat({
   }
 
   return (
-    <div className="flex h-[calc(100dvh-14rem)] min-h-[24rem] flex-col rounded-lg border border-border bg-card shadow-sm">
+    <div className="flex min-h-0 flex-1 flex-col">
       {!aiConfigured ? (
         <div className="p-4">
           <Alert variant="gold">
@@ -108,7 +78,16 @@ export function AssistantChat({
         className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6"
         aria-live="polite"
       >
-        {messages.length === 0 && !thinking ? (
+        {loading ? (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Skeleton className="h-10 w-1/2 rounded-2xl" />
+            </div>
+            <div className="flex justify-start">
+              <Skeleton className="h-24 w-2/3 rounded-2xl" />
+            </div>
+          </div>
+        ) : messages.length === 0 && !thinking ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-navy text-gold">
               <Sparkles className="size-6" aria-hidden />
@@ -177,7 +156,7 @@ export function AssistantChat({
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={retry}
+                    onClick={onRetry}
                     disabled={thinking}
                   >
                     <RotateCcw aria-hidden /> Retry
@@ -201,7 +180,6 @@ export function AssistantChat({
         </label>
         <textarea
           id="assistant-input"
-          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
@@ -212,7 +190,7 @@ export function AssistantChat({
               ? "Ask about stock, orders, campaigns…"
               : "AI is not configured"
           }
-          disabled={!aiConfigured || thinking}
+          disabled={!aiConfigured || thinking || loading}
           className="max-h-32 min-h-9 flex-1 resize-none rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
         />
         <Button
@@ -220,7 +198,7 @@ export function AssistantChat({
           variant="gold"
           size="icon"
           aria-label="Send message"
-          disabled={!aiConfigured || thinking || !input.trim()}
+          disabled={!aiConfigured || thinking || loading || !input.trim()}
         >
           <Send />
         </Button>
