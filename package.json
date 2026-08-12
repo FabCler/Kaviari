@@ -12,7 +12,7 @@
     "db:seed": "prisma db seed",
     "setup": "prisma db push && prisma db seed",
     "postinstall": "prisma generate",
-    "start:railway": "prisma db push --skip-generate --accept-data-loss && node scripts/ensure-seed.mjs && next start"
+    "start:railway": "node scripts/db-push.mjs && node scripts/ensure-seed.mjs && next start"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
