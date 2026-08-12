@@ -6,8 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
  * `AI_UNAVAILABLE_MESSAGE` instead of failing.
  */
 
-export const AI_MODEL =
-  process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5-20250929";
+export const AI_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
 
 export const AI_UNAVAILABLE_MESSAGE =
   "AI features are disabled — set ANTHROPIC_API_KEY in your environment to enable the assistant, import analysis and content generation. Everything else works without it.";
@@ -39,9 +38,11 @@ export async function completeJson(options: {
   maxTokens?: number;
 }): Promise<unknown> {
   const anthropic = getAnthropic();
+  // Claude Opus 5 thinks by default and max_tokens caps thinking + answer
+  // together, so keep a 16K floor to avoid truncated JSON on big extractions.
   const response = await anthropic.messages.create({
     model: AI_MODEL,
-    max_tokens: options.maxTokens ?? 8192,
+    max_tokens: Math.max(options.maxTokens ?? 0, 16000),
     system: options.system,
     messages: [{ role: "user", content: options.prompt }],
   });
@@ -60,7 +61,7 @@ export async function completeText(options: {
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: AI_MODEL,
-    max_tokens: options.maxTokens ?? 2048,
+    max_tokens: Math.max(options.maxTokens ?? 0, 16000),
     system: options.system,
     messages: [{ role: "user", content: options.prompt }],
   });

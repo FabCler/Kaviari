@@ -48,7 +48,7 @@ as a reference only. Sales channels are **Food service**, **Event** and
 | `OWNER_EMAIL` | `fabien@thammachartseafood.com` | Registrations with this email become the owner (auto-approved) |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | _empty_ | Optional — emails the owner an approve/reject link when someone requests access. Without SMTP, approvals happen in Settings → Users. |
 | `ANTHROPIC_API_KEY` | _empty_ | Enables the assistant, import analysis, PO upload parsing and content studio. **The app fully works without it** — AI surfaces show a friendly notice instead. |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-5-20250929` | Optional model override |
+| `ANTHROPIC_MODEL` | `claude-opus-5` | Optional model override |
 
 ## Accounts & access control
 
