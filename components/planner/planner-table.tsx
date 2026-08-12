@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -14,42 +15,51 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  formatGrams,
   formatMoney,
   formatNumber,
+  formatUnits,
+  formatWeeks,
 } from "@/lib/format";
+import { PRODUCT_CATEGORIES } from "@/lib/domain";
 import { ExplainPopover } from "@/components/planner/explain-popover";
 
 export interface PlannerRowDto {
   productId: string;
+  prCode: string;
   name: string;
-  tinSizeGrams: number;
+  category: string;
+  unit: string;
+  packingPerBox: number | null;
+  gramsPerUnit: number | null;
   unitCost: number;
-  aduGramsPerDay: number;
+  aduUnitsPerDay: number;
   aduIsOverride: boolean;
-  onHandTins: number;
-  onHandGrams: number;
-  onOrderTins: number;
-  daysOfCover: number | null;
-  orderUpToGrams: number;
-  suggestedGrams: number;
-  suggestedTins: number;
+  onHandUnits: number;
+  onOrderUnits: number;
+  weeksOfCover: number | null;
+  orderUpToUnits: number;
+  suggestedUnits: number;
+  boxes: number | null;
   lineValue: number;
 }
 
-function CoverBadge({ days }: { days: number | null }) {
-  if (days == null) {
-    return <Badge variant="outline">—</Badge>;
+const CATEGORY_TABS = ["All", ...PRODUCT_CATEGORIES] as const;
+
+function CoverBadge({ weeks }: { weeks: number | null }) {
+  if (weeks == null) {
+    return <Badge variant="outline">∞</Badge>;
   }
-  const label = `${formatNumber(days, 0)} d`;
-  if (days < 7) return <Badge variant="destructive">{label}</Badge>;
-  if (days < 15) return <Badge variant="warning">{label}</Badge>;
+  const label = formatWeeks(weeks);
+  if (weeks < 1) return <Badge variant="destructive">{label}</Badge>;
+  if (weeks < 2) return <Badge variant="warning">{label}</Badge>;
   return <Badge variant="seafoam">{label}</Badge>;
 }
 
 /** A row is "active" when it needs ordering, holds stock, or has demand. */
 function isActive(row: PlannerRowDto): boolean {
-  return row.suggestedTins > 0 || row.onHandTins > 0 || row.aduGramsPerDay > 0;
+  return (
+    row.suggestedUnits > 0 || row.onHandUnits > 0 || row.aduUnitsPerDay > 0
+  );
 }
 
 export function PlannerTable({
@@ -59,139 +69,174 @@ export function PlannerTable({
   rows: PlannerRowDto[];
   currency: string;
 }) {
+  const [category, setCategory] = useState<string>("Caviar");
   const [showAll, setShowAll] = useState(false);
 
-  const visible = useMemo(
-    () => (showAll ? rows : rows.filter(isActive)),
-    [rows, showAll]
+  const inCategory = useMemo(
+    () =>
+      category === "All"
+        ? rows
+        : rows.filter((row) => row.category === category),
+    [rows, category]
   );
-  const dormantCount = rows.length - rows.filter(isActive).length;
-  const totalSuggestedValue = rows.reduce((sum, r) => sum + r.lineValue, 0);
+  const visible = useMemo(
+    () => (showAll ? inCategory : inCategory.filter(isActive)),
+    [inCategory, showAll]
+  );
+  const dormantCount = inCategory.length - inCategory.filter(isActive).length;
+  const totalSuggestedValue = inCategory.reduce(
+    (sum, r) => sum + r.lineValue,
+    0
+  );
 
   return (
     <div className="space-y-3">
-      {dormantCount > 0 ? (
-        <div className="flex items-center justify-end gap-2">
-          <Switch
-            id="show-all-products"
-            checked={showAll}
-            onCheckedChange={setShowAll}
-          />
-          <Label
-            htmlFor="show-all-products"
-            className="text-sm text-muted-foreground"
-          >
-            Show all products ({dormantCount} dormant hidden)
-          </Label>
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <div className="max-w-full overflow-x-auto">
+          <Tabs value={category} onValueChange={setCategory}>
+            <TabsList aria-label="Filter by product category">
+              {CATEGORY_TABS.map((tab) => (
+                <TabsTrigger key={tab} value={tab} className="px-3">
+                  {tab}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
-      ) : null}
+        {dormantCount > 0 ? (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-all-products"
+              checked={showAll}
+              onCheckedChange={setShowAll}
+            />
+            <Label
+              htmlFor="show-all-products"
+              className="text-sm text-muted-foreground"
+            >
+              Show all products ({dormantCount} dormant hidden)
+            </Label>
+          </div>
+        ) : null}
+      </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product</TableHead>
-            <TableHead className="text-right">ADU g/day</TableHead>
-            <TableHead className="text-right">On hand</TableHead>
-            <TableHead className="text-right">On order</TableHead>
-            <TableHead className="text-center">Cover</TableHead>
-            <TableHead className="text-right">Order-up-to S</TableHead>
-            <TableHead className="text-right">Suggested</TableHead>
-            <TableHead>
-              <span className="sr-only">Explain</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {visible.length === 0 ? (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell
-                colSpan={8}
-                className="py-10 text-center text-muted-foreground"
-              >
-                No products with stock, demand or a suggested order. Toggle
-                “Show all products” to see dormant SKUs.
-              </TableCell>
+              <TableHead>Product</TableHead>
+              <TableHead className="text-right">ADU units/day</TableHead>
+              <TableHead className="text-right">On hand</TableHead>
+              <TableHead className="text-right">On order</TableHead>
+              <TableHead className="text-center">Cover</TableHead>
+              <TableHead className="text-right">Order-up-to S</TableHead>
+              <TableHead className="text-right">Suggested</TableHead>
+              <TableHead>
+                <span className="sr-only">Explain</span>
+              </TableHead>
             </TableRow>
-          ) : (
-            visible.map((row) => (
-              <TableRow
-                key={row.productId}
-                className={row.suggestedTins > 0 ? "bg-gold/[0.04]" : undefined}
-              >
-                <TableCell>
-                  <div className="font-medium">{row.name}</div>
-                  <div className="text-xs text-muted-foreground tnum">
-                    {row.tinSizeGrams} g tin · {formatMoney(row.unitCost, currency)}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right tnum">
-                  {formatNumber(row.aduGramsPerDay)}
-                  {row.aduIsOverride ? (
-                    <Badge variant="gold" className="ml-1.5 align-middle">
-                      manual
-                    </Badge>
-                  ) : null}
-                </TableCell>
-                <TableCell className="text-right tnum">
-                  {formatNumber(row.onHandTins)}
-                  <span className="text-muted-foreground">
-                    {" "}
-                    / {formatGrams(row.onHandGrams)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right tnum">
-                  {row.onOrderTins > 0 ? formatNumber(row.onOrderTins) : "—"}
-                </TableCell>
-                <TableCell className="text-center">
-                  <CoverBadge days={row.daysOfCover} />
-                </TableCell>
-                <TableCell className="text-right tnum">
-                  {formatGrams(row.orderUpToGrams)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.suggestedTins > 0 ? (
-                    <div>
-                      <div className="tnum">
-                        <span className="text-muted-foreground">
-                          {formatGrams(row.suggestedGrams)} →{" "}
-                        </span>
-                        <span className="font-semibold">
-                          {row.suggestedTins}{" "}
-                          {row.suggestedTins === 1 ? "tin" : "tins"}
-                        </span>
-                      </div>
-                      <div className="text-xs text-muted-foreground tnum">
-                        {formatMoney(row.lineValue, currency)}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.suggestedTins > 0 ? (
-                    <ExplainPopover
-                      productId={row.productId}
-                      productName={row.name}
-                    />
-                  ) : null}
+          </TableHeader>
+          <TableBody>
+            {visible.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="py-10 text-center text-muted-foreground"
+                >
+                  {inCategory.length === 0
+                    ? `No ${category === "All" ? "" : `${category} `}products found.`
+                    : "No products with stock, demand or a suggested order. Toggle “Show all products” to see dormant SKUs."}
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={6} className="text-right font-medium">
-              Total suggested order value
-            </TableCell>
-            <TableCell className="text-right font-semibold tnum">
-              {formatMoney(totalSuggestedValue, currency)}
-            </TableCell>
-            <TableCell />
-          </TableRow>
-        </TableFooter>
-      </Table>
+            ) : (
+              visible.map((row) => (
+                <TableRow
+                  key={row.productId}
+                  className={
+                    row.suggestedUnits > 0 ? "bg-gold/[0.04]" : undefined
+                  }
+                >
+                  <TableCell>
+                    <div className="font-medium">{row.name}</div>
+                    <div className="text-xs text-muted-foreground tnum">
+                      {row.prCode}
+                      {row.gramsPerUnit ? ` · ${row.gramsPerUnit} g` : ""}
+                      {" · "}
+                      {formatMoney(row.unitCost, currency)}
+                      {row.packingPerBox
+                        ? ` · box of ${row.packingPerBox}`
+                        : ""}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tnum">
+                    {formatNumber(row.aduUnitsPerDay, 2)}
+                    {row.aduIsOverride ? (
+                      <Badge variant="gold" className="ml-1.5 align-middle">
+                        manual
+                      </Badge>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="text-right tnum">
+                    {formatUnits(row.onHandUnits, row.unit)}
+                  </TableCell>
+                  <TableCell className="text-right tnum">
+                    {row.onOrderUnits > 0
+                      ? formatUnits(row.onOrderUnits, row.unit)
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <CoverBadge weeks={row.weeksOfCover} />
+                  </TableCell>
+                  <TableCell className="text-right tnum">
+                    {formatNumber(row.orderUpToUnits, 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {row.suggestedUnits > 0 ? (
+                      <div>
+                        <div className="font-semibold tnum">
+                          {formatUnits(row.suggestedUnits, row.unit)}
+                          {row.boxes ? (
+                            <span>
+                              {" "}
+                              ({formatNumber(row.boxes, 0)}{" "}
+                              {row.boxes === 1 ? "box" : "boxes"})
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-xs font-normal text-muted-foreground tnum">
+                          {formatMoney(row.lineValue, currency)}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {row.suggestedUnits > 0 ? (
+                      <ExplainPopover
+                        productId={row.productId}
+                        productName={row.name}
+                      />
+                    ) : null}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={6} className="text-right font-medium">
+                Total suggested order value
+                {category !== "All" ? ` — ${category}` : ""}
+              </TableCell>
+              <TableCell className="text-right font-semibold tnum">
+                {formatMoney(totalSuggestedValue, currency)}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
     </div>
   );
 }

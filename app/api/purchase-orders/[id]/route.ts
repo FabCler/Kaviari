@@ -10,20 +10,47 @@ const lineSchema = z.object({
   unitCost: z.number().min(0),
 });
 
+/** Statuses in which a PO's header and lines may be corrected in place. */
+const EDITABLE_STATUSES: readonly PoStatus[] = ["draft", "sent", "confirmed"];
+
+const editSchema = z
+  .object({
+    reference: z.string().trim().min(1).max(60).optional(),
+    orderDate: z.string().optional(),
+    expectedDeliveryDate: z.string().optional(),
+    notes: z.string().max(2000).nullable().optional(),
+    status: z.enum(["draft", "sent", "confirmed"]).optional(),
+    lines: z.array(lineSchema).max(200).optional(),
+  })
+  .refine((v) => Object.values(v).some((field) => field !== undefined), {
+    message: "Nothing to update",
+  });
+
 const patchSchema = z
   .object({
     action: z.enum(["send", "confirm", "cancel"]).optional(),
     notes: z.string().max(2000).nullable().optional(),
     expectedDeliveryDate: z.string().optional(),
     lines: z.array(lineSchema).max(200).optional(),
+    edit: editSchema.optional(),
   })
   .refine(
     (v) =>
       v.action !== undefined ||
       v.notes !== undefined ||
       v.expectedDeliveryDate !== undefined ||
-      v.lines !== undefined,
+      v.lines !== undefined ||
+      v.edit !== undefined,
     { message: "Nothing to update" }
+  )
+  .refine(
+    (v) =>
+      v.edit === undefined ||
+      (v.action === undefined &&
+        v.notes === undefined &&
+        v.expectedDeliveryDate === undefined &&
+        v.lines === undefined),
+    { message: "edit cannot be combined with other fields" }
   );
 
 /** Legal status transitions keyed by action. */
@@ -37,6 +64,23 @@ const TRANSITIONS: Record<
 };
 
 type Ctx = { params: Promise<{ id: string }> };
+
+function parseDate(value: string): Date | null {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+async function validateLineProducts(
+  lines: { productId: string }[]
+): Promise<boolean> {
+  if (lines.length === 0) return true;
+  const products = await prisma.product.findMany({
+    where: { id: { in: lines.map((l) => l.productId) } },
+    select: { id: true },
+  });
+  const known = new Set(products.map((p) => p.id));
+  return lines.every((l) => known.has(l.productId));
+}
 
 export async function PATCH(request: Request, ctx: Ctx) {
   const denied = await requireAuth();
@@ -60,6 +104,104 @@ export async function PATCH(request: Request, ctx: Ctx) {
     return Response.json({ error: "Purchase order not found" }, { status: 404 });
   }
 
+  // ---- Full edit (header + lines) for draft/sent/confirmed orders ----
+  if (body.edit !== undefined) {
+    const edit = body.edit;
+    if (!EDITABLE_STATUSES.includes(po.status as PoStatus)) {
+      return Response.json(
+        {
+          error: `A purchase order in status "${po.status}" can no longer be edited.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    let orderDate: Date | undefined;
+    if (edit.orderDate !== undefined) {
+      const d = parseDate(edit.orderDate);
+      if (!d) {
+        return Response.json({ error: "Invalid order date." }, { status: 400 });
+      }
+      orderDate = d;
+    }
+    let expectedDelivery: Date | undefined;
+    if (edit.expectedDeliveryDate !== undefined) {
+      const d = parseDate(edit.expectedDeliveryDate);
+      if (!d) {
+        return Response.json(
+          { error: "Invalid expected delivery date." },
+          { status: 400 }
+        );
+      }
+      expectedDelivery = d;
+    }
+
+    if (edit.reference !== undefined && edit.reference !== po.reference) {
+      const clash = await prisma.purchaseOrder.findUnique({
+        where: { reference: edit.reference },
+        select: { id: true },
+      });
+      if (clash && clash.id !== id) {
+        return Response.json(
+          { error: `Reference "${edit.reference}" is already used by another order.` },
+          { status: 409 }
+        );
+      }
+    }
+
+    if (edit.lines !== undefined && !(await validateLineProducts(edit.lines))) {
+      return Response.json(
+        { error: "One or more products in the order do not exist." },
+        { status: 400 }
+      );
+    }
+
+    // A non-draft order (pipeline stock) must keep at least one line.
+    const resultingStatus = (edit.status ?? po.status) as PoStatus;
+    const resultingLineCount =
+      edit.lines !== undefined
+        ? edit.lines.length
+        : await prisma.purchaseOrderLine.count({
+            where: { purchaseOrderId: id },
+          });
+    if (resultingStatus !== "draft" && resultingLineCount === 0) {
+      return Response.json(
+        { error: "An order that has been sent needs at least one line." },
+        { status: 422 }
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (edit.lines !== undefined) {
+        await tx.purchaseOrderLine.deleteMany({
+          where: { purchaseOrderId: id },
+        });
+        if (edit.lines.length > 0) {
+          await tx.purchaseOrderLine.createMany({
+            data: edit.lines.map((line) => ({
+              purchaseOrderId: id,
+              productId: line.productId,
+              quantityTins: line.quantityTins,
+              unitCost: line.unitCost,
+            })),
+          });
+        }
+      }
+      await tx.purchaseOrder.update({
+        where: { id },
+        data: {
+          ...(edit.reference !== undefined ? { reference: edit.reference } : {}),
+          ...(orderDate ? { orderDate } : {}),
+          ...(expectedDelivery ? { expectedDeliveryDate: expectedDelivery } : {}),
+          ...(edit.notes !== undefined ? { notes: edit.notes } : {}),
+          ...(edit.status !== undefined ? { status: edit.status } : {}),
+        },
+      });
+    });
+
+    return Response.json({ ok: true, status: resultingStatus });
+  }
+
   // ---- Draft edits (notes / expected delivery / replace-all lines) ----
   const wantsEdit =
     body.notes !== undefined ||
@@ -75,27 +217,21 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   let expectedDelivery: Date | undefined;
   if (body.expectedDeliveryDate !== undefined) {
-    expectedDelivery = new Date(body.expectedDeliveryDate);
-    if (Number.isNaN(expectedDelivery.getTime())) {
+    const d = parseDate(body.expectedDeliveryDate);
+    if (!d) {
       return Response.json(
         { error: "Invalid expected delivery date." },
         { status: 400 }
       );
     }
+    expectedDelivery = d;
   }
 
-  if (body.lines !== undefined && body.lines.length > 0) {
-    const products = await prisma.product.findMany({
-      where: { id: { in: body.lines.map((l) => l.productId) } },
-      select: { id: true },
-    });
-    const known = new Set(products.map((p) => p.id));
-    if (body.lines.some((l) => !known.has(l.productId))) {
-      return Response.json(
-        { error: "One or more products in the order do not exist." },
-        { status: 400 }
-      );
-    }
+  if (body.lines !== undefined && !(await validateLineProducts(body.lines))) {
+    return Response.json(
+      { error: "One or more products in the order do not exist." },
+      { status: 400 }
+    );
   }
 
   // ---- Status transition ----

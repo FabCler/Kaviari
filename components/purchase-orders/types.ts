@@ -4,7 +4,9 @@ export interface PoLineDto {
   id: string;
   productId: string;
   productName: string;
-  tinSizeGrams: number;
+  prCode: string;
+  unit: string;
+  packingPerBox: number | null;
   quantityTins: number;
   unitCost: number;
 }
@@ -17,12 +19,15 @@ export interface PoDto {
   expectedDeliveryDate: string; // ISO
   receivedDate: string | null; // ISO
   notes: string | null;
+  uploadedFileName: string | null;
   lines: PoLineDto[];
 }
 
 export interface ProductOptionDto {
   id: string;
+  prCode: string;
   name: string;
-  tinSizeGrams: number;
+  unit: string;
+  packingPerBox: number | null;
   unitCost: number;
 }

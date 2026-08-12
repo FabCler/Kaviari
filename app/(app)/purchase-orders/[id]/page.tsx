@@ -50,11 +50,14 @@ export default async function PurchaseOrderDetailPage({
     expectedDeliveryDate: po.expectedDeliveryDate.toISOString(),
     receivedDate: po.receivedDate ? po.receivedDate.toISOString() : null,
     notes: po.notes,
+    uploadedFileName: po.uploadedFileName,
     lines: po.lines.map((line) => ({
       id: line.id,
       productId: line.productId,
       productName: shortProductName(line.product.name),
-      tinSizeGrams: line.product.tinSizeGrams,
+      prCode: line.product.prCode,
+      unit: line.product.unit,
+      packingPerBox: line.product.packingPerBox,
       quantityTins: line.quantityTins,
       unitCost: line.unitCost,
     })),
@@ -62,8 +65,10 @@ export default async function PurchaseOrderDetailPage({
 
   const productOptions: ProductOptionDto[] = products.map((product) => ({
     id: product.id,
+    prCode: product.prCode,
     name: shortProductName(product.name),
-    tinSizeGrams: product.tinSizeGrams,
+    unit: product.unit,
+    packingPerBox: product.packingPerBox,
     unitCost: product.unitCost,
   }));
 
@@ -78,12 +83,12 @@ export default async function PurchaseOrderDetailPage({
         }
         description={
           po.status === "draft"
-            ? "Draft order — adjust the lines, then mark it as sent to start the next review cycle."
+            ? "Draft order — adjust the details and lines, then mark it as sent to start the next review cycle."
             : po.status === "received"
               ? "This delivery has been received into stock."
               : po.status === "cancelled"
                 ? "This order was cancelled and no longer counts as pipeline stock."
-                : "Open order — its lines count as pipeline stock in the planner."
+                : "Open order — its lines count as pipeline stock in the planner. Details stay editable until it is received."
         }
         actions={
           <Button variant="ghost" asChild>

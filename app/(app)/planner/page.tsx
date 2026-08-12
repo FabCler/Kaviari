@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, FileDown } from "lucide-react";
 import { getPlannerData } from "@/lib/planner";
 import { formatDate, shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateDraftPoButton } from "@/components/planner/create-po-button";
@@ -35,25 +36,42 @@ function Stat({
   );
 }
 
+function DownloadExcelButton({ size }: { size?: "sm" | "default" }) {
+  return (
+    <Button variant="outline" size={size} asChild>
+      <a
+        href="/api/planner/export"
+        download
+        aria-label="Download the current order suggestions as an Excel file"
+      >
+        <FileDown aria-hidden /> Download Excel
+      </a>
+    </Button>
+  );
+}
+
 export default async function PlannerPage() {
   const planner = await getPlannerData();
   const { settings } = planner;
 
   const rows: PlannerRowDto[] = planner.rows.map((row) => ({
     productId: row.product.id,
+    prCode: row.product.prCode,
     name: shortProductName(row.product.name),
-    tinSizeGrams: row.product.tinSizeGrams,
+    category: row.product.category,
+    unit: row.product.unit,
+    packingPerBox: row.product.packingPerBox,
+    gramsPerUnit: row.product.gramsPerUnit,
     unitCost: row.product.unitCost,
-    aduGramsPerDay: row.aduGramsPerDay,
+    aduUnitsPerDay: row.aduUnitsPerDay,
     aduIsOverride: row.aduIsOverride,
-    onHandTins: row.onHandTins,
-    onHandGrams: row.onHandGrams,
-    onOrderTins: row.onOrderTins,
-    daysOfCover: row.daysOfCover,
-    orderUpToGrams: row.suggestion.orderUpToGrams,
-    suggestedGrams: row.suggestion.suggestedGrams,
-    suggestedTins: row.suggestion.suggestedTins,
-    lineValue: row.suggestion.suggestedTins * row.product.unitCost,
+    onHandUnits: row.onHandUnits,
+    onOrderUnits: row.onOrderUnits,
+    weeksOfCover: row.weeksOfCover,
+    orderUpToUnits: row.suggestion.orderUpToUnits,
+    suggestedUnits: row.suggestion.suggestedUnits,
+    boxes: row.suggestion.boxes,
+    lineValue: row.suggestion.suggestedUnits * row.product.unitCost,
   }));
 
   const days = planner.daysUntilOrder;
@@ -77,7 +95,12 @@ export default async function PlannerPage() {
       <PageHeader
         title="Order Planner"
         description="Periodic-review replenishment: every review cycle, order each product back up to its order-up-to level."
-        actions={<CreateDraftPoButton />}
+        actions={
+          <>
+            <DownloadExcelButton />
+            <CreateDraftPoButton />
+          </>
+        }
       />
 
       {planner.orderDue ? (
@@ -93,7 +116,10 @@ export default async function PlannerPage() {
                 : "No previous order has been recorded, so the review cycle starts now."}{" "}
               Review the suggestions below and create a draft purchase order.
             </p>
-            <CreateDraftPoButton size="sm" />
+            <div className="flex flex-wrap gap-2">
+              <CreateDraftPoButton size="sm" />
+              <DownloadExcelButton size="sm" />
+            </div>
           </AlertDescription>
         </Alert>
       ) : null}

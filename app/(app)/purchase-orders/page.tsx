@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, Paperclip } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getSettings } from "@/lib/settings";
 import { OPEN_PO_STATUSES, type PoStatus } from "@/lib/domain";
-import { daysUntil, formatDate, formatMoney } from "@/lib/format";
+import { daysUntil, formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { PoStatusBadge } from "@/components/purchase-orders/po-status-badge";
 import { NewPoButton } from "@/components/purchase-orders/new-po-button";
+import { UploadPoButton } from "@/components/purchase-orders/upload-po-button";
 
 export const dynamic = "force-dynamic";
 
@@ -77,13 +77,10 @@ export default async function PurchaseOrdersPage({
   const { receive } = await searchParams;
   const receiveMode = receive === "1";
 
-  const [orders, settings] = await Promise.all([
-    prisma.purchaseOrder.findMany({
-      include: { lines: true },
-      orderBy: { orderDate: "desc" },
-    }),
-    getSettings(),
-  ]);
+  const orders = await prisma.purchaseOrder.findMany({
+    include: { lines: true },
+    orderBy: { orderDate: "desc" },
+  });
 
   const sorted = [...orders].sort((a, b) => {
     const ga = STATUS_ORDER[a.status as PoStatus] ?? 9;
@@ -107,6 +104,7 @@ export default async function PurchaseOrdersPage({
         }
         actions={
           <>
+            <UploadPoButton />
             <NewPoButton />
             <Button variant="gold" asChild>
               <Link href="/planner">Open the planner</Link>
@@ -125,11 +123,15 @@ export default async function PurchaseOrdersPage({
             <p className="font-medium">No purchase orders yet</p>
             <p className="max-w-md text-sm text-muted-foreground">
               The Order Planner watches your consumption and suggests exactly
-              what to reorder. Create your first draft from its suggestions.
+              what to reorder. Create your first draft from its suggestions, or
+              upload an order file you already sent to Kaviari.
             </p>
-            <Button variant="gold" asChild>
-              <Link href="/planner">Go to the Order Planner</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="gold" asChild>
+                <Link href="/planner">Go to the Order Planner</Link>
+              </Button>
+              <UploadPoButton />
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -143,7 +145,6 @@ export default async function PurchaseOrdersPage({
                   <TableHead>Ordered</TableHead>
                   <TableHead>Expected delivery</TableHead>
                   <TableHead className="text-right">Lines</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -154,10 +155,6 @@ export default async function PurchaseOrdersPage({
                   const isOpen = OPEN_PO_STATUSES.includes(
                     po.status as PoStatus
                   );
-                  const value = po.lines.reduce(
-                    (sum, line) => sum + line.quantityTins * line.unitCost,
-                    0
-                  );
                   return (
                     <TableRow
                       key={po.id}
@@ -166,12 +163,20 @@ export default async function PurchaseOrdersPage({
                       }
                     >
                       <TableCell>
-                        <Link
-                          href={`/purchase-orders/${po.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {po.reference}
-                        </Link>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Link
+                            href={`/purchase-orders/${po.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {po.reference}
+                          </Link>
+                          {po.uploadedFileName ? (
+                            <Paperclip
+                              className="size-3.5 text-muted-foreground"
+                              aria-label={`Created from uploaded file ${po.uploadedFileName}`}
+                            />
+                          ) : null}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <PoStatusBadge status={po.status} />
@@ -193,9 +198,6 @@ export default async function PurchaseOrdersPage({
                       </TableCell>
                       <TableCell className="text-right tnum">
                         {po.lines.length}
-                      </TableCell>
-                      <TableCell className="text-right tnum">
-                        {formatMoney(value, settings.currency)}
                       </TableCell>
                       <TableCell className="text-right">
                         {po.status === "confirmed" || (receiveMode && isOpen) ? (
