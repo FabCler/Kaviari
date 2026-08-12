@@ -20,21 +20,20 @@ export default async function InventoryPage({
 
   const rows: InventoryRow[] = overview.rows.map((row) => ({
     productId: row.product.id,
-    kaviariCode: row.product.kaviariCode,
+    prCode: row.product.prCode,
     name: row.product.name,
     shortName: shortProductName(row.product.name),
-    grade: row.product.grade,
+    caviarType: row.product.caviarType,
     category: row.product.category,
-    tinSizeGrams: row.product.tinSizeGrams,
+    unit: row.product.unit,
+    gramsPerUnit: row.product.gramsPerUnit,
     unitCost: row.product.unitCost,
-    onHandTins: row.onHandTins,
-    onHandGrams: row.onHandGrams,
-    onOrderTins: row.onOrderTins,
-    onOrderGrams: row.onOrderGrams,
-    aduGramsPerDay: row.aduGramsPerDay,
+    onHandUnits: row.onHandUnits,
+    onOrderUnits: row.onOrderUnits,
+    aduUnitsPerDay: row.aduUnitsPerDay,
     aduIsOverride: row.aduIsOverride,
-    aduOverrideGramsPerDay: row.product.aduOverrideGramsPerDay,
-    daysOfCover: row.daysOfCover,
+    aduOverrideUnitsPerDay: row.product.aduOverrideUnitsPerDay,
+    weeksOfCover: row.weeksOfCover,
     stockValue: row.stockValue,
   }));
 
@@ -43,7 +42,8 @@ export default async function InventoryPage({
     lotNumber: lot.lotNumber,
     productId: lot.productId,
     productName: shortProductName(lot.productName),
-    tinSizeGrams: lot.tinSizeGrams,
+    unit: lot.unit,
+    gramsPerUnit: lot.gramsPerUnit,
     quantityTins: lot.quantityTins,
     expiryDate: lot.expiryDate.toISOString(),
     daysLeft: lot.daysLeft,
@@ -53,14 +53,14 @@ export default async function InventoryPage({
     <div>
       <PageHeader
         title="Inventory"
-        description="On-hand stock, lots and daily usage across the cellar"
+        description="On-hand stock, lots and weekly cover across the cellar"
       />
       <InventoryTable
         rows={rows}
         expiring={expiring}
         currency={overview.settings.currency}
         expiryAlertDays={overview.settings.expiryAlertDays}
-        initialView={filter === "expiring" ? "expiring" : "caviar"}
+        initialView={filter === "expiring" ? "expiring" : "products"}
       />
     </div>
   );

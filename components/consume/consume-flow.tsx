@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Search, Undo2 } from "lucide-react";
 import { toast } from "sonner";
-import { formatGrams, formatNumber, formatTins } from "@/lib/format";
+import { CHANNEL_LABELS, type Channel } from "@/lib/domain";
+import { formatGrams, formatNumber, formatUnits } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,11 @@ const TYPE_LABELS: Record<string, string> = {
   marketing_sample: "Sample",
 };
 
+function channelLabel(channel: string | null): string | null {
+  if (!channel) return null;
+  return CHANNEL_LABELS[channel as Channel] ?? channel;
+}
+
 export function ConsumeFlow({
   products,
   recent,
@@ -48,7 +54,7 @@ export function ConsumeFlow({
     ? products.filter(
         (p) =>
           p.name.toLowerCase().includes(query) ||
-          (p.grade ?? "").toLowerCase().includes(query)
+          (p.caviarType ?? "").toLowerCase().includes(query)
       )
     : products;
 
@@ -97,12 +103,14 @@ export function ConsumeFlow({
                   {product.shortName}
                 </span>
                 <span className="tnum mt-0.5 block text-xs text-muted-foreground">
-                  {formatGrams(product.tinSizeGrams)} tin
-                  {product.grade ? ` · ${product.grade}` : ""}
+                  {product.caviarType ? `${product.caviarType} · ` : ""}
+                  {product.gramsPerUnit
+                    ? `${formatGrams(product.gramsPerUnit)} / ${product.unit.toLowerCase()}`
+                    : product.unit}
                 </span>
               </div>
               <Badge variant="secondary" className="tnum mt-2">
-                {formatTins(product.onHandTins)}
+                {formatUnits(product.onHandUnits, product.unit)}
               </Badge>
             </button>
           ))}
@@ -139,7 +147,7 @@ function RecentList({ recent }: { recent: RecentMovementRow[] }) {
     setUndoing(null);
     if (result.ok) {
       toast.success(
-        `Undid ${formatTins(row.tins)} of ${row.productName} — stock restored`
+        `Undid ${formatUnits(row.units, row.unit)} of ${row.productName} — stock restored`
       );
     } else {
       toast.error(result.error ?? "Undo failed");
@@ -165,11 +173,13 @@ function RecentList({ recent }: { recent: RecentMovementRow[] }) {
                 </span>
                 <span className="ml-2 font-medium">{row.productName}</span>
                 <span className="tnum ml-2 text-muted-foreground">
-                  {formatNumber(row.tins, 2)} tins
+                  {formatNumber(row.units, 2)} {row.unit.toLowerCase()}
                 </span>
                 <span className="ml-2 hidden text-xs text-muted-foreground sm:inline">
                   {TYPE_LABELS[row.type] ?? row.type}
-                  {row.channel ? ` · ${row.channel}` : ""}
+                  {channelLabel(row.channel)
+                    ? ` · ${channelLabel(row.channel)}`
+                    : ""}
                 </span>
               </div>
               <Button
@@ -177,7 +187,7 @@ function RecentList({ recent }: { recent: RecentMovementRow[] }) {
                 size="sm"
                 onClick={() => undoRow(row)}
                 disabled={undoing === row.movementId}
-                aria-label={`Undo ${formatTins(row.tins)} of ${row.productName}`}
+                aria-label={`Undo ${formatUnits(row.units, row.unit)} of ${row.productName}`}
               >
                 <Undo2 />
                 <span className="hidden sm:inline">Undo</span>

@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { startOfDay } from "date-fns";
+import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getStockOverview } from "@/lib/stock";
 import { OUTBOUND_MOVEMENT_TYPES } from "@/lib/domain";
 import { shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { ConsumeFlow } from "@/components/consume/consume-flow";
 import type {
   ConsumableProduct,
@@ -22,35 +25,37 @@ export default async function ConsumePage() {
       orderBy: { date: "desc" },
       take: 8,
       include: {
-        product: { select: { name: true } },
+        product: { select: { name: true, unit: true } },
         lot: { select: { lotNumber: true } },
       },
     }),
   ]);
 
   const products: ConsumableProduct[] = overview.rows
-    .filter((row) => row.onHandTins > 0)
+    .filter((row) => row.onHandUnits > 0)
     .sort(
       (a, b) =>
-        b.aduGramsPerDay - a.aduGramsPerDay ||
+        b.aduUnitsPerDay - a.aduUnitsPerDay ||
         a.product.name.localeCompare(b.product.name)
     )
     .map((row) => ({
       productId: row.product.id,
       name: row.product.name,
       shortName: shortProductName(row.product.name),
-      grade: row.product.grade,
+      caviarType: row.product.caviarType,
       category: row.product.category,
-      tinSizeGrams: row.product.tinSizeGrams,
-      onHandTins: row.onHandTins,
-      aduGramsPerDay: row.aduGramsPerDay,
+      unit: row.product.unit,
+      gramsPerUnit: row.product.gramsPerUnit,
+      onHandUnits: row.onHandUnits,
+      aduUnitsPerDay: row.aduUnitsPerDay,
     }));
 
   const recent: RecentMovementRow[] = recentMovements.map((m) => ({
     movementId: m.id,
     date: m.date.toISOString(),
     productName: shortProductName(m.product.name),
-    tins: Math.abs(m.quantityTins),
+    units: Math.abs(m.quantityTins),
+    unit: m.product.unit,
     type: m.type,
     channel: m.channel,
     lotNumber: m.lot?.lotNumber ?? null,
@@ -61,6 +66,14 @@ export default async function ConsumePage() {
       <PageHeader
         title="Log Consumption"
         description="Tap a product, set the quantity, confirm — done."
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/consume/analysis">
+              Analysis &amp; forecasts
+              <ArrowRight />
+            </Link>
+          </Button>
+        }
       />
       <ConsumeFlow products={products} recent={recent} />
     </div>

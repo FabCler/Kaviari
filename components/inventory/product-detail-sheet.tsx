@@ -3,12 +3,13 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { CHANNEL_LABELS, type Channel } from "@/lib/domain";
 import {
   formatDate,
   formatGrams,
   formatMoney,
   formatNumber,
-  formatTins,
+  formatUnits,
 } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,27 @@ const MOVEMENT_LABELS: Record<string, string> = {
   marketing_sample: "Marketing sample",
 };
 
+function channelLabel(channel: string | null): string | null {
+  if (!channel) return null;
+  return CHANNEL_LABELS[channel as Channel] ?? channel;
+}
+
+/** Short unit word for movement quantities ("tins", "pc", "kg", "pk"). */
+function unitWord(unit: string): string {
+  switch (unit) {
+    case "Tin":
+      return "tins";
+    case "PC":
+      return "pc";
+    case "KG":
+      return "kg";
+    case "PK":
+      return "pk";
+    default:
+      return unit.toLowerCase();
+  }
+}
+
 function daysLeft(expiryIso: string): number {
   return Math.ceil((new Date(expiryIso).getTime() - Date.now()) / 86_400_000);
 }
@@ -107,7 +129,7 @@ function ProductDetail({
   const router = useRouter();
   const [detail, setDetail] = React.useState<ProductDetailDto | null>(null);
   const [aduInput, setAduInput] = React.useState(
-    row.aduOverrideGramsPerDay != null ? String(row.aduOverrideGramsPerDay) : ""
+    row.aduOverrideUnitsPerDay != null ? String(row.aduOverrideUnitsPerDay) : ""
   );
   const [saving, setSaving] = React.useState(false);
 
@@ -139,7 +161,7 @@ function ProductDetail({
     if (trimmed !== "") {
       const parsed = Number(trimmed);
       if (!Number.isFinite(parsed) || parsed < 0) {
-        toast.error("ADU override must be a number of grams per day (0 or more)");
+        toast.error("ADU override must be a number of units per day (0 or more)");
         return;
       }
       value = parsed;
@@ -149,7 +171,7 @@ function ProductDetail({
       const res = await fetch(`/api/products/${row.productId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aduOverrideGramsPerDay: value }),
+        body: JSON.stringify({ aduOverrideUnitsPerDay: value }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -159,7 +181,7 @@ function ProductDetail({
       toast.success(
         value == null
           ? "ADU override cleared — back to automatic"
-          : `ADU override set to ${formatNumber(value, 1)} g/day`
+          : `ADU override set to ${formatNumber(value, 2)} units/day`
       );
       router.refresh();
       onClose();
@@ -173,16 +195,19 @@ function ProductDetail({
       <SheetHeader className="pb-0">
         <SheetTitle className="font-display text-xl">{row.shortName}</SheetTitle>
         <SheetDescription>
-          {row.kaviariCode} · {formatGrams(row.tinSizeGrams)} tin
-          {row.grade ? ` · grade ${row.grade}` : ""}
+          {row.prCode} · {row.category}
+          {row.caviarType ? ` · ${row.caviarType}` : ""}
+          {row.gramsPerUnit
+            ? ` · ${formatGrams(row.gramsPerUnit)}/${row.unit.toLowerCase()}`
+            : ""}
         </SheetDescription>
         <div className="mt-2 flex flex-wrap gap-2 text-sm">
           <Badge variant="secondary" className="tnum">
-            {formatTins(row.onHandTins)} on hand
+            {formatUnits(row.onHandUnits, row.unit)} on hand
           </Badge>
-          {row.onOrderTins > 0 ? (
+          {row.onOrderUnits > 0 ? (
             <Badge variant="seafoam" className="tnum">
-              {formatTins(row.onOrderTins)} on order
+              {formatUnits(row.onOrderUnits, row.unit)} on order
             </Badge>
           ) : null}
           <Badge variant="outline" className="tnum">
@@ -220,8 +245,8 @@ function ProductDetail({
                     <DaysLeftBadge days={daysLeft(lot.expiryDate)} />
                   </div>
                   <p className="tnum mt-0.5 text-xs text-muted-foreground">
-                    {formatTins(lot.quantityTins)} of{" "}
-                    {formatTins(lot.receivedTins)} left · received{" "}
+                    {formatUnits(lot.quantityTins, row.unit)} of{" "}
+                    {formatUnits(lot.receivedTins, row.unit)} left · received{" "}
                     {formatDate(lot.receivedDate)} · expires{" "}
                     {formatDate(lot.expiryDate)}
                   </p>
@@ -239,21 +264,21 @@ function ProductDetail({
           <p className="mb-2 text-xs text-muted-foreground">
             Current usage:{" "}
             <span className="tnum">
-              {formatNumber(row.aduGramsPerDay, 1)} g/day
+              {formatNumber(row.aduUnitsPerDay, 2)} units/day
             </span>
             {row.aduIsOverride ? " (manual override)" : " (automatic)"}
           </p>
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Label htmlFor="adu-override" className="mb-1.5 block text-xs">
-                Grams per day (empty = automatic)
+                Units per day (empty = automatic)
               </Label>
               <Input
                 id="adu-override"
                 type="number"
                 inputMode="decimal"
                 min={0}
-                step={1}
+                step={0.1}
                 placeholder="automatic"
                 value={aduInput}
                 onChange={(e) => setAduInput(e.target.value)}
@@ -293,7 +318,9 @@ function ProductDetail({
                     </span>
                     <span className="ml-2 text-xs text-muted-foreground">
                       {formatDate(m.date)}
-                      {m.channel ? ` · ${m.channel}` : ""}
+                      {channelLabel(m.channel)
+                        ? ` · ${channelLabel(m.channel)}`
+                        : ""}
                       {m.lot ? ` · ${m.lot.lotNumber}` : ""}
                     </span>
                   </div>
@@ -303,7 +330,7 @@ function ProductDetail({
                     }`}
                   >
                     {m.quantityTins > 0 ? "+" : ""}
-                    {formatNumber(m.quantityTins, 2)} tins
+                    {formatNumber(m.quantityTins, 2)} {unitWord(row.unit)}
                   </span>
                 </li>
               ))}

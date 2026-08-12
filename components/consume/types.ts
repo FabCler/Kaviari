@@ -4,11 +4,14 @@ export interface ConsumableProduct {
   productId: string;
   name: string;
   shortName: string;
-  grade: string | null;
+  caviarType: string | null;
   category: string;
-  tinSizeGrams: number;
-  onHandTins: number;
-  aduGramsPerDay: number;
+  /** Stock-keeping unit: "Tin" | "PC" | "KG" | "PK". */
+  unit: string;
+  /** kg reference per unit (null for non-weighed items). */
+  gramsPerUnit: number | null;
+  onHandUnits: number;
+  aduUnitsPerDay: number;
 }
 
 export interface RecentMovementRow {
@@ -16,7 +19,9 @@ export interface RecentMovementRow {
   /** ISO string */
   date: string;
   productName: string;
-  tins: number;
+  /** Absolute quantity in the product's unit. */
+  units: number;
+  unit: string;
   type: string;
   channel: string | null;
   lotNumber: string | null;

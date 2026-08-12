@@ -4,13 +4,29 @@ import { requireAuth } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** Product detail for the inventory sheet: in-stock lots + recent movements. */
+/** Product detail for the inventory sheet: product, in-stock lots + recent movements. */
 export async function GET(_request: Request, ctx: Ctx) {
   const denied = await requireAuth();
   if (denied) return denied;
 
   const { id } = await ctx.params;
-  const product = await prisma.product.findUnique({ where: { id } });
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      prCode: true,
+      name: true,
+      caviarType: true,
+      category: true,
+      unit: true,
+      packingPerBox: true,
+      gramsPerUnit: true,
+      unitCost: true,
+      currency: true,
+      active: true,
+      aduOverrideUnitsPerDay: true,
+    },
+  });
   if (!product) {
     return Response.json({ error: "Product not found" }, { status: 404 });
   }
@@ -28,11 +44,11 @@ export async function GET(_request: Request, ctx: Ctx) {
     }),
   ]);
 
-  return Response.json({ lots, movements });
+  return Response.json({ product, lots, movements });
 }
 
 const patchSchema = z.object({
-  aduOverrideGramsPerDay: z.number().min(0).nullable().optional(),
+  aduOverrideUnitsPerDay: z.number().min(0).nullable().optional(),
   active: z.boolean().optional(),
   unitCost: z.number().positive().optional(),
   imageUrl: z.string().max(2000).nullable().optional(),

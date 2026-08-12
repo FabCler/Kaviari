@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CHANNELS, type Channel } from "@/lib/domain";
-import { formatGrams, formatNumber, formatTins } from "@/lib/format";
+import { CHANNELS, CHANNEL_LABELS, type Channel } from "@/lib/domain";
+import { formatGrams, formatNumber, formatUnits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,13 +26,6 @@ import {
 import { undoMovements } from "@/components/consume/undo";
 import type { ConsumableProduct } from "@/components/consume/types";
 
-const CHANNEL_LABELS: Record<Channel, string> = {
-  restaurant: "Restaurant",
-  retail: "Retail",
-  event: "Event",
-  staff: "Staff",
-};
-
 const OUTBOUND_TYPE_OPTIONS = [
   { value: "consumption", label: "Consumption" },
   { value: "sale", label: "Sale" },
@@ -42,6 +35,16 @@ const OUTBOUND_TYPE_OPTIONS = [
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/** Singular unit word for the stepper ("tin", "pc", "kg", "pk"). */
+function unitWord(unit: string, quantity: number): string {
+  switch (unit) {
+    case "Tin":
+      return quantity === 1 ? "tin" : "tins";
+    default:
+      return unit.toLowerCase();
+  }
 }
 
 interface PostResponse {
@@ -88,34 +91,24 @@ function LogForm({
   onLogged: () => void;
   onClose: () => void;
 }) {
-  const [mode, setMode] = React.useState<"tins" | "grams">("tins");
-  const [tins, setTins] = React.useState(1);
-  const [grams, setGrams] = React.useState("");
-  const [channel, setChannel] = React.useState<Channel>("restaurant");
+  const [quantity, setQuantity] = React.useState(1);
+  const [channel, setChannel] = React.useState<Channel>("food_service");
   const [type, setType] = React.useState<string>("consumption");
   const [note, setNote] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  const gramsNumber = Number(grams);
-  const effectiveTins =
-    mode === "tins"
-      ? tins
-      : Number.isFinite(gramsNumber) && gramsNumber > 0
-        ? round2(gramsNumber / product.tinSizeGrams)
-        : 0;
-  const exceedsStock = effectiveTins > product.onHandTins;
+  const exceedsStock = quantity > product.onHandUnits;
 
   async function submit() {
-    if (effectiveTins <= 0) return;
+    if (quantity <= 0) return;
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
         productId: product.productId,
         type,
         channel,
+        tins: quantity,
       };
-      if (mode === "tins") payload.tins = tins;
-      else payload.grams = gramsNumber;
       if (note.trim()) payload.note = note.trim();
 
       const res = await fetch("/api/movements", {
@@ -130,7 +123,7 @@ function LogForm({
         };
         if (res.status === 409) {
           toast.error(
-            `Not enough stock — only ${formatTins(data.availableTins ?? 0)} of ${product.shortName} available`
+            `Not enough stock — only ${formatUnits(data.availableTins ?? 0, product.unit)} of ${product.shortName} available`
           );
         } else {
           toast.error(data.error ?? "Could not log the movement");
@@ -141,7 +134,7 @@ function LogForm({
       const ids = data.movements.map((m) => m.id);
       const lotText = data.allocatedLots.map((l) => l.lotNumber).join(", ");
       toast.success(
-        `Logged ${formatTins(effectiveTins)} of ${product.shortName} (lot ${lotText})`,
+        `Logged ${formatUnits(quantity, product.unit)} of ${product.shortName} (lot ${lotText})`,
         {
           duration: 8000,
           action: {
@@ -173,98 +166,57 @@ function LogForm({
           {product.shortName}
         </SheetTitle>
         <SheetDescription className="tnum">
-          {formatGrams(product.tinSizeGrams)} tin ·{" "}
-          {formatTins(product.onHandTins)} in stock
+          {product.caviarType ? `${product.caviarType} · ` : ""}
+          {product.gramsPerUnit
+            ? `${formatGrams(product.gramsPerUnit)} / ${product.unit.toLowerCase()} · `
+            : ""}
+          {formatUnits(product.onHandUnits, product.unit)} in stock
         </SheetDescription>
       </SheetHeader>
 
       <div className="space-y-5">
-        {/* Quantity mode toggle */}
-        <div
-          className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
-          role="group"
-          aria-label="Quantity unit"
-        >
-          {(["tins", "grams"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={mode === m}
-              onClick={() => setMode(m)}
-              className={cn(
-                "h-9 rounded-md text-sm font-medium transition-colors",
-                mode === m
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {m === "tins" ? "Tins" : "Grams"}
-            </button>
-          ))}
-        </div>
-
-        {/* Quantity input */}
-        {mode === "tins" ? (
-          <div className="flex items-center justify-center gap-5 py-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="size-14 rounded-full"
-              onClick={() => setTins((t) => Math.max(0.5, round2(t - 0.5)))}
-              disabled={tins <= 0.5}
-              aria-label="Decrease quantity by half a tin"
-            >
-              <Minus className="size-6" />
-            </Button>
-            <div className="w-28 text-center">
-              <span className="font-display tnum text-5xl font-medium">
-                {formatNumber(tins, 1)}
-              </span>
-              <p className="tnum mt-0.5 text-xs text-muted-foreground">
-                {tins === 1 ? "tin" : "tins"} ·{" "}
-                {formatGrams(tins * product.tinSizeGrams)}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="size-14 rounded-full"
-              onClick={() => setTins((t) => round2(t + 0.5))}
-              aria-label="Increase quantity by half a tin"
-            >
-              <Plus className="size-6" />
-            </Button>
-          </div>
-        ) : (
-          <div>
-            <Label htmlFor="grams-input" className="mb-1.5 block text-sm">
-              Grams consumed
-            </Label>
-            <Input
-              id="grams-input"
-              type="number"
-              inputMode="decimal"
-              min={1}
-              step={1}
-              placeholder={`e.g. ${product.tinSizeGrams}`}
-              value={grams}
-              onChange={(e) => setGrams(e.target.value)}
-              className="tnum h-12 text-lg"
-            />
-            <p className="tnum mt-1 text-xs text-muted-foreground">
-              {effectiveTins > 0
-                ? `≈ ${formatNumber(effectiveTins, 2)} tins`
-                : "Enter a quantity in grams"}
+        {/* Quantity stepper (always in the product's stock unit) */}
+        <div className="flex items-center justify-center gap-5 py-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-14 rounded-full"
+            onClick={() => setQuantity((q) => Math.max(0.5, round2(q - 0.5)))}
+            disabled={quantity <= 0.5}
+            aria-label="Decrease quantity by half a unit"
+          >
+            <Minus className="size-6" />
+          </Button>
+          <div className="w-28 text-center">
+            <span className="font-display tnum text-5xl font-medium">
+              {formatNumber(quantity, 1)}
+            </span>
+            <p className="tnum mt-0.5 text-xs text-muted-foreground">
+              {unitWord(product.unit, quantity)}
             </p>
+            {product.gramsPerUnit ? (
+              <p className="tnum mt-0.5 text-xs text-muted-foreground">
+                = {formatGrams(quantity * product.gramsPerUnit)}
+              </p>
+            ) : null}
           </div>
-        )}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-14 rounded-full"
+            onClick={() => setQuantity((q) => round2(q + 0.5))}
+            aria-label="Increase quantity by half a unit"
+          >
+            <Plus className="size-6" />
+          </Button>
+        </div>
 
         {exceedsStock ? (
           <p className="text-sm font-medium text-warning">
-            Only {formatTins(product.onHandTins)} in stock — the server will
-            reject anything above that.
+            Only {formatUnits(product.onHandUnits, product.unit)} in stock —
+            the server will reject anything above that.
           </p>
         ) : null}
 
@@ -272,7 +224,7 @@ function LogForm({
         <div>
           <Label className="mb-1.5 block text-sm">Channel</Label>
           <div
-            className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1"
+            className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1"
             role="group"
             aria-label="Channel"
           >
@@ -334,9 +286,11 @@ function LogForm({
           size="lg"
           className="h-12 w-full text-base"
           onClick={submit}
-          disabled={submitting || effectiveTins <= 0}
+          disabled={submitting || quantity <= 0}
         >
-          {submitting ? "Logging…" : `Log ${formatTins(effectiveTins)}`}
+          {submitting
+            ? "Logging…"
+            : `Log ${formatUnits(quantity, product.unit)}`}
         </Button>
       </div>
     </div>
