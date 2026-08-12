@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     "",
     result.totals.units,
     result.totals.grams / 1000,
-    rows.length > 0 ? 100 : 0,
+    result.totals.units > 0 ? 100 : 0,
     result.kpis.avgPerWeek,
     result.totals.forecast,
     result.totals.variance,

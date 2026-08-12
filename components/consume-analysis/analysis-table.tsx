@@ -205,7 +205,9 @@ export function AnalysisTable({
             <TableCell className="text-right tnum">
               {totals.grams > 0 ? formatGrams(totals.grams) : "—"}
             </TableCell>
-            <TableCell className="text-right tnum">100%</TableCell>
+            <TableCell className="text-right tnum">
+              {totals.units > 0 ? "100%" : "—"}
+            </TableCell>
             <TableCell className="text-right tnum">
               {formatNumber(avgPerWeekTotal)}
             </TableCell>
