@@ -23,11 +23,10 @@ export const aiPriceListSchema = z.object({
   rows: z
     .array(
       z.object({
-        kaviariCode: z.string().max(60).nullable(),
+        prCode: z.string().max(60).nullable(),
         name: z.string().min(1).max(200),
-        species: z.string().max(120).nullable(),
-        grade: z.string().max(120).nullable(),
-        tinSizeGrams: z.number().int().positive().max(100_000),
+        caviarType: z.string().max(120).nullable(),
+        gramsPerUnit: z.number().int().positive().max(100_000).nullable(),
         unitCost: z.number().nonnegative().max(1_000_000),
         currency: z.string().min(3).max(3).default("EUR"),
         matchedProductId: z.string().max(60).nullable(),
@@ -64,7 +63,7 @@ export const aiSalesSchema = z.object({
         productId: z.string().min(1).max(60),
         date: z.string().min(4).max(40),
         tins: z.number().positive().max(10_000),
-        channel: channelSchema.default("retail"),
+        channel: channelSchema.default("food_service"),
         note: z.string().max(300).nullable(),
       })
     )
@@ -81,11 +80,10 @@ export const commitPriceListSchema = z.object({
   rows: z
     .array(
       z.object({
-        kaviariCode: z.string().max(60).nullable(),
+        prCode: z.string().max(60).nullable(),
         name: z.string().min(1).max(200),
-        species: z.string().max(120).nullable(),
-        grade: z.string().max(120).nullable(),
-        tinSizeGrams: z.number().int().positive().max(100_000),
+        caviarType: z.string().max(120).nullable(),
+        gramsPerUnit: z.number().int().positive().max(100_000).nullable(),
         unitCost: z.number().nonnegative().max(1_000_000),
         currency: z.string().length(3),
         matchedProductId: z.string().max(60).nullable(),

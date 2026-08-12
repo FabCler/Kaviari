@@ -48,11 +48,11 @@ export async function commitPriceList(rows: PriceListRows): Promise<CommitResult
         warnings.push(`"${name}": matched product no longer exists — skipped.`);
         continue;
       }
-      if (!target && row.kaviariCode) {
+      if (!target && row.prCode) {
         // Race guard: a product with this code may exist even if the
         // analysis said "new".
         target = await tx.product.findUnique({
-          where: { kaviariCode: row.kaviariCode.trim() },
+          where: { prCode: row.prCode.trim() },
         });
       }
 
@@ -63,8 +63,7 @@ export async function commitPriceList(rows: PriceListRows): Promise<CommitResult
           data: {
             unitCost,
             name,
-            species: row.species ?? target.species,
-            grade: row.grade ?? target.grade,
+            caviarType: row.caviarType ?? target.caviarType,
             currency: row.currency,
           },
         });
@@ -72,14 +71,13 @@ export async function commitPriceList(rows: PriceListRows): Promise<CommitResult
       } else {
         await tx.product.create({
           data: {
-            kaviariCode: row.kaviariCode?.trim() || `IMP-${stamp}-${index + 1}`,
+            prCode: row.prCode?.trim() || `IMP-${stamp}-${index + 1}`,
             name,
-            species: row.species,
-            grade: row.grade,
-            tinSizeGrams: row.tinSizeGrams,
+            caviarType: row.caviarType,
+            gramsPerUnit: row.gramsPerUnit,
             unitCost,
             currency: row.currency,
-            category: "caviar",
+            category: "Caviar",
             active: true,
             isPlaceholder: false,
           },
@@ -169,7 +167,7 @@ export async function commitStockTake(rows: StockTakeRows): Promise<CommitResult
             lotId,
             type: "adjustment",
             quantityTins: delta,
-            gramsEquivalent: round2(delta * product.tinSizeGrams),
+            gramsEquivalent: round2(delta * (product.gramsPerUnit ?? 0)),
             date: now,
             note,
           },
@@ -202,7 +200,7 @@ export async function commitStockTake(rows: StockTakeRows): Promise<CommitResult
               lotId: lot.id,
               type: "adjustment",
               quantityTins: -alloc.tins,
-              gramsEquivalent: -round2(alloc.tins * product.tinSizeGrams),
+              gramsEquivalent: -round2(alloc.tins * (product.gramsPerUnit ?? 0)),
               date: now,
               note,
             },
@@ -289,7 +287,7 @@ export async function commitSalesExport(rows: SalesRows): Promise<CommitResult> 
             type: "sale",
             channel: row.channel,
             quantityTins: -alloc.tins,
-            gramsEquivalent: -round2(alloc.tins * product.tinSizeGrams),
+            gramsEquivalent: -round2(alloc.tins * (product.gramsPerUnit ?? 0)),
             date,
             note: row.note ?? "Sales export import",
           },

@@ -1,4 +1,7 @@
 import { Sparkles } from "lucide-react";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { UsersCard } from "@/components/settings/users-card";
 import { getSettings } from "@/lib/settings";
 import { nextOrderDate } from "@/lib/replenishment";
 import { AI_MODEL, isAiConfigured } from "@/lib/ai";
@@ -16,6 +19,10 @@ import { OrderCycleCard } from "@/components/settings/order-cycle-card";
 import { SessionCard } from "@/components/settings/session-card";
 
 export default async function SettingsPage() {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "owner") {
+    redirect("/");
+  }
   const settings = await getSettings();
   const aiConfigured = isAiConfigured();
 
@@ -33,6 +40,9 @@ export default async function SettingsPage() {
         description="Replenishment policy, order cycle and app configuration"
       />
       <div className="grid gap-6 lg:grid-cols-2">
+        <div className="lg:col-span-2">
+          <UsersCard />
+        </div>
         <div className="lg:col-span-2">
           <PolicyForm
             initial={{

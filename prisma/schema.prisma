@@ -16,27 +16,64 @@ datasource db {
 }
 
 model Product {
-  id                    String   @id @default(cuid())
-  kaviariCode           String   @unique
-  name                  String
-  species               String?
-  grade                 String?
-  tinSizeGrams          Int
-  unitCost              Float
-  currency              String   @default("EUR")
-  category              String   @default("caviar") // caviar | other
-  imageUrl              String?
-  active                Boolean  @default(true)
-  isPlaceholder         Boolean  @default(false)
-  // Manual ADU override (grams/day) for seasonality or new products.
-  aduOverrideGramsPerDay Float?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id            String   @id @default(cuid())
+  // Canonical product code from the product database (PR Code).
+  prCode        String   @unique
+  name          String
+  // Kristal | Oscietra | Baeri | Beluga | Daurikus | Transmontanus | Baenki
+  caviarType    String?
+  // Caviar | Marketing Tools | Fish Roe | Crab | Fish
+  category      String   @default("Caviar")
+  // Stock-keeping unit: Tin | PC | KG | PK
+  unit          String   @default("Tin")
+  // Tins per full supplier box — orders are rounded up to whole boxes.
+  packingPerBox Int?
+  // Net grams per unit (kg reference only; null for non-weighed items).
+  gramsPerUnit  Int?
+  unitCost      Float
+  currency      String   @default("EUR")
+  imageUrl      String?
+  active        Boolean  @default(true)
+  isPlaceholder Boolean  @default(false)
+  // Manual ADU override (units/day) for seasonality or new products.
+  aduOverrideUnitsPerDay Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   lots      StockLot[]
   movements StockMovement[]
   poLines   PurchaseOrderLine[]
   campaigns CampaignProduct[]
+  forecasts Forecast[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("member") // owner | member
+  status       String   @default("pending") // pending | approved | rejected
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  forecasts Forecast[]
+}
+
+model Forecast {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // First day of the forecast month (UTC midnight).
+  month     DateTime
+  // Forecast quantity in the product's unit (tins for caviar).
+  quantity  Float
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId, month])
+  @@index([productId, month])
 }
 
 model StockLot {
@@ -44,7 +81,7 @@ model StockLot {
   productId    String
   product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   lotNumber    String
-  // Tins remaining in the lot (receipts add, consumption subtracts).
+  // Units remaining in the lot (receipts add, consumption subtracts).
   quantityTins Float
   receivedTins Float
   receivedDate DateTime
@@ -65,13 +102,13 @@ model StockMovement {
   lot             StockLot? @relation(fields: [lotId], references: [id], onDelete: SetNull)
   // receipt | consumption | sale | waste | adjustment | marketing_sample
   type            String
-  // Signed: receipts positive, consumption/sales/waste negative,
-  // adjustments either way.
+  // Signed units (tins): receipts positive, outbound negative.
   quantityTins    Float
+  // Signed grams (kg reference; 0 when the product has no gramsPerUnit).
   gramsEquivalent Float
   date            DateTime  @default(now())
   note            String?
-  channel         String? // restaurant | retail | event | staff
+  channel         String? // food_service | event | training
   createdAt       DateTime  @default(now())
 
   @@index([productId, date])
@@ -87,6 +124,8 @@ model PurchaseOrder {
   expectedDeliveryDate DateTime
   receivedDate         DateTime?
   notes                String?
+  // Original supplier PO file uploaded by the user (name only; parsed by AI).
+  uploadedFileName     String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

@@ -46,10 +46,10 @@ export async function POST(request: Request) {
   if (body.fromSuggestions) {
     const planner = await getPlannerData(now);
     lines = planner.rows
-      .filter((row) => row.suggestion.suggestedTins > 0)
+      .filter((row) => row.suggestion.suggestedUnits > 0)
       .map((row) => ({
         productId: row.product.id,
-        quantityTins: row.suggestion.suggestedTins,
+        quantityTins: row.suggestion.suggestedUnits,
         unitCost: row.product.unitCost,
       }));
     if (lines.length === 0) {

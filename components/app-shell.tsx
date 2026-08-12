@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarClock,
   FileUp,
   LayoutDashboard,
+  LogOut,
   Megaphone,
   Menu,
   Package,
@@ -33,8 +34,13 @@ const NAV_ITEMS = [
   { href: "/import", label: "Import & Analyze", icon: FileUp },
   { href: "/marketing", label: "Marketing", icon: Megaphone },
   { href: "/assistant", label: "Assistant", icon: Sparkles },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings, ownerOnly: true },
 ] as const;
+
+export interface ShellUser {
+  name: string;
+  role: string;
+}
 
 function Wordmark() {
   return (
@@ -50,11 +56,20 @@ function Wordmark() {
   );
 }
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({
+  onNavigate,
+  isOwner,
+}: {
+  onNavigate?: () => void;
+  isOwner: boolean;
+}) {
   const pathname = usePathname();
+  const items = NAV_ITEMS.filter(
+    (item) => !("ownerOnly" in item && item.ownerOnly) || isOwner
+  );
   return (
     <nav className="flex flex-col gap-0.5 px-3" aria-label="Main navigation">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active =
           item.href === "/"
             ? pathname === "/"
@@ -85,9 +100,46 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function UserFooter({ user }: { user: ShellUser }) {
+  const router = useRouter();
+  async function logout() {
+    await fetch("/api/auth", { method: "DELETE" });
+    router.push("/login");
+    router.refresh();
+  }
+  return (
+    <div className="border-t border-sidebar-border px-6 py-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-sm text-pearl">{user.name}</div>
+          <div className="text-[0.65rem] tracking-wider text-sidebar-foreground/60 uppercase">
+            {user.role === "owner" ? "Owner" : "Team member"}
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={logout}
+          aria-label="Sign out"
+          className="text-sidebar-foreground hover:bg-white/10 hover:text-pearl"
+        >
+          <LogOut className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: ShellUser;
+}) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const pathname = usePathname();
+  const isOwner = user.role === "owner";
   const current =
     NAV_ITEMS.find((item) =>
       item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
@@ -99,11 +151,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="pearl-dots fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-sidebar lg:flex">
         <Wordmark />
         <div className="flex-1 overflow-y-auto pb-6">
-          <NavLinks />
+          <NavLinks isOwner={isOwner} />
         </div>
-        <div className="border-t border-sidebar-border px-6 py-4 text-[0.65rem] tracking-wider text-sidebar-foreground/60 uppercase">
-          Sourced from Kaviari, Paris
-        </div>
+        <UserFooter user={user} />
       </aside>
 
       {/* Mobile top bar */}
@@ -126,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <Wordmark />
             <div className="flex-1 overflow-y-auto pb-6">
-              <NavLinks onNavigate={() => setMobileOpen(false)} />
+              <NavLinks isOwner={isOwner} onNavigate={() => setMobileOpen(false)} />
             </div>
           </SheetContent>
         </Sheet>

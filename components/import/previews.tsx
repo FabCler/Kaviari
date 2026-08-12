@@ -109,17 +109,17 @@ export function PriceListPreview({
                 <TableRow key={`new-${i}`}>
                   <TableCell className="font-medium">
                     {shortProductName(row.name)}
-                    {row.grade ? (
+                    {row.caviarType ? (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        {row.grade}
+                        {row.caviarType}
                       </span>
                     ) : null}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {row.kaviariCode ?? "auto"}
+                    {row.prCode ?? "auto"}
                   </TableCell>
                   <TableCell className="text-right tnum">
-                    {formatGrams(row.tinSizeGrams)}
+                    {formatGrams(row.gramsPerUnit ?? 0)}
                   </TableCell>
                   <TableCell className="text-right tnum">
                     {formatMoney(row.unitCost, currency)}
@@ -153,7 +153,7 @@ export function PriceListPreview({
                     <TableCell className="font-medium">
                       {shortProductName(row.matchedProductName ?? row.name)}
                       <span className="ml-2 text-xs text-muted-foreground tnum">
-                        {formatGrams(row.tinSizeGrams)}
+                        {formatGrams(row.gramsPerUnit ?? 0)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right tnum text-muted-foreground">
@@ -203,7 +203,7 @@ export function PriceListPreview({
                       <TableCell>
                         {shortProductName(row.matchedProductName ?? row.name)}
                         <span className="ml-2 text-xs text-muted-foreground tnum">
-                          {formatGrams(row.tinSizeGrams)}
+                          {formatGrams(row.gramsPerUnit ?? 0)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right tnum text-muted-foreground">
@@ -247,7 +247,7 @@ export function StockTakePreview({ rows }: { rows: StockTakePreviewRow[] }) {
               <TableCell className="font-medium">
                 {shortProductName(row.productName)}
                 <span className="ml-2 text-xs text-muted-foreground tnum">
-                  {formatGrams(row.tinSizeGrams)}
+                  {formatGrams(row.gramsPerUnit ?? 0)}
                 </span>
               </TableCell>
               <TableCell className="text-right tnum">
@@ -287,7 +287,7 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
       grams: 0,
     };
     entry.tins += row.tins;
-    entry.grams += row.tins * row.tinSizeGrams;
+    entry.grams += row.tins * (row.gramsPerUnit ?? 0);
     totals.set(row.productId, entry);
   }
 

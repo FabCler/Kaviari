@@ -1,8 +1,12 @@
 import { cookies } from "next/headers";
 import { z } from "zod";
-import { AUTH_COOKIE, sessionToken, verifyPin } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { AUTH_COOKIE, sessionTokenFor, verifyPassword } from "@/lib/auth";
 
-const bodySchema = z.object({ pin: z.string().min(1).max(64) });
+const bodySchema = z.object({
+  email: z.string().email().max(200),
+  password: z.string().min(1).max(200),
+});
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -15,18 +19,38 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
-  if (!verifyPin(parsed.data.pin)) {
-    return Response.json({ error: "Incorrect PIN" }, { status: 401 });
+  const email = parsed.data.email.trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+    return Response.json(
+      { error: "Incorrect email or password." },
+      { status: 401 }
+    );
+  }
+  if (user.status === "pending") {
+    return Response.json(
+      {
+        error:
+          "Your account is awaiting approval. You'll be able to sign in once the owner approves your request.",
+      },
+      { status: 403 }
+    );
+  }
+  if (user.status !== "approved") {
+    return Response.json(
+      { error: "Your access request was declined." },
+      { status: 403 }
+    );
   }
   const store = await cookies();
-  store.set(AUTH_COOKIE, sessionToken(), {
+  store.set(AUTH_COOKIE, sessionTokenFor(user.id), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
     path: "/",
   });
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, role: user.role });
 }
 
 export async function DELETE() {

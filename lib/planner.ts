@@ -33,10 +33,10 @@ export async function getPlannerData(now = new Date()): Promise<PlannerData> {
     ...row,
     suggestion: replenishmentSuggestion(
       {
-        aduGramsPerDay: row.aduGramsPerDay,
-        onHandGrams: row.onHandGrams,
-        onOrderGrams: row.onOrderGrams,
-        tinSizeGrams: row.product.tinSizeGrams,
+        aduUnitsPerDay: row.aduUnitsPerDay,
+        onHandUnits: row.onHandUnits,
+        onOrderUnits: row.onOrderUnits,
+        packingPerBox: row.product.packingPerBox,
       },
       settings
     ),
@@ -66,7 +66,7 @@ export async function getPlannerData(now = new Date()): Promise<PlannerData> {
     orderDue: daysUntilOrder == null || daysUntilOrder <= 0,
     rows,
     totalSuggestedValue: rows.reduce(
-      (sum, row) => sum + row.suggestion.suggestedTins * row.product.unitCost,
+      (sum, row) => sum + row.suggestion.suggestedUnits * row.product.unitCost,
       0
     ),
     openPoCount,

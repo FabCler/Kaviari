@@ -21,11 +21,10 @@ export interface UnmatchedRow {
 export type PriceChangeKind = "new" | "price_change" | "unchanged";
 
 export interface PriceListPreviewRow {
-  kaviariCode: string | null;
+  prCode: string | null;
   name: string;
-  species: string | null;
-  grade: string | null;
-  tinSizeGrams: number;
+  caviarType: string | null;
+  gramsPerUnit: number | null;
   unitCost: number;
   currency: string;
   /** Verified server-side against the catalog — never trusted from the AI. */
@@ -38,7 +37,7 @@ export interface PriceListPreviewRow {
 export interface StockTakePreviewRow {
   productId: string;
   productName: string;
-  tinSizeGrams: number;
+  gramsPerUnit: number | null;
   countedTins: number;
   /** Recomputed server-side from in-stock lots — never trusted from the AI. */
   systemTins: number;
@@ -48,7 +47,7 @@ export interface StockTakePreviewRow {
 export interface SalesPreviewRow {
   productId: string;
   productName: string;
-  tinSizeGrams: number;
+  gramsPerUnit: number | null;
   /** ISO date (yyyy-mm-dd). */
   date: string;
   tins: number;

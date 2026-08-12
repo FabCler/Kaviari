@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getSettings, type AppSettings } from "@/lib/settings";
 import {
-  computeAduGramsPerDay,
+  computeAduUnitsPerDay,
   daysOfCover,
   type DemandEvent,
 } from "@/lib/replenishment";
@@ -10,13 +10,15 @@ import type { Product } from "@prisma/client";
 
 export interface ProductStockView {
   product: Product;
-  onHandTins: number;
+  /** On hand in the product's stock unit (tins for caviar). */
+  onHandUnits: number;
+  /** kg reference (0 when the product has no gramsPerUnit). */
   onHandGrams: number;
-  onOrderTins: number;
-  onOrderGrams: number;
-  aduGramsPerDay: number;
+  onOrderUnits: number;
+  aduUnitsPerDay: number;
   aduIsOverride: boolean;
   daysOfCover: number | null;
+  weeksOfCover: number | null;
   stockValue: number;
 }
 
@@ -24,7 +26,7 @@ export interface StockOverview {
   settings: AppSettings;
   rows: ProductStockView[];
   totals: {
-    tins: number;
+    units: number;
     grams: number;
     value: number;
     daysOfCover: number | null;
@@ -34,7 +36,7 @@ export interface StockOverview {
 /**
  * One consistent snapshot used by the dashboard, inventory, order planner
  * and AI assistant: on-hand from in-stock lots, pipeline from open POs,
- * ADU from demand movements over the configured trailing window.
+ * ADU (units/day) from demand movements over the configured trailing window.
  */
 export async function getStockOverview(options?: {
   includeInactive?: boolean;
@@ -62,7 +64,7 @@ export async function getStockOverview(options?: {
         type: { in: [...DEMAND_MOVEMENT_TYPES] },
         date: { gte: windowStart, lte: now },
       },
-      select: { productId: true, gramsEquivalent: true, date: true },
+      select: { productId: true, quantityTins: true, date: true },
     }),
   ]);
 
@@ -85,55 +87,51 @@ export async function getStockOverview(options?: {
   const demandByProduct = new Map<string, DemandEvent[]>();
   for (const movement of demandMovements) {
     const list = demandByProduct.get(movement.productId) ?? [];
-    list.push({
-      grams: Math.abs(movement.gramsEquivalent),
-      date: movement.date,
-    });
+    list.push({ units: Math.abs(movement.quantityTins), date: movement.date });
     demandByProduct.set(movement.productId, list);
   }
 
   const rows: ProductStockView[] = products.map((product) => {
-    const onHandTins = lotsByProduct.get(product.id) ?? 0;
-    const onHandGrams = onHandTins * product.tinSizeGrams;
-    const onOrderTins = onOrderByProduct.get(product.id) ?? 0;
-    const adu = computeAduGramsPerDay(
+    const onHandUnits = lotsByProduct.get(product.id) ?? 0;
+    const adu = computeAduUnitsPerDay(
       demandByProduct.get(product.id) ?? [],
       settings.aduWindowDays,
       now,
-      product.aduOverrideGramsPerDay
+      product.aduOverrideUnitsPerDay
     );
+    const cover = daysOfCover(onHandUnits, adu);
     return {
       product,
-      onHandTins,
-      onHandGrams,
-      onOrderTins,
-      onOrderGrams: onOrderTins * product.tinSizeGrams,
-      aduGramsPerDay: adu,
-      aduIsOverride: product.aduOverrideGramsPerDay != null,
-      daysOfCover: daysOfCover(onHandGrams, adu),
-      stockValue: onHandTins * product.unitCost,
+      onHandUnits,
+      onHandGrams: onHandUnits * (product.gramsPerUnit ?? 0),
+      onOrderUnits: onOrderByProduct.get(product.id) ?? 0,
+      aduUnitsPerDay: adu,
+      aduIsOverride: product.aduOverrideUnitsPerDay != null,
+      daysOfCover: cover,
+      weeksOfCover: cover == null ? null : cover / 7,
+      stockValue: onHandUnits * product.unitCost,
     };
   });
 
   const totals = rows.reduce(
     (acc, row) => {
-      acc.tins += row.onHandTins;
+      acc.units += row.onHandUnits;
       acc.grams += row.onHandGrams;
       acc.value += row.stockValue;
-      acc.adu += row.aduGramsPerDay;
+      acc.adu += row.aduUnitsPerDay;
       return acc;
     },
-    { tins: 0, grams: 0, value: 0, adu: 0 }
+    { units: 0, grams: 0, value: 0, adu: 0 }
   );
 
   return {
     settings,
     rows,
     totals: {
-      tins: totals.tins,
+      units: totals.units,
       grams: totals.grams,
       value: totals.value,
-      daysOfCover: totals.adu > 0 ? totals.grams / totals.adu : null,
+      daysOfCover: totals.adu > 0 ? totals.units / totals.adu : null,
     },
   };
 }
@@ -143,7 +141,8 @@ export interface ExpiringLotView {
   lotNumber: string;
   productId: string;
   productName: string;
-  tinSizeGrams: number;
+  unit: string;
+  gramsPerUnit: number | null;
   quantityTins: number;
   expiryDate: Date;
   daysLeft: number;
@@ -173,7 +172,8 @@ export async function getExpiringLots(options?: {
     lotNumber: lot.lotNumber,
     productId: lot.productId,
     productName: lot.product.name,
-    tinSizeGrams: lot.product.tinSizeGrams,
+    unit: lot.product.unit,
+    gramsPerUnit: lot.product.gramsPerUnit,
     quantityTins: lot.quantityTins,
     expiryDate: lot.expiryDate,
     daysLeft: Math.ceil((lot.expiryDate.getTime() - now.getTime()) / 86_400_000),

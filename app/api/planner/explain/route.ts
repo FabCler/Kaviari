@@ -46,16 +46,16 @@ export async function POST(request: Request) {
   const { settings } = planner;
   const s = row.suggestion;
   const prompt = [
-    `Product: ${shortProductName(row.product.name)} (${row.product.tinSizeGrams} g tins)`,
-    `Average daily usage (ADU): ${formatNumber(row.aduGramsPerDay)} g/day${
+    `Product: ${shortProductName(row.product.name)} (unit: ${row.product.unit}${row.product.gramsPerUnit ? `, ${row.product.gramsPerUnit} g` : ""}${row.product.packingPerBox ? `, box of ${row.product.packingPerBox}` : ""})`,
+    `Average daily usage (ADU): ${formatNumber(row.aduUnitsPerDay)} units/day${
       row.aduIsOverride ? " (manual override)" : ""
     }`,
     `Policy: lead time ${settings.leadTimeDays} days, review period ${settings.reviewPeriodDays} days, safety stock ${settings.safetyStockDays} days`,
-    `Order-up-to level S: ${formatGrams(s.orderUpToGrams)}`,
-    `On hand: ${formatNumber(row.onHandTins)} tins (${formatGrams(row.onHandGrams)})`,
-    `On order (open POs): ${formatNumber(row.onOrderTins)} tins (${formatGrams(row.onOrderGrams)})`,
-    `Gap to S: ${formatGrams(s.suggestedGrams)}`,
-    `Suggested order: ${s.suggestedTins} tins (${formatGrams(s.roundedGrams)} after rounding up to whole tins)`,
+    `Order-up-to level S: ${formatNumber(s.orderUpToUnits)} units`,
+    `On hand: ${formatNumber(row.onHandUnits)} units`,
+    `On order (open POs): ${formatNumber(row.onOrderUnits)} units`,
+    `Gap to S: ${formatNumber(s.suggestedRawUnits)} units`,
+    `Suggested order: ${s.suggestedUnits} units${s.boxes ? ` (${s.boxes} full box${s.boxes > 1 ? "es" : ""})` : ""} after rounding up to full boxes`,
     `Days of cover from on-hand stock: ${
       s.daysOfCover == null ? "no recent consumption" : formatNumber(s.daysOfCover, 0) + " days"
     }`,

@@ -103,9 +103,8 @@ export async function POST(request: Request) {
     for (const p of factProducts) {
       const facts = [
         p.name,
-        p.species ? `species: ${p.species}` : null,
-        p.grade ? `grade: ${p.grade}` : null,
-        `tin size: ${p.tinSizeGrams} g`,
+        p.caviarType ? `caviar type: ${p.caviarType}` : null,
+        p.gramsPerUnit ? `tin size: ${p.gramsPerUnit} g` : null,
       ].filter(Boolean);
       lines.push(`- ${facts.join(", ")}`);
     }

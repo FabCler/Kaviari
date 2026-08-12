@@ -29,15 +29,21 @@ export const OUTBOUND_MOVEMENT_TYPES: readonly MovementType[] = [
   "marketing_sample",
 ];
 
-/** Movement types counted as demand when computing ADU. */
+/** Movement types counted as demand when computing average daily usage. */
 export const DEMAND_MOVEMENT_TYPES: readonly MovementType[] = [
   "consumption",
   "sale",
   "marketing_sample",
 ];
 
-export const CHANNELS = ["restaurant", "retail", "event", "staff"] as const;
+export const CHANNELS = ["food_service", "event", "training"] as const;
 export type Channel = (typeof CHANNELS)[number];
+
+export const CHANNEL_LABELS: Record<Channel, string> = {
+  food_service: "Food service",
+  event: "Event",
+  training: "Training",
+};
 
 export const PO_STATUSES = [
   "draft",
@@ -76,8 +82,35 @@ export const CONTENT_TYPES = [
 ] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
-export const PRODUCT_CATEGORIES = ["caviar", "other"] as const;
+/** Product categories from the product database workbook. */
+export const PRODUCT_CATEGORIES = [
+  "Caviar",
+  "Fish Roe",
+  "Fish",
+  "Crab",
+  "Marketing Tools",
+] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
+export const CAVIAR_TYPES = [
+  "Kristal",
+  "Oscietra",
+  "Baeri",
+  "Beluga",
+  "Daurikus",
+  "Transmontanus",
+  "Baenki",
+] as const;
+export type CaviarType = (typeof CAVIAR_TYPES)[number];
+
+export const PRODUCT_UNITS = ["Tin", "PC", "KG", "PK"] as const;
+export type ProductUnit = (typeof PRODUCT_UNITS)[number];
+
+export const USER_ROLES = ["owner", "member"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const USER_STATUSES = ["pending", "approved", "rejected"] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
 
 // zod schemas for API payload validation
 export const movementTypeSchema = z.enum(MOVEMENT_TYPES);
@@ -88,3 +121,4 @@ export const campaignStatusSchema = z.enum(CAMPAIGN_STATUSES);
 export const contentTypeSchema = z.enum(CONTENT_TYPES);
 export const productCategorySchema = z.enum(PRODUCT_CATEGORIES);
 export const lotStatusSchema = z.enum(LOT_STATUSES);
+export const userStatusSchema = z.enum(USER_STATUSES);

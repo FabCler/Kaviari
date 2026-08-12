@@ -25,7 +25,7 @@ export async function buildBusinessSummary(now = new Date()): Promise<string> {
           type: { in: ["consumption", "sale", "marketing_sample"] },
           date: { gte: new Date(now.getTime() - 30 * 86_400_000) },
         },
-        _sum: { gramsEquivalent: true },
+        _sum: { quantityTins: true, gramsEquivalent: true },
       }),
       prisma.campaign.findMany({
         where: { status: { in: ["planned", "active"] } },
@@ -51,21 +51,21 @@ export async function buildBusinessSummary(now = new Date()): Promise<string> {
 
   lines.push("");
   lines.push(
-    "## Products (name | on hand tins | on order tins | ADU g/day | days cover | suggested order tins)"
+    "## Products (name | on hand units | on order units | ADU units/day | days cover | suggested order units)"
   );
   for (const row of planner.rows) {
     if (
-      row.onHandTins === 0 &&
-      row.onOrderTins === 0 &&
-      row.aduGramsPerDay === 0
+      row.onHandUnits === 0 &&
+      row.onOrderUnits === 0 &&
+      row.aduUnitsPerDay === 0
     ) {
       continue; // dormant SKU — keep the summary small
     }
     const cover =
       row.daysOfCover == null ? "∞" : row.daysOfCover.toFixed(0);
     lines.push(
-      `${row.product.name} | ${row.onHandTins} | ${row.onOrderTins} | ` +
-        `${row.aduGramsPerDay.toFixed(1)}${row.aduIsOverride ? " (manual)" : ""} | ${cover} | ${row.suggestion.suggestedTins}`
+      `${row.product.name} | ${row.onHandUnits} | ${row.onOrderUnits} | ` +
+        `${row.aduUnitsPerDay.toFixed(1)}${row.aduIsOverride ? " (manual)" : ""} | ${cover} | ${row.suggestion.suggestedUnits}`
     );
   }
 
@@ -91,11 +91,11 @@ export async function buildBusinessSummary(now = new Date()): Promise<string> {
   }
 
   lines.push("");
-  lines.push("## Consumption by channel, last 30 days (grams)");
+  lines.push("## Consumption by channel, last 30 days (units, kg reference)");
   if (recentByChannel.length === 0) lines.push("None.");
   for (const row of recentByChannel) {
     lines.push(
-      `${row.channel ?? "unspecified"}: ${Math.abs(row._sum.gramsEquivalent ?? 0).toFixed(0)} g`
+      `${row.channel ?? "unspecified"}: ${Math.abs(row._sum.quantityTins ?? 0).toFixed(0)} units (${(Math.abs(row._sum.gramsEquivalent ?? 0) / 1000).toFixed(1)} kg)`
     );
   }
 

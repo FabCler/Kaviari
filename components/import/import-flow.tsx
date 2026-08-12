@@ -143,11 +143,10 @@ export function ImportFlow({
       const rows = analysis.rows
         .filter((r) => r.change !== "unchanged")
         .map((r) => ({
-          kaviariCode: r.kaviariCode,
+          prCode: r.prCode,
           name: r.name,
-          species: r.species,
-          grade: r.grade,
-          tinSizeGrams: r.tinSizeGrams,
+          caviarType: r.caviarType,
+          gramsPerUnit: r.gramsPerUnit,
           unitCost: r.unitCost,
           currency: r.currency,
           matchedProductId: r.matchedProductId,

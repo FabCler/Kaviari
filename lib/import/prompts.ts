@@ -13,7 +13,7 @@ Rules:
 - Ignore header rows, subtotal rows, footers, page numbers, legal text and blank separators.
 - Numbers may use European formats ("1 234,50", "12,5") — normalise them to plain JSON numbers.
 - Tin/jar sizes may be written as "30g", "0.03 kg", "125 gr" etc. — normalise to integer grams.
-- Product matching: prefer an exact kaviariCode match; otherwise match on product name plus tin size. Names may be abbreviated or reworded — match on species/grade/size when clearly the same product.`;
+- Product matching: prefer an exact prCode match; otherwise match on product name plus tin size. Names may be abbreviated or reworded — match on species/grade/size when clearly the same product.`;
 
 export function priceListSystemPrompt(): string {
   return `${COMMON_RULES}
@@ -24,11 +24,11 @@ Respond with exactly this JSON shape:
 {
   "rows": [
     {
-      "kaviariCode": string | null,      // supplier/product code if present in the file
+      "prCode": string | null,      // supplier/product code if present in the file
       "name": string,                     // full product name as it should appear in the catalog
       "species": string | null,           // sturgeon species if stated (e.g. "Acipenser baerii")
       "grade": string | null,             // grade/quality if stated (e.g. "Royal", "Prestige")
-      "tinSizeGrams": number,             // integer grams per tin/jar
+      "gramsPerUnit": number,             // integer grams per tin/jar
       "unitCost": number,                 // price per tin in the file's currency, >= 0
       "currency": string,                 // 3-letter code, "EUR" if not stated
       "matchedProductId": string | null   // id of the catalog product this row is, or null if it is new

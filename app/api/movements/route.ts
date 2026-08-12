@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   }
 
   const tinsRequested =
-    parsed.data.tins ?? round2((parsed.data.grams ?? 0) / product.tinSizeGrams);
+    parsed.data.tins ?? round2((parsed.data.grams ?? 0) / (product.gramsPerUnit || 1));
   if (tinsRequested <= 0) {
     return Response.json(
       { error: "Quantity must be greater than zero" },
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
             channel,
             note: note?.trim() ? note.trim() : null,
             quantityTins: -alloc.tins,
-            gramsEquivalent: -round2(alloc.tins * product.tinSizeGrams),
+            gramsEquivalent: -round2(alloc.tins * (product.gramsPerUnit ?? 0)),
             date: now,
           },
         });

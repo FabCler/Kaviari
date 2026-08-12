@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,8 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [pin, setPin] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -20,14 +22,14 @@ export default function LoginPage() {
       const response = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ email, password }),
       });
       if (response.ok) {
         router.push("/");
         router.refresh();
       } else {
-        setError("Incorrect PIN. Please try again.");
-        setPin("");
+        const body = await response.json().catch(() => ({}));
+        setError(body.error ?? "Sign-in failed. Please try again.");
       }
     } catch {
       setError("Could not reach the server. Please try again.");
@@ -52,35 +54,49 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           className="mt-8 rounded-xl border border-white/10 bg-charcoal/60 p-6 shadow-2xl backdrop-blur"
         >
-          <Label htmlFor="pin" className="text-pearl">
-            Enter PIN
+          <Label htmlFor="email" className="text-pearl">
+            Email
           </Label>
           <Input
-            id="pin"
-            type="password"
-            inputMode="numeric"
-            autoComplete="current-password"
+            id="email"
+            type="email"
+            autoComplete="email"
             autoFocus
-            value={pin}
-            onChange={(event) => setPin(event.target.value)}
-            className="mt-2 border-white/15 bg-navy-800 text-center text-lg tracking-[0.5em] text-pearl"
-            aria-invalid={error ? true : undefined}
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="mt-2 border-white/15 bg-navy-800 text-pearl"
+          />
+          <Label htmlFor="password" className="mt-4 text-pearl">
+            Password
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="mt-2 border-white/15 bg-navy-800 text-pearl"
           />
           {error && (
-            <p role="alert" className="mt-2 text-sm text-red-400">
+            <p role="alert" className="mt-3 text-sm text-red-400">
               {error}
             </p>
           )}
           <Button
             type="submit"
             variant="gold"
-            className="mt-4 w-full"
-            disabled={submitting || pin.length === 0}
+            className="mt-5 w-full"
+            disabled={submitting || !email || !password}
           >
-            {submitting ? "Unlocking…" : "Unlock"}
+            {submitting ? "Signing in…" : "Sign in"}
           </Button>
-          <p className="mt-4 text-center text-xs text-pearl/50">
-            Staff access · caviar inventory &amp; marketing
+          <p className="mt-4 text-center text-xs text-pearl/60">
+            No account yet?{" "}
+            <Link href="/register" className="text-champagne underline">
+              Request access
+            </Link>
           </p>
         </form>
       </div>

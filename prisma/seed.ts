@@ -1,13 +1,16 @@
 /**
- * Seed: real Kaviari catalog + ~63 days of demo activity.
+ * Seed v2: canonical product database + ~63 days of real demo activity.
  *
- * Products and weekly consumption rates come from data/kaviari_products.json
- * and data/consumption_history.json, both extracted from the Thammachart
- * "Import Review" workbook (data/extract_kaviari.py). The nine weekly
- * consumption snapshots are laid out over the 63 days before "now" so charts
- * and the order engine show live-looking behaviour whenever you seed.
+ * Products come from data/products_db.json (extracted from
+ * Data_base_products.xlsx — PR codes, caviar types, categories, units,
+ * packing per box). Weekly consumption rates and stock on hand come from the
+ * Thammachart import-review workbook, matched by PR code, and are laid out
+ * over the 63 days before "now".
  *
- * Unit costs are estimates (the workbook has no prices) — see README.
+ * User accounts are NEVER deleted by the seed. Everything else is wiped and
+ * reloaded. Setting catalogVersion marks the catalog generation so hosted
+ * deployments reseed automatically after an upgrade (see
+ * scripts/ensure-seed.mjs).
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "fs";
@@ -16,19 +19,19 @@ import { join } from "path";
 const prisma = new PrismaClient();
 
 const DAY = 86_400_000;
+export const CATALOG_VERSION = "2";
 
 interface CatalogProduct {
-  kaviariCode: string;
+  prCode: string;
   name: string;
-  species: string | null;
-  grade: string | null;
-  tinSizeGrams: number;
+  caviarType: string | null;
+  category: string;
+  unit: string;
+  packingPerBox: number | null;
+  gramsPerUnit: number | null;
   unitCost: number;
   currency: string;
-  category: string;
-  active: boolean;
-  isPlaceholder: boolean;
-  stockOnHandTins?: number;
+  stockOnHand: number;
 }
 
 interface ConsumptionHistory {
@@ -48,21 +51,23 @@ function mulberry32(seed: number) {
   };
 }
 
-const rand = mulberry32(20260811);
+const rand = mulberry32(20260812);
 
 function pickChannel(): { channel: string; type: string } {
   const r = rand();
-  if (r < 0.55) return { channel: "restaurant", type: "consumption" };
-  if (r < 0.85) return { channel: "retail", type: "sale" };
-  if (r < 0.93) return { channel: "event", type: "consumption" };
-  if (r < 0.97) return { channel: "staff", type: "consumption" };
-  return { channel: "event", type: "marketing_sample" };
+  if (r < 0.75) return { channel: "food_service", type: "consumption" };
+  if (r < 0.87) {
+    return rand() < 0.25
+      ? { channel: "event", type: "marketing_sample" }
+      : { channel: "event", type: "consumption" };
+  }
+  return { channel: "training", type: "consumption" };
 }
 
 async function main() {
   const dataDir = join(__dirname, "..", "data");
   const catalog: CatalogProduct[] = JSON.parse(
-    readFileSync(join(dataDir, "kaviari_products.json"), "utf8")
+    readFileSync(join(dataDir, "products_db.json"), "utf8")
   );
   const history: ConsumptionHistory = JSON.parse(
     readFileSync(join(dataDir, "consumption_history.json"), "utf8")
@@ -71,7 +76,7 @@ async function main() {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
 
-  console.log("Clearing existing data…");
+  console.log("Clearing existing data (user accounts are preserved)…");
   await prisma.contentAsset.deleteMany();
   await prisma.campaignProduct.deleteMany();
   await prisma.campaign.deleteMany();
@@ -79,29 +84,34 @@ async function main() {
   await prisma.purchaseOrder.deleteMany();
   await prisma.stockMovement.deleteMany();
   await prisma.stockLot.deleteMany();
+  await prisma.forecast.deleteMany();
   await prisma.product.deleteMany();
   await prisma.setting.deleteMany();
 
   console.log(`Seeding ${catalog.length} products…`);
-  const productByCode = new Map<string, { id: string; tinSizeGrams: number; unitCost: number; name: string }>();
+  const productByCode = new Map<
+    string,
+    { id: string; gramsPerUnit: number | null; unitCost: number; name: string }
+  >();
   for (const entry of catalog) {
     const product = await prisma.product.create({
       data: {
-        kaviariCode: entry.kaviariCode,
+        prCode: entry.prCode,
         name: entry.name,
-        species: entry.species,
-        grade: entry.grade,
-        tinSizeGrams: entry.tinSizeGrams,
+        caviarType: entry.caviarType,
+        category: entry.category,
+        unit: entry.unit,
+        packingPerBox: entry.packingPerBox,
+        gramsPerUnit: entry.gramsPerUnit,
         unitCost: entry.unitCost,
         currency: entry.currency,
-        category: entry.category,
-        active: entry.active,
-        isPlaceholder: entry.isPlaceholder,
+        active: true,
+        isPlaceholder: false,
       },
     });
-    productByCode.set(entry.kaviariCode, {
+    productByCode.set(entry.prCode, {
       id: product.id,
-      tinSizeGrams: entry.tinSizeGrams,
+      gramsPerUnit: entry.gramsPerUnit,
       unitCost: entry.unitCost,
       name: entry.name,
     });
@@ -127,22 +137,16 @@ async function main() {
     const product = productByCode.get(code);
     if (!product) continue;
     let total = 0;
-    weekly.forEach((tinsPerWeek, weekIndex) => {
-      if (tinsPerWeek <= 0) return;
-      total += tinsPerWeek;
-      // Week 0 is the oldest -> starts (weeksCount - weekIndex) weeks ago.
+    weekly.forEach((unitsPerWeek, weekIndex) => {
+      if (unitsPerWeek <= 0) return;
+      total += unitsPerWeek;
       const weekStart = today.getTime() - (weeksCount - weekIndex) * 7 * DAY;
-      // Split the week's tins into 1-tin (occasionally 2-tin) events.
-      let remaining = tinsPerWeek;
+      let remaining = unitsPerWeek;
       while (remaining > 0) {
         const qty = remaining >= 2 && rand() < 0.25 ? 2 : 1;
         const take = Math.min(qty, remaining);
         remaining -= take;
-        const at = new Date(
-          weekStart + rand() * 7 * DAY + (10 + rand() * 12) * 3_600_000 * 0
-        );
-        // Spread within the week; bias to evenings for restaurant service.
-        at.setTime(weekStart + Math.floor(rand() * 7) * DAY);
+        const at = new Date(weekStart + Math.floor(rand() * 7) * DAY);
         at.setHours(11 + Math.floor(rand() * 11), Math.floor(rand() * 60));
         const { channel, type } = pickChannel();
         movements.push({
@@ -150,7 +154,7 @@ async function main() {
           lotId: null,
           type,
           quantityTins: -take,
-          gramsEquivalent: -take * product.tinSizeGrams,
+          gramsEquivalent: -take * (product.gramsPerUnit ?? 0),
           date: at,
           channel,
           note: null,
@@ -160,15 +164,15 @@ async function main() {
     if (total > 0) totalConsumedByCode.set(code, total);
   }
 
-  // Attach historical consumption to consumed "history" lots so lot
-  // views stay coherent.
+  // Attach historical consumption to consumed "history" lots so lot views
+  // stay coherent.
   for (const [code, total] of totalConsumedByCode) {
     const product = productByCode.get(code)!;
     const receivedDate = new Date(today.getTime() - 70 * DAY);
     const lot = await prisma.stockLot.create({
       data: {
         productId: product.id,
-        lotNumber: `KV-${code.slice(-7, -3)}-H1`,
+        lotNumber: `KV-${code}-H1`,
         quantityTins: 0,
         receivedTins: total,
         receivedDate,
@@ -181,9 +185,9 @@ async function main() {
       lotId: lot.id,
       type: "receipt",
       quantityTins: total,
-      gramsEquivalent: total * product.tinSizeGrams,
+      gramsEquivalent: total * (product.gramsPerUnit ?? 0),
       date: receivedDate,
-      channel: "restaurant",
+      channel: "food_service",
       note: "Opening stock (historic)",
     });
     for (const movement of movements) {
@@ -195,18 +199,16 @@ async function main() {
 
   // ---- Current stock lots (matching the latest review's on-hand) ----
   console.log("Seeding current stock lots…");
-  // Short-dated exceptions to demo expiry alerts + FEFO:
-  //   unpasteurized Oscietra has a short DLC; whitefish roe close behind.
+  // Short-dated exceptions to demo expiry alerts + FEFO.
   const shortDated: Record<string, number> = {
-    "1638CAVCVRFRC1004-01": 9, // Oscietra Prestige 125g unpasteurized -> 9 days
-    "1640FSRFIRFRC1001-01": 12, // Whitefish roe -> 12 days
+    "9011": 9, // Oscietra Prestige 125g unpasteurized -> 9 days
+    "9396": 12, // Whitefish roe -> 12 days
   };
 
   for (const entry of catalog) {
-    const stock = entry.stockOnHandTins ?? 0;
+    const stock = entry.stockOnHand ?? 0;
     if (stock <= 0) continue;
-    const product = productByCode.get(entry.kaviariCode)!;
-    // Split larger holdings into two lots (older + newer receipt).
+    const product = productByCode.get(entry.prCode)!;
     const splits: Array<{ tins: number; receivedDaysAgo: number }> =
       stock >= 20
         ? [
@@ -220,18 +222,17 @@ async function main() {
       const receivedDate = new Date(
         today.getTime() - split.receivedDaysAgo * DAY
       );
-      const shortDays = shortDated[entry.kaviariCode];
+      const shortDays = shortDated[entry.prCode];
       const expiryDate =
         shortDays != null
           ? new Date(today.getTime() + shortDays * DAY)
           : new Date(
-              receivedDate.getTime() +
-                (120 + Math.floor(rand() * 60)) * DAY
+              receivedDate.getTime() + (120 + Math.floor(rand() * 60)) * DAY
             );
       const lot = await prisma.stockLot.create({
         data: {
           productId: product.id,
-          lotNumber: `KV-${entry.kaviariCode.slice(-7, -3)}-${String(lotIndex).padStart(2, "0")}`,
+          lotNumber: `KV-${entry.prCode}-${String(lotIndex).padStart(2, "0")}`,
           quantityTins: split.tins,
           receivedTins: split.tins,
           receivedDate,
@@ -244,9 +245,9 @@ async function main() {
         lotId: lot.id,
         type: "receipt",
         quantityTins: split.tins,
-        gramsEquivalent: split.tins * product.tinSizeGrams,
+        gramsEquivalent: split.tins * (product.gramsPerUnit ?? 0),
         date: receivedDate,
-        channel: "restaurant",
+        channel: "food_service",
         note: `Received ${lot.lotNumber}`,
       });
       lotIndex += 1;
@@ -254,18 +255,7 @@ async function main() {
   }
 
   console.log(`Writing ${movements.length} stock movements…`);
-  await prisma.stockMovement.createMany({
-    data: movements.map((movement) => ({
-      productId: movement.productId,
-      lotId: movement.lotId,
-      type: movement.type,
-      quantityTins: movement.quantityTins,
-      gramsEquivalent: movement.gramsEquivalent,
-      date: movement.date,
-      channel: movement.channel,
-      note: movement.note,
-    })),
-  });
+  await prisma.stockMovement.createMany({ data: movements });
 
   // ---- Purchase orders: received history + overlapping open pipeline ----
   console.log("Seeding purchase orders…");
@@ -276,33 +266,20 @@ async function main() {
         const recent = weekly.slice(-4);
         const perWeek =
           recent.reduce((sum, n) => sum + n, 0) / Math.max(1, recent.length);
-        const tins = Math.ceil((perWeek / 7) * daysOfDemand);
+        const units = Math.ceil((perWeek / 7) * daysOfDemand);
         const product = productByCode.get(code);
-        if (!product || tins <= 0) return null;
+        if (!product || units <= 0) return null;
         return {
           productId: product.id,
-          quantityTins: tins,
+          quantityTins: units,
           unitCost: product.unitCost,
         };
       })
       .filter((line): line is NonNullable<typeof line> => line !== null);
 
-  const topMovers = [
-    "402FSRCVRFRC1010-01", // Kristal 30g
-    "440CAVCVRFRC1005-01", // Oscietra Prestige 30g
-    "440CAVCVRFRC1014-01", // Kristal 125g
-    "440CAVCVRFRC1006-01", // Oscietra Prestige 50g
-    "440CAVCVRFRC1008-01", // Oscietra Prestige 125g
-    "440CAVCVRFRC1007-01", // Kristal 50g
-  ];
-  const secondTier = [
-    "1640CAVKAIFRC1004-01", // Daurikus 125g
-    "440CAVCVRFRC1012-01", // Baeri 30g
-    "1638CAVCVRFRC1004-01", // Oscietra 125g unpasteurized
-    "1640FSRFIRFRC1001-01", // Whitefish roe
-  ];
+  const topMovers = ["1216", "3126", "3193", "3127", "3134", "3133"];
+  const secondTier = ["7715", "3148", "9011", "9396"];
 
-  // Received 24 days ago (ordered 45 days ago — 21-day lead time).
   await prisma.purchaseOrder.create({
     data: {
       reference: "PO-RECEIVED-DEMO",
@@ -315,7 +292,6 @@ async function main() {
     },
   });
 
-  // Open order #1: placed 18 days ago, lands in ~3 days (confirmed).
   await prisma.purchaseOrder.create({
     data: {
       reference: "PO-OPEN-DEMO-1",
@@ -327,8 +303,6 @@ async function main() {
     },
   });
 
-  // Open order #2: placed 3 days ago, lands in ~18 days (sent). Together
-  // with #1 this is the overlapping pipeline the (R,S) math must count.
   await prisma.purchaseOrder.create({
     data: {
       reference: "PO-OPEN-DEMO-2",
@@ -342,9 +316,9 @@ async function main() {
 
   // ---- Campaigns & content ----
   console.log("Seeding campaigns…");
-  const kristal125 = productByCode.get("440CAVCVRFRC1014-01")!;
-  const oscietra30 = productByCode.get("440CAVCVRFRC1005-01")!;
-  const oscietraUnpast = productByCode.get("1638CAVCVRFRC1004-01")!;
+  const kristal125 = productByCode.get("3193")!;
+  const oscietra30 = productByCode.get("3126")!;
+  const oscietraUnpast = productByCode.get("9011")!;
 
   const tasting = await prisma.campaign.create({
     data: {
@@ -357,10 +331,7 @@ async function main() {
       notes:
         "Guided tasting for 24 guests: Kristal vs Oscietra Prestige flight, blinis and Grower Champagne pairing.",
       products: {
-        create: [
-          { productId: kristal125.id },
-          { productId: oscietra30.id },
-        ],
+        create: [{ productId: kristal125.id }, { productId: oscietra30.id }],
       },
     },
   });
@@ -379,37 +350,12 @@ async function main() {
     },
   });
 
-  await prisma.campaign.create({
-    data: {
-      name: "July Indulgence — retail gift sets",
-      type: "email",
-      status: "completed",
-      startDate: new Date(today.getTime() - 35 * DAY),
-      endDate: new Date(today.getTime() - 14 * DAY),
-      budget: 250,
-      results:
-        "2 sends to 1,840 subscribers, 41% open rate. Cleared 38 gift tins; repeat orders from 6 corporate clients.",
-      resultRevenue: 5230,
-      products: { create: [{ productId: kristal125.id }] },
-    },
-  });
-
   await prisma.contentAsset.create({
     data: {
       campaignId: tasting.id,
       type: "event_invite",
       createdByAI: true,
-      text:
-        "An evening of quiet luxury. Join us as we open Kaviari's Kristal and Oscietra Prestige side by side — six caviars, one flight of Grower Champagne, and the stories behind the sturgeon. Thursday, 7 pm. Twenty-four seats, no more.",
-    },
-  });
-  await prisma.contentAsset.create({
-    data: {
-      campaignId: tasting.id,
-      type: "caption",
-      createdByAI: true,
-      text:
-        "Pearls before dinner. Kristal® caviar, chilled to 2 °C, mother-of-pearl spoons polished. Thursday's tasting has four seats left — link in bio.",
+      text: "An evening of quiet luxury. Join us as we open Kaviari's Kristal and Oscietra Prestige side by side — six caviars, one flight of Grower Champagne, and the stories behind the sturgeon. Thursday, 7 pm. Twenty-four seats, no more.",
     },
   });
 
@@ -424,19 +370,20 @@ async function main() {
     currency: "EUR",
     expiryAlertDays: "14",
     lastOrderDate: lastOrderDate.toISOString(),
+    catalogVersion: CATALOG_VERSION,
   };
   for (const [key, value] of Object.entries(settings)) {
     await prisma.setting.create({ data: { key, value } });
   }
 
-  const counts = {
+  console.log("Seed complete:", {
     products: await prisma.product.count(),
     lots: await prisma.stockLot.count(),
     movements: await prisma.stockMovement.count(),
     purchaseOrders: await prisma.purchaseOrder.count(),
     campaigns: await prisma.campaign.count(),
-  };
-  console.log("Seed complete:", counts);
+    users: await prisma.user.count(),
+  });
 }
 
 main()

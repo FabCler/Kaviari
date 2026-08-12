@@ -86,11 +86,11 @@ async function analyzePriceList(
   });
   const catalog = products.map((p) => ({
     id: p.id,
-    kaviariCode: p.kaviariCode,
+    prCode: p.prCode,
     name: p.name,
-    species: p.species,
-    grade: p.grade,
-    tinSizeGrams: p.tinSizeGrams,
+    species: p.caviarType,
+    grade: p.caviarType,
+    gramsPerUnit: p.gramsPerUnit,
     unitCost: p.unitCost,
     currency: p.currency,
   }));
@@ -105,26 +105,26 @@ async function analyzePriceList(
 
   const byId = new Map(products.map((p) => [p.id, p]));
   const byCode = new Map(
-    products.map((p) => [p.kaviariCode.trim().toLowerCase(), p])
+    products.map((p) => [p.prCode.trim().toLowerCase(), p])
   );
   const byNameSize = new Map<string, Product>();
   for (const p of products) {
-    byNameSize.set(`${normalizeName(p.name)}|${p.tinSizeGrams}`, p);
+    byNameSize.set(`${normalizeName(p.name)}|${p.gramsPerUnit}`, p);
   }
 
   const rows: PriceListPreviewRow[] = ai.rows.map((row) => {
     // Server-side match: code first, then name+size, then the AI's claim
     // (only if it points at a real product with the same tin size).
     let match: Product | undefined;
-    if (row.kaviariCode) {
-      match = byCode.get(row.kaviariCode.trim().toLowerCase());
+    if (row.prCode) {
+      match = byCode.get(row.prCode.trim().toLowerCase());
     }
     if (!match) {
-      match = byNameSize.get(`${normalizeName(row.name)}|${row.tinSizeGrams}`);
+      match = byNameSize.get(`${normalizeName(row.name)}|${row.gramsPerUnit}`);
     }
     if (!match && row.matchedProductId) {
       const claimed = byId.get(row.matchedProductId);
-      if (claimed && claimed.tinSizeGrams === row.tinSizeGrams) {
+      if (claimed && claimed.gramsPerUnit === row.gramsPerUnit) {
         match = claimed;
       }
     }
@@ -136,11 +136,10 @@ async function analyzePriceList(
         : "unchanged";
 
     return {
-      kaviariCode: row.kaviariCode?.trim() || null,
+      prCode: row.prCode?.trim() || null,
       name: row.name.trim(),
-      species: row.species,
-      grade: row.grade,
-      tinSizeGrams: row.tinSizeGrams,
+      caviarType: row.caviarType,
+      gramsPerUnit: row.gramsPerUnit,
       unitCost: round2(row.unitCost),
       currency: row.currency.toUpperCase(),
       matchedProductId: match?.id ?? null,
@@ -179,9 +178,9 @@ async function analyzeStockTake(
   }
   const catalog = products.map((p) => ({
     id: p.id,
-    kaviariCode: p.kaviariCode,
+    prCode: p.prCode,
     name: p.name,
-    tinSizeGrams: p.tinSizeGrams,
+    gramsPerUnit: p.gramsPerUnit,
     systemTins: round2(systemByProduct.get(p.id) ?? 0),
   }));
 
@@ -221,7 +220,7 @@ async function analyzeStockTake(
       return {
         productId,
         productName: product.name,
-        tinSizeGrams: product.tinSizeGrams,
+        gramsPerUnit: product.gramsPerUnit,
         countedTins,
         systemTins,
         deltaTins: round2(countedTins - systemTins),
@@ -247,9 +246,9 @@ async function analyzeSalesExport(
   const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
   const catalog = products.map((p) => ({
     id: p.id,
-    kaviariCode: p.kaviariCode,
+    prCode: p.prCode,
     name: p.name,
-    tinSizeGrams: p.tinSizeGrams,
+    gramsPerUnit: p.gramsPerUnit,
   }));
 
   const ai = await askAi(
@@ -287,7 +286,7 @@ async function analyzeSalesExport(
     rows.push({
       productId: product.id,
       productName: product.name,
-      tinSizeGrams: product.tinSizeGrams,
+      gramsPerUnit: product.gramsPerUnit,
       date,
       tins: round2(row.tins),
       channel: row.channel,

@@ -125,7 +125,7 @@ export async function POST(request: Request, ctx: Ctx) {
           type: "receipt",
           quantityTins: receipt.receivedTins,
           gramsEquivalent:
-            receipt.receivedTins * receipt.line.product.tinSizeGrams,
+            receipt.receivedTins * (receipt.line.product.gramsPerUnit ?? 0),
           date: now,
           note: `Received ${po.reference}`,
         },

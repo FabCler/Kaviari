@@ -30,6 +30,30 @@ export function formatTins(tins: number): string {
   return `${rounded.toLocaleString("en-GB")} ${rounded === 1 ? "tin" : "tins"}`;
 }
 
+/** Quantity in the product's stock unit: "12 tins", "3 pc", "2.5 kg". */
+export function formatUnits(quantity: number, unit: string): string {
+  const rounded = Math.round(quantity * 10) / 10;
+  const n = rounded.toLocaleString("en-GB");
+  switch (unit) {
+    case "Tin":
+      return `${n} ${rounded === 1 ? "tin" : "tins"}`;
+    case "PC":
+      return `${n} pc`;
+    case "KG":
+      return `${n} kg`;
+    case "PK":
+      return `${n} pk`;
+    default:
+      return `${n} ${unit.toLowerCase()}`;
+  }
+}
+
+/** Weeks of cover: "6.2 wks". */
+export function formatWeeks(weeks: number | null): string {
+  if (weeks == null) return "∞";
+  return `${weeks.toLocaleString("en-GB", { maximumFractionDigits: 1 })} wk${weeks >= 2 ? "s" : ""}`;
+}
+
 export function formatNumber(n: number, maxFractionDigits = 1): string {
   return n.toLocaleString("en-GB", { maximumFractionDigits: maxFractionDigits });
 }
