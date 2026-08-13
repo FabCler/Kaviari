@@ -95,7 +95,7 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-xs text-pearl/60">
             No account yet?{" "}
             <Link href="/register" className="text-champagne underline">
-              Request access
+              Create an account
             </Link>
           </p>
         </form>

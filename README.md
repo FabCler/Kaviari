@@ -14,12 +14,11 @@ npm run setup               # prisma db push + seed demo data
 npm run dev                 # http://localhost:3000
 ```
 
-Then open **/register** and create the owner account: any registration
-with the `OWNER_EMAIL` address (default
-`fabien@thammachartseafood.com`) is approved automatically and gets the
-**owner** role. Everyone else lands in a **pending** state until the
-owner approves them — by one-click email link (if SMTP is configured) or
-from **Settings → Users**.
+Then open **/register** and create an account: any registration with
+the `OWNER_EMAIL` address (default `fabien@thammachartseafood.com`)
+gets the **owner** role; everyone else signs in immediately as a
+member. The owner can block or remove accounts from
+**Settings → Users**.
 
 The seed loads the product database extracted from
 `data/Data_base_products.xlsx` (85 products: caviar, marketing tools,
@@ -46,20 +45,19 @@ as a reference only. Sales channels are **Food service**, **Event** and
 | `APP_URL` | `http://localhost:3000` | Public URL, used in approval-email links |
 | `APP_SECRET` | dev fallback | HMAC key for session cookies and approval links — change in production |
 | `OWNER_EMAIL` | `fabien@thammachartseafood.com` | Registrations with this email become the owner (auto-approved) |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | _empty_ | Optional — emails the owner an approve/reject link when someone requests access. Without SMTP, approvals happen in Settings → Users. |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | _empty_ | Optional — reserved for future email notifications (not required). |
 | `ANTHROPIC_API_KEY` | _empty_ | Enables the assistant, import analysis, PO upload parsing and content studio. **The app fully works without it** — AI surfaces show a friendly notice instead. |
 | `ANTHROPIC_MODEL` | `claude-opus-5` | Optional model override |
 
 ## Accounts & access control
 
 - **Registration required.** New users sign up at `/register` with
-  email + password; their account is created in `pending` status.
-- **Owner approval.** With SMTP configured, the owner receives an email
-  with signed one-click **Approve / Reject** links. Either way, pending
-  requests can be handled in **Settings → Users**.
+  email + password and can sign in immediately — no approval step.
+- **Owner controls.** The owner can block, unblock or remove any
+  account from **Settings → Users**; blocked accounts cannot sign in.
 - **Roles.** The owner (matched by `OWNER_EMAIL`) is the only role that
-  can open **Settings** (policy parameters, user management). Approved
-  members get everything else.
+  can open **Settings** (policy parameters, user management). Members
+  get everything else.
 - Sessions are HMAC-signed cookies; passwords are scrypt-hashed.
 
 ## How the ordering formula works
@@ -166,7 +164,7 @@ that applies the schema and seeds the demo data on first boot only).
    - `APP_URL` = your public Railway URL (after generating the domain)
    - `OWNER_EMAIL` = the owner's email (defaults to
      `fabien@thammachartseafood.com`)
-   - `SMTP_*` = optional, for approval emails
+
    - `ANTHROPIC_API_KEY` = your key (optional — enables the AI features)
 5. Deploy, then **Settings → Networking → Generate Domain** for your
    public URL (and put it in `APP_URL`).

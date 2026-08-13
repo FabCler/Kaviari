@@ -26,7 +26,7 @@ export default function RegisterPage() {
       });
       const body = await response.json().catch(() => ({}));
       if (response.ok) {
-        setDone(body.message ?? "Request sent.");
+        setDone(body.message ?? "Account created — you can sign in.");
       } else {
         setError(body.error ?? "Registration failed. Please try again.");
       }
@@ -63,7 +63,7 @@ export default function RegisterPage() {
             className="mt-8 rounded-xl border border-white/10 bg-charcoal/60 p-6 shadow-2xl backdrop-blur"
           >
             <p className="mb-4 text-sm text-pearl/80">
-              Request access — the owner will review and approve your account.
+              Create your account — you can sign in right away.
             </p>
             <Label htmlFor="name" className="text-pearl">
               Full name
@@ -114,10 +114,10 @@ export default function RegisterPage() {
               className="mt-5 w-full"
               disabled={submitting || !name || !email || password.length < 6}
             >
-              {submitting ? "Sending…" : "Request access"}
+              {submitting ? "Creating…" : "Create account"}
             </Button>
             <p className="mt-4 text-center text-xs text-pearl/60">
-              Already approved?{" "}
+              Already have an account?{" "}
               <Link href="/login" className="text-champagne underline">
                 Sign in
               </Link>

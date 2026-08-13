@@ -5,8 +5,6 @@ import { UsersCard } from "@/components/settings/users-card";
 import { getSettings } from "@/lib/settings";
 import { nextOrderDate } from "@/lib/replenishment";
 import { AI_MODEL, isAiConfigured } from "@/lib/ai";
-import { isEmailConfigured } from "@/lib/email";
-import { EmailCard } from "@/components/settings/email-card";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -94,8 +92,6 @@ export default async function SettingsPage() {
             </p>
           </CardContent>
         </Card>
-
-        <EmailCard configured={isEmailConfigured()} />
 
         <SessionCard />
       </div>

@@ -27,20 +27,19 @@ export async function POST(request: Request) {
       { status: 401 }
     );
   }
-  if (user.status === "pending") {
+  if (user.status === "rejected") {
     return Response.json(
-      {
-        error:
-          "Your account is awaiting approval. You'll be able to sign in once the owner approves your request.",
-      },
+      { error: "This account has been blocked by the owner." },
       { status: 403 }
     );
   }
-  if (user.status !== "approved") {
-    return Response.json(
-      { error: "Your access request was declined." },
-      { status: 403 }
-    );
+  // No approval step: accounts created before this policy change may still
+  // be "pending" — promote them on their first successful sign-in.
+  if (user.status === "pending") {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { status: "approved" },
+    });
   }
   const store = await cookies();
   store.set(AUTH_COOKIE, sessionTokenFor(user.id), {

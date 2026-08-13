@@ -63,7 +63,7 @@ export function UsersCard() {
         body: JSON.stringify({ action }),
       });
       if (!res.ok) throw new Error();
-      toast.success(action === "approve" ? "Access approved." : "Access rejected.");
+      toast.success(action === "approve" ? "Account unblocked." : "Account blocked.");
       await load();
     } catch {
       toast.error("The action failed. Please try again.");
@@ -87,12 +87,10 @@ export function UsersCard() {
   }
 
   const statusBadge = (status: string) =>
-    status === "approved" ? (
-      <Badge variant="success">Approved</Badge>
-    ) : status === "pending" ? (
-      <Badge variant="warning">Pending</Badge>
+    status === "rejected" ? (
+      <Badge variant="destructive">Blocked</Badge>
     ) : (
-      <Badge variant="destructive">Rejected</Badge>
+      <Badge variant="success">Active</Badge>
     );
 
   return (
@@ -100,8 +98,8 @@ export function UsersCard() {
       <CardHeader>
         <CardTitle>Users &amp; access requests</CardTitle>
         <CardDescription>
-          New sign-ups appear here as pending. You also receive an email with
-          one-click approve/reject links when SMTP is configured.
+          Anyone who registers gets access immediately. Block or remove an
+          account here to revoke its access.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,8 +110,8 @@ export function UsersCard() {
           </div>
         ) : users.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No accounts yet — team members can request access from the sign-in
-            page.
+            No accounts yet — team members can create an account from the
+            sign-in page.
           </p>
         ) : (
           <Table>
@@ -144,24 +142,23 @@ export function UsersCard() {
                   <TableCell className="text-right">
                     {user.role !== "owner" && (
                       <div className="flex justify-end gap-1">
-                        {user.status !== "approved" && (
+                        {user.status === "rejected" ? (
                           <Button
                             size="sm"
                             variant="gold"
                             disabled={busy === user.id}
                             onClick={() => act(user.id, "approve")}
                           >
-                            <Check className="size-3.5" /> Approve
+                            <Check className="size-3.5" /> Unblock
                           </Button>
-                        )}
-                        {user.status === "pending" && (
+                        ) : (
                           <Button
                             size="sm"
                             variant="outline"
                             disabled={busy === user.id}
                             onClick={() => act(user.id, "reject")}
                           >
-                            <X className="size-3.5" /> Reject
+                            <X className="size-3.5" /> Block
                           </Button>
                         )}
                         <Button
