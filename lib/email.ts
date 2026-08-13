@@ -46,6 +46,35 @@ export async function sendEmail(options: {
   }
 }
 
+/** Send a test email and report the exact failure (Settings → Email). */
+export async function sendTestEmail(
+  to: string
+): Promise<{ ok: boolean; error?: string }> {
+  if (!isEmailConfigured()) {
+    return { ok: false, error: "SMTP is not configured." };
+  }
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure: Number(process.env.SMTP_PORT ?? 587) === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+      to,
+      subject: "Kaviari Cellar — test email",
+      html: `<p>This is a test email from Kaviari Cellar. If you are reading this, SMTP is configured correctly and access-request notifications will reach you.</p>`,
+    });
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message.slice(0, 300) : "Unknown error",
+    };
+  }
+}
+
 export function accessRequestEmail(params: {
   applicantName: string;
   applicantEmail: string;
