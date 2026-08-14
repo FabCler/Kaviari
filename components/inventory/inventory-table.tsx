@@ -164,6 +164,7 @@ function ProductsTable({
             <TableHead>Type</TableHead>
             <TableHead>Unit</TableHead>
             <TableHead className="text-right">Stock on hand</TableHead>
+            <TableHead className="text-right">On order</TableHead>
             <TableHead className="text-right">Consumed (30 d)</TableHead>
             <TableHead className="text-right">Cover</TableHead>
           </TableRow>
@@ -204,6 +205,13 @@ function ProductsTable({
                   formatUnits(row.onHandUnits, row.unit)
                 ) : (
                   <span className="font-normal text-muted-foreground">-</span>
+                )}
+              </TableCell>
+              <TableCell className="tnum text-right">
+                {row.onOrderUnits > 0 ? (
+                  formatUnits(row.onOrderUnits, row.unit)
+                ) : (
+                  <span className="text-muted-foreground">-</span>
                 )}
               </TableCell>
               <TableCell className="tnum text-right">
