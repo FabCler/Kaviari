@@ -4,16 +4,17 @@
  * exactly once per database.
  *
  * History: v1/v2 imported a consumption workbook that turned out to be test
- * data; v3 purged August 2026. v4 removes EVERYTHING that import created —
- * real consumption is recorded through uploads, logging or Manage data.
+ * data; v3 purged August 2026; v4 removed that import's movements. v5 wipes
+ * ALL movements and ALL stock lots — the team restarts from a clean slate
+ * and loads real stock/consumption through uploads. Products, users,
+ * forecasts and purchase orders are untouched.
  */
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 4;
-const NOTE_PREFIX = "Historical consumption import";
+const VERSION = 5;
 
 async function main() {
   const done = await prisma.setting.findUnique({ where: { key: GUARD_KEY } });
@@ -23,13 +24,15 @@ async function main() {
     return;
   }
 
-  let removed = 0;
+  let movements = 0;
+  let lots = 0;
   if (doneVersion > 0) {
-    // Remove every movement written by the old test-file import.
-    const result = await prisma.stockMovement.deleteMany({
-      where: { note: { startsWith: NOTE_PREFIX } },
-    });
-    removed = result.count;
+    const [m, l] = await prisma.$transaction([
+      prisma.stockMovement.deleteMany(),
+      prisma.stockLot.deleteMany(),
+    ]);
+    movements = m.count;
+    lots = l.count;
   }
 
   await prisma.setting.upsert({
@@ -39,7 +42,7 @@ async function main() {
   });
 
   console.log(
-    `consumption-maintenance: v${doneVersion} -> v${VERSION} — removed ${removed} imported test movements.`
+    `consumption-maintenance: v${doneVersion} -> v${VERSION} — removed ${movements} movements and ${lots} stock lots.`
   );
 }
 
