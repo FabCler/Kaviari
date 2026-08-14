@@ -311,11 +311,19 @@ export default async function DashboardPage() {
       {/* Charts */}
       <div className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Consumption vs forecast</CardTitle>
-            <CardDescription>
-              Units consumed per period against the team forecast
-            </CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-3">
+            <div>
+              <CardTitle>Consumption vs forecast</CardTitle>
+              <CardDescription>
+                Units consumed per period against the team forecast — same
+                data as the Consumption page
+              </CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/consume">
+                Open analysis <ArrowRight className="size-4" />
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             <ConsumptionTrendChart
