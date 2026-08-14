@@ -12,7 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ForecastEditor } from "@/components/consume-analysis/forecast-editor";
 import { UploadDropzone } from "@/components/consume-analysis/upload-dropzone";
+import type { ForecastEditorData } from "@/components/consume-analysis/types";
 
 interface UploadResult {
   updated: number;
@@ -21,11 +23,18 @@ interface UploadResult {
 }
 
 /**
- * Forecast round-trip: download the styled template, fill it in Excel, drop
- * it back here. Uploads are saved under the signed-in user; totals shown in
- * the analysis are the sum across everyone's forecasts.
+ * Forecast round-trip: edit saved forecasts directly in the app, or download
+ * the styled template, fill it in Excel and drop it back here. Everything is
+ * saved under the signed-in user; totals shown in the analysis are the sum
+ * across everyone's forecasts.
  */
-export function ForecastTools({ hasForecasts }: { hasForecasts: boolean }) {
+export function ForecastTools({
+  hasForecasts,
+  editor,
+}: {
+  hasForecasts: boolean;
+  editor: ForecastEditorData;
+}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -84,17 +93,20 @@ export function ForecastTools({ hasForecasts }: { hasForecasts: boolean }) {
             <div className="text-sm text-muted-foreground">
               {hasForecasts ? (
                 <p>
-                  The template is prefilled with your saved forecasts for the
-                  next six months — blank cells keep saved values, 0 clears one.
+                  Fix a mistake directly with “Edit forecasts”, or round-trip
+                  the template — it is prefilled with your saved forecasts for
+                  the next six months. Blank cells keep saved values, 0 clears
+                  one.
                 </p>
               ) : (
                 <p>
-                  No forecasts yet. Download the template to enter the first
-                  monthly quantities for the caviar and fish-roe range.
+                  No forecasts yet. Enter the first monthly quantities for the
+                  caviar and fish-roe range directly, or download the template.
                 </p>
               )}
             </div>
-            <div>
+            <div className="flex flex-wrap gap-2">
+              <ForecastEditor editor={editor} />
               <Button variant="outline" asChild>
                 <a href="/api/forecasts/template" download>
                   <Download aria-hidden />

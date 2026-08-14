@@ -37,6 +37,17 @@ try {
       process.exit(result.status ?? 1);
     }
   }
+
+  // One-time historical consumption import (idempotent — guarded by a
+  // setting; see scripts/import-consumption.ts).
+  const imported = spawnSync("npx", ["tsx", "scripts/import-consumption.ts"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  if (imported.status !== 0) {
+    console.error("ensure-seed: consumption import failed");
+    process.exit(imported.status ?? 1);
+  }
 } finally {
   await prisma.$disconnect();
 }

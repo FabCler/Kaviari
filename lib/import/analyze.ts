@@ -272,6 +272,9 @@ async function analyzeSalesExport(
   );
 
   const byId = new Map(products.map((p) => [p.id, p]));
+  const byCode = new Map(
+    products.map((p) => [p.prCode.trim().toLowerCase(), p])
+  );
   const unmatched: UnmatchedRow[] = [...ai.unmatched];
   let badDates = 0;
   let futureMonths = 0;
@@ -279,11 +282,19 @@ async function analyzeSalesExport(
 
   const rows: SalesPreviewRow[] = [];
   for (const row of ai.rows) {
-    const product = byId.get(row.productId);
+    // The product code from the FILE is authoritative; the AI's productId
+    // claim is only a fallback for rows without a code.
+    const codeMatch = row.prCode
+      ? byCode.get(row.prCode.trim().toLowerCase())
+      : undefined;
+    const product =
+      codeMatch ?? (row.productId ? byId.get(row.productId) : undefined);
     if (!product) {
       unmatched.push({
-        label: `${row.tins} tins in ${row.period} (product id ${row.productId})`,
-        reason: "Not a known product in the catalog",
+        label: `${row.tins} tins in ${row.period} (${row.prCode ? `code ${row.prCode}` : `product id ${row.productId ?? "?"}`})`,
+        reason: row.prCode
+          ? "Product code not found in the catalog"
+          : "Not a known product in the catalog",
       });
       continue;
     }

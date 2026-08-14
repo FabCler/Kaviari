@@ -63,7 +63,10 @@ export const aiSalesSchema = z.object({
   rows: z
     .array(
       z.object({
-        productId: z.string().min(1).max(60),
+        // Product code copied verbatim from the FILE — the primary match key.
+        prCode: z.string().max(60).nullable().default(null),
+        // Catalog id fallback for files without a code column.
+        productId: z.string().max(60).nullable().default(null),
         // "yyyy-mm-dd" for a single day, "yyyy-mm" for a whole-month total.
         period: z.string().min(4).max(40),
         tins: z.number().positive().max(10_000),

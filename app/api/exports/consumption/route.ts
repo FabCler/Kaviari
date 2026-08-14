@@ -57,19 +57,25 @@ export async function POST(request: Request) {
     ? result.rows
     : result.rows.filter((r) => r.units !== 0 || r.forecast !== 0);
 
-  const filterEntries = describeFilters(filters, data.people);
+  const filterEntries = describeFilters(filters, data.people, result);
   const generated = `Generated ${formatDate(now)} — Kaviari Cellar`;
 
   const wb = createWorkbook();
 
   // ---- Sheet 1: Consumption (the detailed table) ----
+  const consumedHeader = `Consumed — ${result.periodLabel}`;
   const columns: ColumnSpec[] = [
     { header: "Code", width: fitWidth("Code", rows.map((r) => r.prCode)) },
     { header: "Description", width: fitWidth("Description", rows.map((r) => r.name)) },
     { header: "Type", width: fitWidth("Type", rows.map((r) => r.caviarType)) },
     { header: "Category", width: fitWidth("Category", rows.map((r) => r.category)) },
     { header: "Unit", width: 8 },
-    { header: "Consumed", width: 12, align: "right", numFmt: NUM_FMT },
+    {
+      header: consumedHeader,
+      width: Math.max(12, consumedHeader.length + 2),
+      align: "right",
+      numFmt: NUM_FMT,
+    },
     { header: "Kg (ref)", width: 11, align: "right", numFmt: KG_FMT },
     { header: "Share %", width: 10, align: "right", numFmt: PCT_FMT },
     { header: "Avg / week", width: 12, align: "right", numFmt: NUM_FMT },
@@ -109,7 +115,7 @@ export async function POST(request: Request) {
     result.totals.units,
     result.totals.grams / 1000,
     result.totals.units > 0 ? 100 : 0,
-    result.kpis.avgPerWeek,
+    result.totals.avgPerWeek,
     result.totals.forecast,
     result.totals.variance,
   ]);

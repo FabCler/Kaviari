@@ -79,7 +79,8 @@ Respond with exactly this JSON shape:
 {
   "rows": [
     {
-      "productId": string,          // id copied verbatim from the catalog below — REQUIRED
+      "prCode": string | null,      // the product code EXACTLY as written in the FILE (e.g. "3193") — the primary key; null only if the file has no code column
+      "productId": string | null,   // catalog id (copied verbatim from the catalog below) — fill it when you can, REQUIRED when prCode is null
       "period": string,             // "yyyy-mm-dd" for a single day, OR "yyyy-mm" for a WHOLE-MONTH total; if the file has no date at all use "${todayIso}"
       "tins": number,               // tins sold/consumed, > 0 (convert grams using the tin size)
       "channel": "food_service" | "event" | "training",  // infer from context, default "food_service"
@@ -90,11 +91,13 @@ Respond with exactly this JSON shape:
 }
 
 Notes:
+- Matching is done by PRODUCT CODE first: copy the code from the file's code column verbatim into "prCode".
+- CONSUMPTION IS OFTEN RECORDED AS NEGATIVE NUMBERS (stock going out, e.g. -25 means 25 tins consumed). Treat negative quantities as consumption and output their ABSOLUTE value in "tins". Do NOT send them to "unmatched".
+- Skip cells that are zero or empty — they mean no consumption for that period.
 - DAILY files (one line per sale or per day): "period" is the exact date. Dates may be in any format ("11/08/2026", "Aug 11", "2026-08-11") — normalise to yyyy-mm-dd, assuming day-first for ambiguous numeric dates (European source).
-- MONTHLY files (quantities given per month — month column headers like "Jan 2025", "01/2025", "2025-01", or a Month column): "period" MUST be the month form "yyyy-mm" (e.g. "2025-01"). NEVER invent a day inside the month.
+- MONTHLY files (quantities given per month — month column headers like "Jan 2025", "01/2025", "2025-01", "2025-01-01 00:00", or a Month column): "period" MUST be the month form "yyyy-mm" (e.g. "2025-01"). NEVER invent a day inside the month.
 - A table with one column per month becomes one row per product per MONTH (skip empty/zero cells). Monthly totals are automatically spread across the weeks of the month later — do not spread them yourself.
 - If a row aggregates several days but is NOT a whole calendar month, keep it as one row on its stated date.
-- Quantities of zero and returns/credits (negative quantities) go to "unmatched" with the reason.
 - Rows that do not correspond to any catalog product go to "unmatched" — never invent a productId.`;
 }
 

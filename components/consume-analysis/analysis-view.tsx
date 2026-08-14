@@ -10,16 +10,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   buildAnalysis,
+  presetWindow,
   WEEKLY_FORECAST_NOTE,
 } from "@/components/consume-analysis/aggregate";
 import { AnalysisChart } from "@/components/consume-analysis/analysis-chart";
 import { AnalysisTable } from "@/components/consume-analysis/analysis-table";
 import { FilterBar, type FilterBarState } from "@/components/consume-analysis/filter-bar";
 import { ForecastTools } from "@/components/consume-analysis/forecast-tools";
-import type {
-  AnalysisData,
-  AnalysisFilters,
-  Granularity,
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PERIOD_PRESETS,
+  type AnalysisData,
+  type AnalysisFilters,
+  type ChartStyle,
+  type ForecastEditorData,
+  type Granularity,
 } from "@/components/consume-analysis/types";
 
 function Kpi({
@@ -41,7 +46,15 @@ function Kpi({
   );
 }
 
-export function AnalysisView({ data, now }: { data: AnalysisData; now: string }) {
+export function AnalysisView({
+  data,
+  forecastEditor,
+  now,
+}: {
+  data: AnalysisData;
+  forecastEditor: ForecastEditorData;
+  now: string;
+}) {
   const nowDate = useMemo(() => new Date(now), [now]);
 
   const availableTypes = useMemo(() => {
@@ -53,8 +66,7 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
 
   const [state, setState] = useState<FilterBarState>(() => ({
     granularity: "monthly" as Granularity,
-    weeklyWindow: 8,
-    monthlyWindow: 6,
+    period: "6m",
     scope: "total",
     types: [...availableTypes],
     category: "Caviar",
@@ -62,12 +74,24 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
     compare: false,
   }));
   const [showAll, setShowAll] = useState(false);
+  const [chartStyle, setChartStyle] = useState<ChartStyle>("bar");
+  /** "all" or a bucket key of the CURRENT granularity/period. */
+  const [tableBucket, setTableBucket] = useState("all");
   const [exporting, setExporting] = useState(false);
+
+  const onFilterChange = (patch: Partial<FilterBarState>) => {
+    // Bucket keys change shape with granularity/period — zoom back out.
+    if (patch.granularity !== undefined || patch.period !== undefined) {
+      setTableBucket("all");
+    }
+    setState((prev) => ({ ...prev, ...patch }));
+  };
 
   const filters: AnalysisFilters = useMemo(
     () => ({
       granularity: state.granularity,
-      window: state.granularity === "weekly" ? state.weeklyWindow : state.monthlyWindow,
+      window: presetWindow(state.period, state.granularity, nowDate),
+      tableBucket,
       scope: state.scope,
       types: state.types.filter((t): t is (typeof CAVIAR_TYPES)[number] =>
         (CAVIAR_TYPES as readonly string[]).includes(t)
@@ -77,7 +101,7 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
       compare: state.compare,
       showAll,
     }),
-    [state, showAll]
+    [state, tableBucket, showAll, nowDate]
   );
 
   const result = useMemo(
@@ -86,9 +110,7 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
   );
 
   const windowLabel =
-    state.granularity === "weekly"
-      ? `last ${filters.window} wks`
-      : `last ${filters.window} mo`;
+    PERIOD_PRESETS.find((p) => p.id === state.period)?.short ?? state.period;
 
   async function downloadExcel() {
     setExporting(true);
@@ -130,7 +152,7 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <FilterBar
               state={state}
-              onChange={(patch) => setState((prev) => ({ ...prev, ...patch }))}
+              onChange={onFilterChange}
               availableTypes={availableTypes}
               people={data.people}
             />
@@ -199,10 +221,22 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
       {/* Chart */}
       <Card className="py-4">
         <CardContent className="px-4">
+          <div className="mb-2 flex justify-end">
+            <Tabs
+              value={chartStyle}
+              onValueChange={(v) => setChartStyle(v as ChartStyle)}
+            >
+              <TabsList aria-label="Chart style">
+                <TabsTrigger value="line">Line</TabsTrigger>
+                <TabsTrigger value="bar">Bar</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
           <AnalysisChart
             data={result.chartData}
             series={result.series}
             compare={state.compare}
+            chartStyle={chartStyle}
             weeklyNote={
               state.compare && state.granularity === "weekly"
                 ? WEEKLY_FORECAST_NOTE
@@ -212,21 +246,28 @@ export function AnalysisView({ data, now }: { data: AnalysisData; now: string })
         </CardContent>
       </Card>
 
-      {/* Detailed table */}
+      {/* Detailed table — follows the filters, plus its own period zoom */}
       <Card className="py-2">
         <CardContent className="px-2 sm:px-4">
           <AnalysisTable
             rows={result.rows}
             totals={result.totals}
-            avgPerWeekTotal={kpis.avgPerWeek}
+            avgPerWeekTotal={result.totals.avgPerWeek}
+            periodLabel={result.periodLabel}
+            buckets={result.buckets}
+            tableBucket={filters.tableBucket}
+            onTableBucketChange={setTableBucket}
             showAll={showAll}
             onShowAllChange={setShowAll}
           />
         </CardContent>
       </Card>
 
-      {/* Forecast round-trip */}
-      <ForecastTools hasForecasts={data.forecasts.length > 0} />
+      {/* Forecast editing & round-trip */}
+      <ForecastTools
+        hasForecasts={data.forecasts.length > 0}
+        editor={forecastEditor}
+      />
     </div>
   );
 }

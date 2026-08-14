@@ -1,11 +1,15 @@
 import { startOfDay } from "date-fns";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getStockOverview } from "@/lib/stock";
 import { OUTBOUND_MOVEMENT_TYPES } from "@/lib/domain";
 import { shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { AnalysisView } from "@/components/consume-analysis/analysis-view";
-import { loadAnalysisData } from "@/components/consume-analysis/data";
+import {
+  loadAnalysisData,
+  loadForecastEditorData,
+} from "@/components/consume-analysis/data";
 import { LogConsumption } from "@/components/consume/log-consumption";
 import type {
   ConsumableProduct,
@@ -23,8 +27,14 @@ export default async function ConsumePage({
 }) {
   const { log } = await searchParams;
   const now = new Date();
-  const [data, overview, recentMovements] = await Promise.all([
+  // The (app) layout redirects unauthenticated visitors; the user is only
+  // needed here to prefill the forecast editor with THEIR saved quantities.
+  const user = await getCurrentUser();
+  const [data, forecastEditor, overview, recentMovements] = await Promise.all([
     loadAnalysisData(now),
+    user
+      ? loadForecastEditorData(user.id, now)
+      : Promise.resolve({ months: [], products: [], saved: {} }),
     getStockOverview({ now }),
     prisma.stockMovement.findMany({
       where: {
@@ -74,7 +84,7 @@ export default async function ConsumePage({
     <div>
       <PageHeader
         title="Consumption & Forecasts"
-        description="How the cellar is being consumed — weekly or monthly, in total or by caviar type — compared against everyone's forecasts."
+        description="How the cellar is being consumed — weekly, monthly or quarterly, in total or by caviar type — compared against everyone's forecasts."
         actions={
           <LogConsumption
             products={products}
@@ -83,7 +93,11 @@ export default async function ConsumePage({
           />
         }
       />
-      <AnalysisView data={data} now={now.toISOString()} />
+      <AnalysisView
+        data={data}
+        forecastEditor={forecastEditor}
+        now={now.toISOString()}
+      />
     </div>
   );
 }

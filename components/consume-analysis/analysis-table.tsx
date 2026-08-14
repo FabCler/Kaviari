@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { formatGrams, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { AnalysisRow } from "@/components/consume-analysis/aggregate";
+import type { AnalysisRow, Bucket } from "@/components/consume-analysis/aggregate";
 
 type SortKey =
   | "prCode"
@@ -81,12 +88,23 @@ export function AnalysisTable({
   rows,
   totals,
   avgPerWeekTotal,
+  periodLabel,
+  buckets,
+  tableBucket,
+  onTableBucketChange,
   showAll,
   onShowAllChange,
 }: {
   rows: AnalysisRow[];
   totals: { units: number; grams: number; forecast: number; variance: number };
   avgPerWeekTotal: number;
+  /** Named period the Consumed/Forecast columns cover ("Aug 2026", "Jan 2025 → Aug 2026"). */
+  periodLabel: string;
+  /** Buckets of the current granularity, for the table-period selector. */
+  buckets: Bucket[];
+  /** "all" (whole period) or a bucket key. */
+  tableBucket: string;
+  onTableBucketChange: (value: string) => void;
   showAll: boolean;
   onShowAllChange: (value: boolean) => void;
 }) {
@@ -118,14 +136,37 @@ export function AnalysisTable({
 
   return (
     <div className="space-y-3">
-      {hiddenCount > 0 ? (
-        <div className="flex items-center justify-end gap-2">
-          <Switch id="show-all-rows" checked={showAll} onCheckedChange={onShowAllChange} />
-          <Label htmlFor="show-all-rows" className="text-sm text-muted-foreground">
-            Show all products ({hiddenCount} without consumption or forecast hidden)
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pt-2">
+        <div className="flex items-center gap-2">
+          <Label
+            htmlFor="table-period"
+            className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+          >
+            Table period
           </Label>
+          <Select value={tableBucket} onValueChange={onTableBucketChange}>
+            <SelectTrigger size="sm" className="min-w-44" id="table-period">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Whole period</SelectItem>
+              {buckets.map((b) => (
+                <SelectItem key={b.key} value={b.key}>
+                  {b.longLabel}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      ) : null}
+        {hiddenCount > 0 ? (
+          <div className="flex items-center gap-2">
+            <Switch id="show-all-rows" checked={showAll} onCheckedChange={onShowAllChange} />
+            <Label htmlFor="show-all-rows" className="text-sm text-muted-foreground">
+              Show all products ({hiddenCount} without consumption or forecast hidden)
+            </Label>
+          </div>
+        ) : null}
+      </div>
 
       <Table>
         <TableHeader>
@@ -135,7 +176,12 @@ export function AnalysisTable({
             <TableHead>Type</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Unit</TableHead>
-            <SortableHead label="Consumed" sortKey="units" sort={sort} onSort={onSort} />
+            <SortableHead
+              label={`Consumed — ${periodLabel}`}
+              sortKey="units"
+              sort={sort}
+              onSort={onSort}
+            />
             <SortableHead label="Kg ref" sortKey="grams" sort={sort} onSort={onSort} />
             <SortableHead label="Share %" sortKey="sharePct" sort={sort} onSort={onSort} />
             <SortableHead label="Avg/wk" sortKey="avgPerWeek" sort={sort} onSort={onSort} />
