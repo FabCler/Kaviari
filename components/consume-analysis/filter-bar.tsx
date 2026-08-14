@@ -15,16 +15,15 @@ import {
 import { MAX_TYPE_SERIES, WEEKLY_FORECAST_NOTE } from "@/components/consume-analysis/aggregate";
 import { seriesColor } from "@/components/consume-analysis/analysis-chart";
 import {
-  MONTHLY_WINDOWS,
-  WEEKLY_WINDOWS,
+  PERIOD_PRESETS,
   type ForecastPerson,
   type Granularity,
+  type PeriodPresetId,
 } from "@/components/consume-analysis/types";
 
 export interface FilterBarState {
   granularity: Granularity;
-  weeklyWindow: number;
-  monthlyWindow: number;
+  period: PeriodPresetId;
   scope: "total" | "by_type";
   types: string[];
   category: string;
@@ -55,9 +54,6 @@ export function FilterBar({
   availableTypes: string[];
   people: ForecastPerson[];
 }) {
-  const windows = state.granularity === "weekly" ? WEEKLY_WINDOWS : MONTHLY_WINDOWS;
-  const windowValue = state.granularity === "weekly" ? state.weeklyWindow : state.monthlyWindow;
-
   // Chips mirror the chart's fixed-order color assignment.
   const orderedSelected = CAVIAR_TYPES.filter((t) => state.types.includes(t));
   const chipColor = (type: string): string | null => {
@@ -88,28 +84,23 @@ export function FilterBar({
             <TabsList aria-label="Granularity">
               <TabsTrigger value="weekly">Weekly</TabsTrigger>
               <TabsTrigger value="monthly">Monthly</TabsTrigger>
+              <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
             </TabsList>
           </Tabs>
         </Field>
 
         <Field label="Period">
           <Select
-            value={String(windowValue)}
-            onValueChange={(v) =>
-              onChange(
-                state.granularity === "weekly"
-                  ? { weeklyWindow: Number(v) }
-                  : { monthlyWindow: Number(v) }
-              )
-            }
+            value={state.period}
+            onValueChange={(v) => onChange({ period: v as PeriodPresetId })}
           >
-            <SelectTrigger size="sm" className="min-w-36" aria-label="Period">
+            <SelectTrigger size="sm" className="min-w-44" aria-label="Period">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {windows.map((w) => (
-                <SelectItem key={w} value={String(w)}>
-                  Last {w} {state.granularity === "weekly" ? "weeks" : "months"}
+              {PERIOD_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.label}
                 </SelectItem>
               ))}
             </SelectContent>

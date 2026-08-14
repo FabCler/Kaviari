@@ -19,6 +19,7 @@ import {
   formatTins,
   shortProductName,
 } from "@/lib/format";
+import { formatMonthLabel, isMonthPeriod } from "@/lib/import/period";
 import type {
   PriceListPreviewRow,
   SalesPreviewRow,
@@ -276,6 +277,7 @@ export function StockTakePreview({ rows }: { rows: StockTakePreviewRow[] }) {
 // -------------------------------------------------------------- sales export
 
 export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
+  const monthlyCount = rows.filter((row) => isMonthPeriod(row.period)).length;
   const totals = new Map<
     string,
     { name: string; tins: number; grams: number }
@@ -323,12 +325,21 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
 
       <section>
         <h3 className="mb-2 text-sm font-medium">
-          Movements to record ({rows.length})
+          Rows to record ({rows.length})
         </h3>
+        {monthlyCount > 0 ? (
+          <p className="mb-2 text-xs text-muted-foreground">
+            {monthlyCount === rows.length
+              ? "These are monthly totals"
+              : `${monthlyCount} row${monthlyCount === 1 ? " is a" : "s are"} monthly total${monthlyCount === 1 ? "" : "s"}`}
+            {" "}— each will be spread across the weeks of its month, so weekly
+            consumption stays smooth.
+          </p>
+        ) : null}
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
+              <TableHead>Period</TableHead>
               <TableHead>Product</TableHead>
               <TableHead className="text-right">Tins</TableHead>
               <TableHead>Channel</TableHead>
@@ -339,7 +350,16 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
             {rows.map((row, i) => (
               <TableRow key={i}>
                 <TableCell className="whitespace-nowrap tnum">
-                  {formatDate(row.date)}
+                  {isMonthPeriod(row.period) ? (
+                    <>
+                      {formatMonthLabel(row.period)}
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        month
+                      </span>
+                    </>
+                  ) : (
+                    formatDate(row.period)
+                  )}
                 </TableCell>
                 <TableCell className="font-medium">
                   {shortProductName(row.productName)}

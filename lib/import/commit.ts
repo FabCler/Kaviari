@@ -7,6 +7,11 @@ import type {
   commitStockTakeSchema,
 } from "@/lib/import/schemas";
 import type { CommitResult } from "@/lib/import/types";
+import {
+  formatMonthLabel,
+  isMonthPeriod,
+  spreadMonthlyQuantity,
+} from "@/lib/import/period";
 
 /**
  * Commit handlers — the only place an import writes to the DB. Every commit
@@ -224,8 +229,31 @@ type SalesRows = z.infer<typeof commitSalesSchema>["rows"];
 export async function commitSalesExport(rows: SalesRows): Promise<CommitResult> {
   const warnings: string[] = [];
 
+  // Monthly rows ("yyyy-mm") are spread across the ISO weeks overlapping the
+  // month — one dated entry per week, weighted by the days of that week that
+  // fall inside the month, the last chunk absorbing rounding drift so the
+  // month's total stays exact. Daily rows pass through unchanged. The
+  // expanded entries then follow the exact same FEFO path as daily sales.
+  const expanded = rows.flatMap((row) => {
+    const base = {
+      productId: row.productId,
+      channel: row.channel,
+      note: row.note,
+    };
+    if (!isMonthPeriod(row.period)) {
+      return [{ ...base, date: row.period, tins: row.tins }];
+    }
+    const monthNote = `${row.note ?? "Sales export import"} (spread from ${formatMonthLabel(row.period)} monthly total)`;
+    return spreadMonthlyQuantity(row.period, row.tins).map((chunk) => ({
+      ...base,
+      note: monthNote,
+      date: chunk.date,
+      tins: chunk.tins,
+    }));
+  });
+
   // Chronological order so FEFO allocation follows the real sequence.
-  const ordered = [...rows].sort((a, b) => a.date.localeCompare(b.date));
+  const ordered = expanded.sort((a, b) => a.date.localeCompare(b.date));
 
   const result = await prisma.$transaction(async (tx) => {
     let movements = 0;
@@ -269,12 +297,27 @@ export async function commitSalesExport(rows: SalesRows): Promise<CommitResult> 
       }
       const state = lotState.get(row.productId) ?? [];
       const { allocations, shortfallTins } = allocateFefo(state, row.tins);
-      if (shortfallTins > 0) {
-        warnings.push(
-          `${product.name} on ${row.date}: ${row.tins} tins requested, only ${round2(row.tins - shortfallTins)} in stock — the shortfall was not recorded.`
-        );
-      }
       const date = new Date(`${row.date}T12:00:00.000Z`);
+      // Consumption beyond available lot stock is still recorded (without a
+      // lot) so historical imports produce a complete series; only current
+      // stock levels are unaffected.
+      if (shortfallTins > 0) {
+        await tx.stockMovement.create({
+          data: {
+            productId: product.id,
+            lotId: null,
+            type: "sale",
+            channel: row.channel,
+            quantityTins: -shortfallTins,
+            gramsEquivalent: -round2(
+              shortfallTins * (product.gramsPerUnit ?? 0)
+            ),
+            date,
+            note: `${row.note ?? "Sales export import"} (no lot allocated — beyond current stock)`,
+          },
+        });
+        movements += 1;
+      }
       for (const alloc of allocations) {
         const lot = state.find((l) => l.id === alloc.lotId);
         if (!lot) continue;

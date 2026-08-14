@@ -80,7 +80,7 @@ Respond with exactly this JSON shape:
   "rows": [
     {
       "productId": string,          // id copied verbatim from the catalog below — REQUIRED
-      "date": string,               // "yyyy-mm-dd"; if the file has no date use "${todayIso}"
+      "period": string,             // "yyyy-mm-dd" for a single day, OR "yyyy-mm" for a WHOLE-MONTH total; if the file has no date at all use "${todayIso}"
       "tins": number,               // tins sold/consumed, > 0 (convert grams using the tin size)
       "channel": "food_service" | "event" | "training",  // infer from context, default "food_service"
       "note": string | null         // short context from the row (e.g. table/order ref), or null
@@ -90,8 +90,10 @@ Respond with exactly this JSON shape:
 }
 
 Notes:
-- Dates may be in any format ("11/08/2026", "Aug 11", "2026-08-11") — normalise to yyyy-mm-dd, assuming day-first for ambiguous numeric dates (European source).
-- If a row aggregates several days, keep it as one row on its stated date.
+- DAILY files (one line per sale or per day): "period" is the exact date. Dates may be in any format ("11/08/2026", "Aug 11", "2026-08-11") — normalise to yyyy-mm-dd, assuming day-first for ambiguous numeric dates (European source).
+- MONTHLY files (quantities given per month — month column headers like "Jan 2025", "01/2025", "2025-01", or a Month column): "period" MUST be the month form "yyyy-mm" (e.g. "2025-01"). NEVER invent a day inside the month.
+- A table with one column per month becomes one row per product per MONTH (skip empty/zero cells). Monthly totals are automatically spread across the weeks of the month later — do not spread them yourself.
+- If a row aggregates several days but is NOT a whole calendar month, keep it as one row on its stated date.
 - Quantities of zero and returns/credits (negative quantities) go to "unmatched" with the reason.
 - Rows that do not correspond to any catalog product go to "unmatched" — never invent a productId.`;
 }

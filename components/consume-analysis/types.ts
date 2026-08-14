@@ -51,16 +51,38 @@ export interface AnalysisData {
 
 // ---- filters ---------------------------------------------------------------
 
-export const GRANULARITIES = ["weekly", "monthly"] as const;
+export const GRANULARITIES = ["weekly", "monthly", "quarterly"] as const;
 export type Granularity = (typeof GRANULARITIES)[number];
 
-export const WEEKLY_WINDOWS = [8, 13] as const;
-export const MONTHLY_WINDOWS = [3, 6, 12] as const;
+/**
+ * Period presets shown in the filter bar. Each maps to a bucket count for the
+ * selected granularity via presetWindow() in aggregate.ts, so the serialized
+ * filter state stays a plain { granularity, window } pair.
+ */
+export const PERIOD_PRESETS = [
+  { id: "13w", label: "Last 13 weeks", short: "last 13 wks" },
+  { id: "6m", label: "Last 6 months", short: "last 6 mo" },
+  { id: "12m", label: "Last 12 months", short: "last 12 mo" },
+  { id: "all", label: "Since Jan 2025 (all)", short: "since Jan 2025" },
+] as const;
+export type PeriodPresetId = (typeof PERIOD_PRESETS)[number]["id"];
+
+/** Hard cap on bucket counts (covers weekly since Jan 2025 for years). */
+export const MAX_WINDOW = 200;
+
+/** How the chart draws consumption series (forecast stays a dashed line). */
+export const CHART_STYLES = ["line", "bar"] as const;
+export type ChartStyle = (typeof CHART_STYLES)[number];
 
 export const analysisFiltersSchema = z.object({
   granularity: z.enum(GRANULARITIES),
-  /** Number of buckets in the rolling window (weeks or months). */
-  window: z.number().int().min(1).max(26),
+  /** Number of buckets in the rolling window (weeks, months or quarters). */
+  window: z.number().int().min(1).max(MAX_WINDOW),
+  /**
+   * Bucket key the TABLE zooms to ("all" = whole period). Chart and KPIs
+   * always cover the whole window; unknown keys fall back to "all".
+   */
+  tableBucket: z.string().min(1).max(16),
   scope: z.enum(["total", "by_type"]),
   /** Caviar types to compare (by_type scope). Empty = all types. */
   types: z.array(z.enum(CAVIAR_TYPES)).max(CAVIAR_TYPES.length),
@@ -74,3 +96,25 @@ export const analysisFiltersSchema = z.object({
 });
 
 export type AnalysisFilters = z.infer<typeof analysisFiltersSchema>;
+
+// ---- in-app forecast editor --------------------------------------------------
+
+export interface ForecastEditorProduct {
+  id: string;
+  prCode: string;
+  name: string;
+  caviarType: string | null;
+  unit: string;
+}
+
+/**
+ * Server-loaded snapshot for the "Edit forecasts" dialog: the forecastable
+ * range (same products as the Excel template) and the CURRENT USER's saved
+ * quantities keyed "productId|YYYY-MM" for the editable months.
+ */
+export interface ForecastEditorData {
+  /** Editable months, "YYYY-MM", current month first. */
+  months: string[];
+  products: ForecastEditorProduct[];
+  saved: Record<string, number>;
+}

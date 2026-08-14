@@ -5,7 +5,9 @@ import type {
   AnalysisProduct,
   ForecastPerson,
   Granularity,
+  PeriodPresetId,
 } from "@/components/consume-analysis/types";
+import { MAX_WINDOW } from "@/components/consume-analysis/types";
 
 /**
  * Pure aggregation shared by the client view and the Excel export route.
@@ -15,6 +17,9 @@ import type {
 
 const DAY = 86_400_000;
 const WEEK = 7 * DAY;
+
+/** Consumption history uploads start in January 2025 (UTC). */
+export const HISTORY_START_MS = Date.UTC(2025, 0, 1);
 
 /** Series id used when more than MAX_TYPE_SERIES caviar types are compared. */
 export const OTHER_SERIES_ID = "Other";
@@ -48,7 +53,7 @@ export function parseMonthKey(key: string): Date | null {
   return new Date(Date.UTC(year, month - 1, 1));
 }
 
-function monthLabel(key: string): string {
+export function monthLabel(key: string): string {
   const date = parseMonthKey(key);
   if (!date) return key;
   return date.toLocaleDateString("en-GB", {
@@ -56,6 +61,17 @@ function monthLabel(key: string): string {
     year: "numeric",
     timeZone: "UTC",
   });
+}
+
+/** "2025-Q1" for any date within that UTC quarter. */
+function quarterKeyOf(d: Date): string {
+  return `${d.getUTCFullYear()}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
+}
+
+/** "Q1 2025" from a "2025-Q1" key. */
+function quarterLabel(key: string): string {
+  const m = /^(\d{4})-Q([1-4])$/.exec(key);
+  return m ? `Q${m[2]} ${m[1]}` : key;
 }
 
 /** Monday 00:00 UTC of the week containing the timestamp. */
@@ -77,9 +93,11 @@ function daysInMonthOf(ms: number): number {
 // ---- buckets ----------------------------------------------------------------
 
 export interface Bucket {
-  /** "2026-08" (monthly) or "2026-08-10" week-start date (weekly). */
+  /** "2026-08" (monthly), "2026-Q3" (quarterly) or week-start "2026-08-10". */
   key: string;
   label: string;
+  /** Unambiguous label for selectors/headers ("Wk of 10 Aug 2026"). */
+  longLabel: string;
   /** [start, end) in ms UTC. */
   start: number;
   end: number;
@@ -96,25 +114,85 @@ export function buildBuckets(
       const start = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1);
       const end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 1);
       const key = monthKeyOf(new Date(start));
-      buckets.push({ key, label: monthLabel(key), start, end });
+      const label = monthLabel(key);
+      buckets.push({ key, label, longLabel: label, start, end });
+    }
+    return buckets;
+  }
+  if (granularity === "quarterly") {
+    const quarterMonth = Math.floor(now.getUTCMonth() / 3) * 3;
+    for (let i = window - 1; i >= 0; i--) {
+      const start = Date.UTC(now.getUTCFullYear(), quarterMonth - i * 3, 1);
+      const end = Date.UTC(now.getUTCFullYear(), quarterMonth - (i - 1) * 3, 1);
+      const key = quarterKeyOf(new Date(start));
+      const label = quarterLabel(key);
+      buckets.push({ key, label, longLabel: label, start, end });
     }
     return buckets;
   }
   const currentWeek = weekStartMs(now.getTime());
+  // Axis labels carry a 2-digit year once the window spans more than a year.
+  const withYear = window > 53;
   for (let i = window - 1; i >= 0; i--) {
     const start = currentWeek - i * WEEK;
+    const startDate = new Date(start);
     buckets.push({
       key: isoDate(start),
-      label: new Date(start).toLocaleDateString("en-GB", {
+      label: startDate.toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
+        ...(withYear ? { year: "2-digit" as const } : {}),
         timeZone: "UTC",
       }),
+      longLabel: `Wk of ${startDate.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      })}`,
       start,
       end: start + WEEK,
     });
   }
   return buckets;
+}
+
+// ---- period presets ----------------------------------------------------------
+
+/**
+ * Map a period preset to a bucket count for the granularity: buckets from the
+ * one containing the preset's start date up to (and including) the current one.
+ */
+export function presetWindow(
+  preset: PeriodPresetId,
+  granularity: Granularity,
+  now: Date
+): number {
+  const startMs =
+    preset === "13w"
+      ? weekStartMs(now.getTime()) - 12 * WEEK
+      : preset === "6m"
+        ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1)
+        : preset === "12m"
+          ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1)
+          : HISTORY_START_MS;
+  const start = new Date(Math.min(startMs, now.getTime()));
+  let count: number;
+  if (granularity === "weekly") {
+    count =
+      Math.floor((weekStartMs(now.getTime()) - weekStartMs(start.getTime())) / WEEK) + 1;
+  } else if (granularity === "monthly") {
+    count =
+      (now.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+      (now.getUTCMonth() - start.getUTCMonth()) +
+      1;
+  } else {
+    count =
+      (now.getUTCFullYear() - start.getUTCFullYear()) * 4 +
+      (Math.floor(now.getUTCMonth() / 3) - Math.floor(start.getUTCMonth() / 3)) +
+      1;
+  }
+  return Math.min(Math.max(count, 1), MAX_WINDOW);
 }
 
 // ---- result shapes -----------------------------------------------------------
@@ -144,14 +222,28 @@ export interface AnalysisRow {
 
 export interface AnalysisResult {
   buckets: Bucket[];
-  /** Elapsed weeks in the window (partial current bucket clamped to now). */
+  /** Elapsed weeks in the whole window (partial current bucket clamped to now). */
   weeks: number;
+  /** Human label of the whole window ("Jan 2025 → Aug 2026"). */
+  rangeLabel: string;
+  /** What the TABLE covers: the selected bucket's label, or the whole range. */
+  periodLabel: string;
+  /** Elapsed weeks in the table scope (selected bucket, or the whole window). */
+  tableWeeks: number;
   /** Consumption series (one, or one per compared type + "Other"). */
   series: AnalysisSeries[];
   /** One row per bucket; series values by id, plus "forecast". */
   chartData: ChartRow[];
+  /** Per-product rows, scoped to the table bucket when one is selected. */
   rows: AnalysisRow[];
-  totals: { units: number; grams: number; forecast: number; variance: number };
+  totals: {
+    units: number;
+    grams: number;
+    forecast: number;
+    variance: number;
+    /** Table-scope average, for the table footer / export totals row. */
+    avgPerWeek: number;
+  };
   kpis: {
     totalUnits: number;
     totalGrams: number;
@@ -190,6 +282,12 @@ export function buildAnalysis(
   const windowEnd = buckets[buckets.length - 1].end;
   const bucketIndex = new Map(buckets.map((b, i) => [b.key, i]));
 
+  // Table scope: one bucket, or the whole window. Unknown/stale keys (e.g. a
+  // week key after switching to monthly) gracefully fall back to "all".
+  const tableIndex =
+    filters.tableBucket === "all" ? null : (bucketIndex.get(filters.tableBucket) ?? null);
+  const tableBucket = tableIndex != null ? buckets[tableIndex] : null;
+
   const types = effectiveTypes(filters);
   const typeSet = new Set(types);
   const products = data.products.filter((p) => productMatches(p, filters, typeSet));
@@ -213,7 +311,23 @@ export function buildAnalysis(
   };
 
   // ---- consumption accumulation ----
+  // Whole-window totals feed the chart and KPIs; when a table bucket is
+  // selected, a second accumulator scopes the per-product rows to it.
   const perProduct = new Map<string, { units: number; grams: number }>();
+  const perProductTable = tableBucket
+    ? new Map<string, { units: number; grams: number }>()
+    : perProduct;
+  const addConsumed = (
+    map: Map<string, { units: number; grams: number }>,
+    productId: string,
+    units: number,
+    grams: number
+  ) => {
+    const acc = map.get(productId) ?? { units: 0, grams: 0 };
+    acc.units += units;
+    acc.grams += grams;
+    map.set(productId, acc);
+  };
   const perBucketSeries = buckets.map(() => new Map<string, number>());
   for (const m of data.movements) {
     const product = productById.get(m.productId);
@@ -223,14 +337,16 @@ export function buildAnalysis(
     const key =
       filters.granularity === "monthly"
         ? monthKeyOf(new Date(t))
-        : isoDate(weekStartMs(t));
+        : filters.granularity === "quarterly"
+          ? quarterKeyOf(new Date(t))
+          : isoDate(weekStartMs(t));
     const index = bucketIndex.get(key);
     if (index === undefined) continue;
 
-    const acc = perProduct.get(product.id) ?? { units: 0, grams: 0 };
-    acc.units += m.units;
-    acc.grams += m.grams;
-    perProduct.set(product.id, acc);
+    addConsumed(perProduct, product.id, m.units, m.grams);
+    if (tableBucket && index === tableIndex) {
+      addConsumed(perProductTable, product.id, m.units, m.grams);
+    }
 
     const sid = seriesIdFor(product);
     perBucketSeries[index].set(sid, (perBucketSeries[index].get(sid) ?? 0) + m.units);
@@ -249,9 +365,22 @@ export function buildAnalysis(
     months.set(f.month, (months.get(f.month) ?? 0) + f.quantity);
   }
 
-  /** Forecast for one product in one bucket (monthly direct; weekly prorated by day). */
+  /**
+   * Forecast for one product in one bucket. Monthly buckets read the month
+   * directly; quarterly buckets sum their three whole months; weekly buckets
+   * prorate each month's forecast evenly across its days.
+   */
   const bucketForecast = (months: Map<string, number>, bucket: Bucket): number => {
     if (filters.granularity === "monthly") return months.get(bucket.key) ?? 0;
+    if (filters.granularity === "quarterly") {
+      let total = 0;
+      for (let ms = bucket.start; ms < bucket.end; ) {
+        const d = new Date(ms);
+        total += months.get(monthKeyOf(d)) ?? 0;
+        ms = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+      }
+      return total;
+    }
     let total = 0;
     for (let day = bucket.start; day < bucket.end; day += DAY) {
       const monthly = months.get(monthKeyOf(new Date(day))) ?? 0;
@@ -261,26 +390,35 @@ export function buildAnalysis(
   };
 
   const perBucketForecast = buckets.map(() => 0);
+  /** Whole-window forecast per product (KPIs) and table-scoped one (rows). */
   const forecastPerProduct = new Map<string, number>();
+  const forecastPerProductTable = new Map<string, number>();
   for (const [productId, months] of forecastByProduct) {
     let productTotal = 0;
+    let productTable = 0;
     buckets.forEach((bucket, i) => {
       const value = bucketForecast(months, bucket);
       perBucketForecast[i] += value;
       productTotal += value;
+      if (tableIndex === i) productTable += value;
     });
     if (productTotal > 0) forecastPerProduct.set(productId, productTotal);
+    const tableValue = tableBucket ? productTable : productTotal;
+    if (tableValue > 0) forecastPerProductTable.set(productId, tableValue);
   }
 
-  // ---- table rows ----
-  const totalUnits = [...perProduct.values()].reduce((sum, v) => sum + v.units, 0);
+  // ---- table rows (scoped to the selected bucket when there is one) ----
+  const totalUnits = [...perProductTable.values()].reduce((sum, v) => sum + v.units, 0);
   const clampedEnd = Math.min(now.getTime(), windowEnd);
   const weeks = Math.max((clampedEnd - windowStart) / WEEK, 1 / 7);
+  const tableWeeks = tableBucket
+    ? Math.max((Math.min(now.getTime(), tableBucket.end) - tableBucket.start) / WEEK, 1 / 7)
+    : weeks;
 
   const rows: AnalysisRow[] = products
     .map((p) => {
-      const consumed = perProduct.get(p.id) ?? { units: 0, grams: 0 };
-      const forecast = forecastPerProduct.get(p.id) ?? 0;
+      const consumed = perProductTable.get(p.id) ?? { units: 0, grams: 0 };
+      const forecast = forecastPerProductTable.get(p.id) ?? 0;
       return {
         productId: p.id,
         prCode: p.prCode,
@@ -291,7 +429,7 @@ export function buildAnalysis(
         units: round2(consumed.units),
         grams: round2(consumed.grams),
         sharePct: totalUnits > 0 ? round2((consumed.units / totalUnits) * 100) : 0,
-        avgPerWeek: round2(consumed.units / weeks),
+        avgPerWeek: round2(consumed.units / tableWeeks),
         forecast: round2(forecast),
         variance: round2(consumed.units - forecast),
       };
@@ -305,12 +443,13 @@ export function buildAnalysis(
       acc.forecast += r.forecast;
       return acc;
     },
-    { units: 0, grams: 0, forecast: 0, variance: 0 }
+    { units: 0, grams: 0, forecast: 0, variance: 0, avgPerWeek: 0 }
   );
   totals.units = round2(totals.units);
   totals.grams = round2(totals.grams);
   totals.forecast = round2(totals.forecast);
   totals.variance = round2(totals.units - totals.forecast);
+  totals.avgPerWeek = round2(totals.units / tableWeeks);
 
   // ---- chart data ----
   const chartData: ChartRow[] = buckets.map((bucket, i) => {
@@ -322,7 +461,21 @@ export function buildAnalysis(
     return row;
   });
 
-  // ---- KPIs ----
+  // ---- KPIs (always whole window, regardless of the table bucket) ----
+  const allTotals = [...perProduct.values()].reduce(
+    (acc, v) => {
+      acc.units += v.units;
+      acc.grams += v.grams;
+      return acc;
+    },
+    { units: 0, grams: 0 }
+  );
+  const allUnits = round2(allTotals.units);
+  const allGrams = round2(allTotals.grams);
+  const allForecast = round2(
+    [...forecastPerProduct.values()].reduce((sum, v) => sum + v, 0)
+  );
+
   const unitsByType = new Map<string, number>();
   for (const [productId, acc] of perProduct) {
     const type = productById.get(productId)?.caviarType;
@@ -339,23 +492,29 @@ export function buildAnalysis(
     }
   }
 
-  const totalGrams = totals.grams;
+  // ---- period labels ----
+  const rangeStart = monthLabel(monthKeyOf(new Date(windowStart)));
+  const rangeEnd = monthLabel(monthKeyOf(now));
+  const rangeLabel = rangeStart === rangeEnd ? rangeStart : `${rangeStart} → ${rangeEnd}`;
+
   return {
     buckets,
     weeks: round2(weeks),
+    rangeLabel,
+    periodLabel: tableBucket ? tableBucket.longLabel : rangeLabel,
+    tableWeeks: round2(tableWeeks),
     series,
     chartData,
     rows,
     totals,
     kpis: {
-      totalUnits: totals.units,
-      totalGrams,
-      avgPerWeek: round2(totals.units / weeks),
+      totalUnits: allUnits,
+      totalGrams: allGrams,
+      avgPerWeek: round2(allUnits / weeks),
       bestType,
       bestTypeUnits: round2(bestTypeUnits),
-      forecastTotal: totals.forecast,
-      attainmentPct:
-        totals.forecast > 0 ? Math.round((totals.units / totals.forecast) * 100) : null,
+      forecastTotal: allForecast,
+      attainmentPct: allForecast > 0 ? Math.round((allUnits / allForecast) * 100) : null,
     },
   };
 }
@@ -364,12 +523,18 @@ export function buildAnalysis(
 
 export function describeFilters(
   filters: AnalysisFilters,
-  people: ForecastPerson[]
+  people: ForecastPerson[],
+  result: AnalysisResult
 ): [string, string][] {
-  const period =
+  const bucketNoun =
     filters.granularity === "weekly"
-      ? `Last ${filters.window} weeks (weekly)`
-      : `Last ${filters.window} months (monthly)`;
+      ? "weeks"
+      : filters.granularity === "monthly"
+        ? "months"
+        : "quarters";
+  const period = `${result.rangeLabel} (${result.buckets.length} ${bucketNoun})`;
+  const tablePeriod =
+    result.periodLabel === result.rangeLabel ? "Whole period" : result.periodLabel;
   const scope =
     filters.scope === "total"
       ? "Total consumption"
@@ -381,6 +546,7 @@ export function describeFilters(
       : people.find((p) => p.id === filters.personId)?.name ?? "Unknown";
   return [
     ["Period", period],
+    ["Table period", tablePeriod],
     ["Scope", scope],
     ["Category", category],
     ["Forecast person", person],

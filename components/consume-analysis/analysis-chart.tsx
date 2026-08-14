@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { formatNumber } from "@/lib/format";
 import type { AnalysisSeries, ChartRow } from "@/components/consume-analysis/aggregate";
+import type { ChartStyle } from "@/components/consume-analysis/types";
 
 const CHART_COLORS = [
   "var(--chart-1)",
@@ -55,14 +56,17 @@ export function AnalysisChart({
   data,
   series,
   compare,
+  chartStyle,
   weeklyNote,
 }: {
   data: ChartRow[];
   series: AnalysisSeries[];
   compare: boolean;
+  /** Consumption series as lines or bars; the forecast overlay stays dashed. */
+  chartStyle: ChartStyle;
   weeklyNote: string | null;
 }) {
-  const singleSeries = series.length === 1;
+  const bars = chartStyle === "bar";
   const hasAny = data.some(
     (row) =>
       series.some((s) => Number(row[s.id] ?? 0) > 0) ||
@@ -106,35 +110,34 @@ export function AnalysisChart({
               ]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
               cursor={
-                singleSeries
-                  ? { fill: "var(--muted)", opacity: 0.5 }
-                  : { stroke: "#E3DFD2" }
+                bars ? { fill: "var(--muted)", opacity: 0.5 } : { stroke: "#E3DFD2" }
               }
             />
-            {singleSeries ? (
-              <Bar
-                dataKey={series[0].id}
-                name={series[0].label}
-                fill={seriesColor(0, series[0].id)}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={40}
-                isAnimationActive={false}
-              />
-            ) : (
-              series.map((s, i) => (
-                <Line
-                  key={s.id}
-                  type="monotone"
-                  dataKey={s.id}
-                  name={s.label}
-                  stroke={seriesColor(i, s.id)}
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  isAnimationActive={false}
-                />
-              ))
-            )}
+            {bars
+              ? series.map((s, i) => (
+                  <Bar
+                    key={s.id}
+                    dataKey={s.id}
+                    name={s.label}
+                    fill={seriesColor(i, s.id)}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={series.length === 1 ? 40 : 20}
+                    isAnimationActive={false}
+                  />
+                ))
+              : series.map((s, i) => (
+                  <Line
+                    key={s.id}
+                    type="monotone"
+                    dataKey={s.id}
+                    name={s.label}
+                    stroke={seriesColor(i, s.id)}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                    isAnimationActive={false}
+                  />
+                ))}
             {compare ? (
               <Line
                 type="monotone"

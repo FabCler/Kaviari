@@ -64,7 +64,8 @@ export const aiSalesSchema = z.object({
     .array(
       z.object({
         productId: z.string().min(1).max(60),
-        date: z.string().min(4).max(40),
+        // "yyyy-mm-dd" for a single day, "yyyy-mm" for a whole-month total.
+        period: z.string().min(4).max(40),
         tins: z.number().positive().max(10_000),
         channel: channelSchema.default("food_service"),
         note: z.string().max(300).nullable(),
@@ -115,9 +116,14 @@ export const commitSalesSchema = z.object({
     .array(
       z.object({
         productId: z.string().min(1).max(60),
-        date: z
+        // A single day ("yyyy-mm-dd") or a whole month ("yyyy-mm"). Monthly
+        // rows are spread across the ISO weeks of the month on commit.
+        period: z
           .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be yyyy-mm-dd"),
+          .regex(
+            /^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/,
+            "Period must be yyyy-mm-dd or yyyy-mm"
+          ),
         tins: z.number().positive().max(10_000),
         channel: channelSchema,
         note: z.string().max(300).nullable(),

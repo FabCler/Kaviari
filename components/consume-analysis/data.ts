@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import { DEMAND_MOVEMENT_TYPES } from "@/lib/domain";
 import { shortProductName } from "@/lib/format";
-import { monthKeyOf, round2 } from "@/components/consume-analysis/aggregate";
-import type { AnalysisData } from "@/components/consume-analysis/types";
+import { HISTORY_START_MS, monthKeyOf, round2 } from "@/components/consume-analysis/aggregate";
+import type { AnalysisData, ForecastEditorData } from "@/components/consume-analysis/types";
 
 /**
  * SERVER-ONLY loader for the consumption analysis screen. Used by both the
@@ -11,8 +11,11 @@ import type { AnalysisData } from "@/components/consume-analysis/types";
  * Client components must import types from ./types, never this module.
  */
 export async function loadAnalysisData(now: Date = new Date()): Promise<AnalysisData> {
-  // Enough history for the largest window (12 months, aligned to month start).
-  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
+  // The full uploaded history (since Jan 2025), and never less than the
+  // 12-month preset needs, aligned to month start.
+  const from = new Date(
+    Math.min(HISTORY_START_MS, Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1))
+  );
 
   const [products, movements, forecasts] = await Promise.all([
     prisma.product.findMany({
@@ -90,5 +93,56 @@ export async function loadAnalysisData(now: Date = new Date()): Promise<Analysis
     people: [...people.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+/** Months shown by the in-app forecast editor (current + next 5, template-like). */
+const EDITOR_MONTHS = 6;
+
+/**
+ * SERVER-ONLY loader for the "Edit forecasts" dialog: the same forecastable
+ * products as the Excel template, plus the CURRENT USER's saved quantities
+ * for the editable months (forecasts are per-user; totals sum across users).
+ */
+export async function loadForecastEditorData(
+  userId: string,
+  now: Date = new Date()
+): Promise<ForecastEditorData> {
+  const monthDates: Date[] = [];
+  for (let i = 0; i < EDITOR_MONTHS; i++) {
+    monthDates.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i, 1)));
+  }
+  const months = monthDates.map((d) => monthKeyOf(d));
+
+  const [products, existing] = await Promise.all([
+    prisma.product.findMany({
+      where: { active: true, category: { in: ["Caviar", "Fish Roe"] } },
+      select: { id: true, prCode: true, name: true, caviarType: true, unit: true },
+      orderBy: [{ category: "asc" }, { name: "asc" }],
+    }),
+    prisma.forecast.findMany({
+      where: {
+        userId,
+        month: { gte: monthDates[0], lte: monthDates[EDITOR_MONTHS - 1] },
+      },
+      select: { productId: true, month: true, quantity: true },
+    }),
+  ]);
+
+  const saved: Record<string, number> = {};
+  for (const f of existing) {
+    saved[`${f.productId}|${monthKeyOf(f.month)}`] = f.quantity;
+  }
+
+  return {
+    months,
+    products: products.map((p) => ({
+      id: p.id,
+      prCode: p.prCode,
+      name: shortProductName(p.name),
+      caviarType: p.caviarType,
+      unit: p.unit,
+    })),
+    saved,
   };
 }

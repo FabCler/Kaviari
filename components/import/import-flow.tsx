@@ -161,7 +161,7 @@ export function ImportFlow({
     }
     const rows = analysis.rows.map((r) => ({
       productId: r.productId,
-      date: r.date,
+      period: r.period,
       tins: r.tins,
       channel: r.channel,
       note: r.note,

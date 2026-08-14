@@ -15,6 +15,7 @@ import {
   salesExportSystemPrompt,
   stockTakeSystemPrompt,
 } from "@/lib/import/prompts";
+import { isMonthPeriod } from "@/lib/import/period";
 import type {
   AnalysisResult,
   ImportMode,
@@ -273,32 +274,45 @@ async function analyzeSalesExport(
   const byId = new Map(products.map((p) => [p.id, p]));
   const unmatched: UnmatchedRow[] = [...ai.unmatched];
   let badDates = 0;
+  let futureMonths = 0;
+  const currentMonth = isoDay(now).slice(0, 7);
 
   const rows: SalesPreviewRow[] = [];
   for (const row of ai.rows) {
     const product = byId.get(row.productId);
     if (!product) {
       unmatched.push({
-        label: `${row.tins} tins on ${row.date} (product id ${row.productId})`,
+        label: `${row.tins} tins in ${row.period} (product id ${row.productId})`,
         reason: "Not a known product in the catalog",
       });
       continue;
     }
-    let date = row.date.slice(0, 10);
-    const time = Date.parse(date);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(time)) {
-      date = isoDay(now);
-      badDates += 1;
-    } else if (time > now.getTime()) {
-      // A sales export cannot contain future dates — clamp to today.
-      date = isoDay(now);
-      badDates += 1;
+    const raw = row.period.trim();
+    let period: string;
+    if (isMonthPeriod(raw)) {
+      // Whole-month total. Past months (back to the first movements) are
+      // fine; a month cannot lie in the future — clamp to the current month
+      // (the current, still-running month itself is allowed).
+      period = raw > currentMonth ? currentMonth : raw;
+      if (raw > currentMonth) futureMonths += 1;
+    } else {
+      let date = raw.slice(0, 10);
+      const time = Date.parse(date);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(time)) {
+        date = isoDay(now);
+        badDates += 1;
+      } else if (time > now.getTime()) {
+        // A sales export cannot contain future dates — clamp to today.
+        date = isoDay(now);
+        badDates += 1;
+      }
+      period = date;
     }
     rows.push({
       productId: product.id,
       productName: product.name,
       gramsPerUnit: product.gramsPerUnit,
-      date,
+      period,
       tins: round2(row.tins),
       channel: row.channel,
       note: row.note?.trim() ? row.note.trim() : null,
@@ -309,12 +323,24 @@ async function analyzeSalesExport(
       `${badDates} row${badDates === 1 ? "" : "s"} had a missing, invalid or future date and ${badDates === 1 ? "was" : "were"} set to today.`
     );
   }
+  if (futureMonths > 0) {
+    notices.push(
+      `${futureMonths} monthly row${futureMonths === 1 ? "" : "s"} pointed at a future month and ${futureMonths === 1 ? "was" : "were"} moved to the current month.`
+    );
+  }
+  const monthlyRows = rows.filter((row) => isMonthPeriod(row.period)).length;
+  if (monthlyRows > 0) {
+    notices.push(
+      `${monthlyRows} row${monthlyRows === 1 ? " is a" : "s are"} monthly total${monthlyRows === 1 ? "" : "s"} — each will be spread across the weeks of its month when written.`
+    );
+  }
 
   if (rows.length === 0 && unmatched.length === 0) {
     throw new ImportAnalysisError(UNREADABLE_MESSAGE);
   }
 
-  rows.sort((a, b) => a.date.localeCompare(b.date));
+  // "yyyy-mm" sorts before any "yyyy-mm-dd" inside the same month.
+  rows.sort((a, b) => a.period.localeCompare(b.period));
   return { mode: "sales_export", rows, unmatched, notices };
 }
 

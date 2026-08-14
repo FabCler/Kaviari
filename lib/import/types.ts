@@ -48,8 +48,12 @@ export interface SalesPreviewRow {
   productId: string;
   productName: string;
   gramsPerUnit: number | null;
-  /** ISO date (yyyy-mm-dd). */
-  date: string;
+  /**
+   * When the movement happened: an ISO date ("2025-03-14") for daily rows, or
+   * a month ("2025-03") when the file gave a monthly total. Monthly rows are
+   * spread across the ISO weeks of the month at commit time.
+   */
+  period: string;
   tins: number;
   channel: Channel;
   note: string | null;
