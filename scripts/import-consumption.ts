@@ -15,6 +15,10 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
+// Bump when the shipped data changes: previous historical-import movements
+// are wiped and re-imported from the JSON (v2 removed August 2026).
+const IMPORT_VERSION = 2;
+const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
   prCode: string;
@@ -29,9 +33,18 @@ async function main() {
     return;
   }
   const done = await prisma.setting.findUnique({ where: { key: GUARD_KEY } });
-  if (done) {
+  const doneVersion = done ? Number(done.value.split("|")[0]) || 1 : 0;
+  if (doneVersion >= IMPORT_VERSION) {
     console.log("import-consumption: already imported — skipping.");
     return;
+  }
+  if (doneVersion > 0) {
+    const removed = await prisma.stockMovement.deleteMany({
+      where: { note: { startsWith: NOTE_PREFIX } },
+    });
+    console.log(
+      `import-consumption: v${doneVersion} -> v${IMPORT_VERSION} — removed ${removed.count} previously imported movements.`
+    );
   }
 
   const rows: MonthlyRow[] = JSON.parse(readFileSync(file, "utf8"));
@@ -55,7 +68,7 @@ async function main() {
         quantityTins: -chunk.tins,
         gramsEquivalent: -Math.round(chunk.tins * (product.gramsPerUnit ?? 0) * 100) / 100,
         date: new Date(`${chunk.date}T12:00:00.000Z`),
-        note: `Historical consumption import (${row.month} monthly total)`,
+        note: `${NOTE_PREFIX} (${row.month} monthly total)`,
       });
     }
   }
@@ -64,8 +77,11 @@ async function main() {
     prisma.stockMovement.createMany({ data: movements }),
     prisma.setting.upsert({
       where: { key: GUARD_KEY },
-      create: { key: GUARD_KEY, value: new Date().toISOString() },
-      update: { value: new Date().toISOString() },
+      create: {
+        key: GUARD_KEY,
+        value: `${IMPORT_VERSION}|${new Date().toISOString()}`,
+      },
+      update: { value: `${IMPORT_VERSION}|${new Date().toISOString()}` },
     }),
   ]);
 

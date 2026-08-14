@@ -11,6 +11,7 @@ import {
   loadForecastEditorData,
 } from "@/components/consume-analysis/data";
 import { LogConsumption } from "@/components/consume/log-consumption";
+import { DataManager } from "@/components/consume-analysis/data-manager";
 import type {
   ConsumableProduct,
   RecentMovementRow,
@@ -86,11 +87,14 @@ export default async function ConsumePage({
         title="Consumption & Forecasts"
         description="How the cellar is being consumed — weekly, monthly or quarterly, in total or by caviar type — compared against everyone's forecasts."
         actions={
-          <LogConsumption
-            products={products}
-            recent={recent}
-            autoOpen={log != null}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <DataManager />
+            <LogConsumption
+              products={products}
+              recent={recent}
+              autoOpen={log != null}
+            />
+          </div>
         }
       />
       <AnalysisView
