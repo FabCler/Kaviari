@@ -52,10 +52,10 @@ export interface MonthlyChunk {
  *
  * Each chunk is the intersection of an ISO week (Mon–Sun) with the month and
  * is weighted by its day count (e.g. a 31-day month starting on a Monday
- * yields 7/7/7/7/3). Quantities are rounded to 2 decimals; the LAST chunk
- * absorbs the rounding drift so the chunks always sum exactly to
- * `round2(quantity)`. Chunks whose share rounds to zero are dropped (their
- * share flows into the last chunk).
+ * yields 7/7/7/7/3). WHOLE-NUMBER totals are split into whole-number chunks
+ * (largest-remainder allocation) so product histories read naturally;
+ * fractional totals are rounded to 2 decimals. Either way the chunks always
+ * sum EXACTLY to `round2(quantity)`; chunks whose share is zero are dropped.
  */
 export function spreadMonthlyQuantity(
   month: string,
@@ -83,33 +83,28 @@ export function spreadMonthlyQuantity(
 
   const iso = (day: number) => `${month}-${String(day).padStart(2, "0")}`;
   const total = round2(quantity);
+  const integer = Number.isInteger(total);
+
+  // Proportional shares, floored to the unit (1 tin or 0.01), then the
+  // largest fractional remainders receive the leftover units — sums are
+  // exact by construction.
+  const unit = integer ? 1 : 0.01;
+  const shares = segments.map((segment) => (total * segment.days) / daysInMonth);
+  const floored = shares.map((s) => Math.floor(s / unit + 1e-9));
+  let leftover = Math.round(total / unit) - floored.reduce((a, b) => a + b, 0);
+  const order = shares
+    .map((share, index) => ({ index, frac: share / unit - floored[index] }))
+    .sort((a, b) => b.frac - a.frac || a.index - b.index);
+  for (const entry of order) {
+    if (leftover <= 0) break;
+    floored[entry.index] += 1;
+    leftover -= 1;
+  }
 
   const chunks: MonthlyChunk[] = [];
-  let allocated = 0;
   for (const [index, segment] of segments.entries()) {
-    const isLast = index === segments.length - 1;
-    let tins = isLast
-      ? round2(total - allocated)
-      : round2((total * segment.days) / daysInMonth);
-
-    if (isLast && tins < 0) {
-      // Degenerate: earlier round-ups overshot the total. Claw the deficit
-      // back from previous chunks (newest first) so the sum stays exact.
-      let deficit = -tins;
-      tins = 0;
-      for (let i = chunks.length - 1; i >= 0 && deficit > 0; i--) {
-        const take = Math.min(chunks[i].tins, deficit);
-        chunks[i].tins = round2(chunks[i].tins - take);
-        deficit = round2(deficit - take);
-      }
-      for (let i = chunks.length - 1; i >= 0; i--) {
-        if (chunks[i].tins <= 0) chunks.splice(i, 1);
-      }
-    }
-
-    allocated = round2(allocated + tins);
-    if (tins <= 0) continue; // zero share — the last chunk absorbs it
-
+    const tins = round2(floored[index] * unit);
+    if (tins <= 0) continue;
     const middle = segment.start + Math.floor((segment.days - 1) / 2);
     chunks.push({
       date: iso(middle),

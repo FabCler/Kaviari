@@ -33,10 +33,11 @@ describe("formatMonthLabel", () => {
 
 describe("spreadMonthlyQuantity", () => {
   it("splits a Monday-starting 31-day month into 7/7/7/7/3 day chunks", () => {
-    // December 2025 starts on a Monday.
+    // December 2025 starts on a Monday. Whole-number totals spread as whole
+    // numbers (largest remainder), summing exactly.
     const chunks = spreadMonthlyQuantity("2025-12", 20);
     expect(chunks.map((c) => c.days)).toEqual([7, 7, 7, 7, 3]);
-    expect(chunks.map((c) => c.tins)).toEqual([4.52, 4.52, 4.52, 4.52, 1.92]);
+    expect(chunks.map((c) => c.tins)).toEqual([5, 5, 4, 4, 2]);
     expect(sumCents(chunks)).toBe(2000); // exact total
     expect(chunks.map((c) => c.weekStart)).toEqual([
       "2025-12-01",
@@ -71,10 +72,26 @@ describe("spreadMonthlyQuantity", () => {
   });
 
   it("handles a perfectly aligned February (4 full ISO weeks)", () => {
-    // February 2027 starts on a Monday and has 28 days.
+    // February 2027 starts on a Monday and has 28 days. Integer totals stay
+    // integer per chunk (10 -> 3/3/2/2); fractional totals split evenly.
     const chunks = spreadMonthlyQuantity("2027-02", 10);
     expect(chunks.map((c) => c.days)).toEqual([7, 7, 7, 7]);
-    expect(chunks.map((c) => c.tins)).toEqual([2.5, 2.5, 2.5, 2.5]);
+    expect(chunks.map((c) => c.tins)).toEqual([3, 3, 2, 2]);
+    expect(spreadMonthlyQuantity("2027-02", 10.5).map((c) => c.tins)).toEqual([
+      2.63, 2.63, 2.62, 2.62,
+    ]);
+  });
+
+  it("spreads integer totals as integers", () => {
+    for (const month of ["2025-01", "2025-02", "2026-07", "2025-12"]) {
+      for (const qty of [1, 2, 7, 20, 81, 348]) {
+        const chunks = spreadMonthlyQuantity(month, qty);
+        expect(sumCents(chunks)).toBe(qty * 100);
+        for (const chunk of chunks) {
+          expect(Number.isInteger(chunk.tins)).toBe(true);
+        }
+      }
+    }
   });
 
   it("keeps the total exact for awkward quantities (last chunk absorbs drift)", () => {
@@ -101,8 +118,11 @@ describe("spreadMonthlyQuantity", () => {
     const chunks = spreadMonthlyQuantity("2025-12", 0.01);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].tins).toBe(0.01);
-    // The surviving chunk is the last (drift-absorbing) one.
-    expect(chunks[0].weekStart).toBe("2025-12-29");
+    // The largest-remainder unit lands on the biggest-share (first full) week.
+    expect(chunks[0].days).toBe(7);
+    const one = spreadMonthlyQuantity("2025-12", 1);
+    expect(one).toHaveLength(1);
+    expect(one[0].tins).toBe(1);
   });
 
   it("covers every day of the month exactly once", () => {
