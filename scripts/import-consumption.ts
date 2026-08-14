@@ -16,8 +16,9 @@ const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
 // Bump when the shipped data changes: previous historical-import movements
-// are wiped and re-imported from the JSON (v2 removed August 2026).
-const IMPORT_VERSION = 2;
+// are wiped and re-imported from the JSON (v2 removed August 2026; v3 also
+// purges ALL August 2026 demand data regardless of its source).
+const IMPORT_VERSION = 3;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -42,8 +43,19 @@ async function main() {
     const removed = await prisma.stockMovement.deleteMany({
       where: { note: { startsWith: NOTE_PREFIX } },
     });
+    // The August 2026 source data was wrong — purge that month entirely,
+    // whatever wrote it (upload, boot import or manual log).
+    const august = await prisma.stockMovement.deleteMany({
+      where: {
+        quantityTins: { lt: 0 },
+        date: {
+          gte: new Date(Date.UTC(2026, 7, 1)),
+          lt: new Date(Date.UTC(2026, 8, 1)),
+        },
+      },
+    });
     console.log(
-      `import-consumption: v${doneVersion} -> v${IMPORT_VERSION} — removed ${removed.count} previously imported movements.`
+      `import-consumption: v${doneVersion} -> v${IMPORT_VERSION} — removed ${removed.count} imported + ${august.count} August 2026 movements.`
     );
   }
 

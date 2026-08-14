@@ -183,6 +183,9 @@ export async function PUT(request: Request) {
   let created = 0;
   if (tins > 0) {
     const chunks = spreadMonthlyQuantity(month, tins);
+    // Clamp future-dated chunks (current-month corrections) to today so
+    // every view counts them.
+    const today = new Date().toISOString().slice(0, 10);
     await prisma.stockMovement.createMany({
       data: chunks.map((chunk) => ({
         productId,
@@ -191,7 +194,9 @@ export async function PUT(request: Request) {
         channel: "food_service",
         quantityTins: -chunk.tins,
         gramsEquivalent: -round2(chunk.tins * (product.gramsPerUnit ?? 0)),
-        date: new Date(`${chunk.date}T12:00:00.000Z`),
+        date: new Date(
+          `${chunk.date > today ? today : chunk.date}T12:00:00.000Z`
+        ),
         note: `Manual correction (${month} monthly total)`,
       })),
     });

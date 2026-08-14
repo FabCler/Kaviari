@@ -244,10 +244,13 @@ export async function commitSalesExport(rows: SalesRows): Promise<CommitResult> 
       return [{ ...base, date: row.period, tins: row.tins }];
     }
     const monthNote = `${row.note ?? "Sales export import"} (spread from ${formatMonthLabel(row.period)} monthly total)`;
+    // A current-month total would otherwise produce future-dated chunks,
+    // which some views exclude — clamp them to today so every view agrees.
+    const today = new Date().toISOString().slice(0, 10);
     return spreadMonthlyQuantity(row.period, row.tins).map((chunk) => ({
       ...base,
       note: monthNote,
-      date: chunk.date,
+      date: chunk.date > today ? today : chunk.date,
       tins: chunk.tins,
     }));
   });
