@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ProductDetailSheet } from "@/components/inventory/product-detail-sheet";
 import { CoverBadge } from "@/components/inventory/badges";
 import type { InventoryRow } from "@/components/inventory/types";
 
@@ -33,17 +32,10 @@ function isDormant(row: InventoryRow): boolean {
   );
 }
 
-export function InventoryTable({
-  rows,
-  currency,
-}: {
-  rows: InventoryRow[];
-  currency: string;
-}) {
+export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
   const [category, setCategory] = React.useState<string>(ALL);
   const [caviarType, setCaviarType] = React.useState<string>(ALL);
   const [showDormant, setShowDormant] = React.useState(false);
-  const [selected, setSelected] = React.useState<InventoryRow | null>(null);
 
   // Caviar type only applies when the category filter can contain caviar.
   const typeFilterEnabled = category === ALL || category === "Caviar";
@@ -126,26 +118,12 @@ export function InventoryTable({
         ) : null}
       </div>
 
-      <ProductsTable rows={visibleRows} onSelect={setSelected} />
-
-      <ProductDetailSheet
-        row={selected}
-        currency={currency}
-        onOpenChange={(open) => {
-          if (!open) setSelected(null);
-        }}
-      />
+      <ProductsTable rows={visibleRows} />
     </div>
   );
 }
 
-function ProductsTable({
-  rows,
-  onSelect,
-}: {
-  rows: InventoryRow[];
-  onSelect: (row: InventoryRow) => void;
-}) {
+function ProductsTable({ rows }: { rows: InventoryRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
@@ -171,19 +149,7 @@ function ProductsTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow
-              key={row.productId}
-              className="cursor-pointer"
-              onClick={() => onSelect(row)}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onSelect(row);
-                }
-              }}
-              aria-label={`Open details for ${row.shortName}`}
-            >
+            <TableRow key={row.productId}>
               <TableCell className="tnum text-muted-foreground">
                 {row.prCode}
               </TableCell>

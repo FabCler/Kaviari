@@ -57,7 +57,7 @@ export default async function InventoryPage() {
         title="Inventory"
         description="On-hand stock, lots and weekly cover across the cellar"
       />
-      <InventoryTable rows={rows} currency={overview.settings.currency} />
+      <InventoryTable rows={rows} />
     </div>
   );
 }
