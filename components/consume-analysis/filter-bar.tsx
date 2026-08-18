@@ -29,7 +29,11 @@ export interface FilterBarState {
   category: string;
   personId: string;
   compare: boolean;
+  compareN1: boolean;
 }
+
+const N1_NOTE =
+  "Overlays the same period one year earlier — same month/quarter of the previous year, or the week exactly 52 weeks back.";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -169,6 +173,17 @@ export function FilterBar({
             title={state.granularity === "weekly" ? WEEKLY_FORECAST_NOTE : undefined}
           >
             Compare vs forecast
+          </Label>
+        </div>
+
+        <div className="flex h-8 items-center gap-2">
+          <Switch
+            id="compare-n1"
+            checked={state.compareN1}
+            onCheckedChange={(v) => onChange({ compareN1: v })}
+          />
+          <Label htmlFor="compare-n1" className="text-sm" title={N1_NOTE}>
+            Compare vs N-1
           </Label>
         </div>
       </div>

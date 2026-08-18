@@ -72,17 +72,18 @@ export function AnalysisView({
     category: "Caviar",
     personId: "all",
     compare: false,
+    compareN1: false,
   }));
   const [showAll, setShowAll] = useState(false);
   const [chartStyle, setChartStyle] = useState<ChartStyle>("bar");
-  /** "all" or a bucket key of the CURRENT granularity/period. */
-  const [tableBucket, setTableBucket] = useState("all");
+  /** Selected bucket keys of the CURRENT granularity/period (empty = whole). */
+  const [tableBuckets, setTableBuckets] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
 
   const onFilterChange = (patch: Partial<FilterBarState>) => {
     // Bucket keys change shape with granularity/period — zoom back out.
     if (patch.granularity !== undefined || patch.period !== undefined) {
-      setTableBucket("all");
+      setTableBuckets([]);
     }
     setState((prev) => ({ ...prev, ...patch }));
   };
@@ -91,7 +92,7 @@ export function AnalysisView({
     () => ({
       granularity: state.granularity,
       window: presetWindow(state.period, state.granularity, nowDate),
-      tableBucket,
+      tableBuckets,
       scope: state.scope,
       types: state.types.filter((t): t is (typeof CAVIAR_TYPES)[number] =>
         (CAVIAR_TYPES as readonly string[]).includes(t)
@@ -99,9 +100,10 @@ export function AnalysisView({
       category: state.category as AnalysisFilters["category"],
       personId: state.personId,
       compare: state.compare,
+      compareN1: state.compareN1,
       showAll,
     }),
-    [state, tableBucket, showAll, nowDate]
+    [state, tableBuckets, showAll, nowDate]
   );
 
   const result = useMemo(
@@ -183,6 +185,21 @@ export function AnalysisView({
               · {formatGrams(kpis.totalGrams)}
             </span>
           ) : null}
+          {state.compareN1 ? (
+            <span className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground tnum">
+                N-1 ({result.prevRangeLabel}): {formatNumber(kpis.prevTotalUnits)} units
+              </span>
+              {kpis.yoyChangePct != null ? (
+                <Badge variant={kpis.yoyChangePct >= 0 ? "seafoam" : "warning"}>
+                  {kpis.yoyChangePct > 0 ? "+" : ""}
+                  {kpis.yoyChangePct}% vs N-1
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">no N-1 data</span>
+              )}
+            </span>
+          ) : null}
         </Kpi>
         <Kpi label="Avg per week">
           <span className="font-semibold tnum">{formatNumber(kpis.avgPerWeek)}</span>{" "}
@@ -236,6 +253,7 @@ export function AnalysisView({
             data={result.chartData}
             series={result.series}
             compare={state.compare}
+            compareN1={state.compareN1}
             chartStyle={chartStyle}
             weeklyNote={
               state.compare && state.granularity === "weekly"
@@ -253,10 +271,11 @@ export function AnalysisView({
             rows={result.rows}
             totals={result.totals}
             avgPerWeekTotal={result.totals.avgPerWeek}
-            periodLabel={result.periodLabel}
+            tableColumns={result.tableColumns}
+            compareN1={state.compareN1}
             buckets={result.buckets}
-            tableBucket={filters.tableBucket}
-            onTableBucketChange={setTableBucket}
+            tableBuckets={tableBuckets}
+            onTableBucketsChange={setTableBuckets}
             showAll={showAll}
             onShowAllChange={setShowAll}
           />

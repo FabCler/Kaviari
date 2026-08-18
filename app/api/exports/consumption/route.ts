@@ -63,25 +63,41 @@ export async function POST(request: Request) {
   const wb = createWorkbook();
 
   // ---- Sheet 1: Consumption (the detailed table) ----
-  const consumedHeader = `Consumed — ${result.periodLabel}`;
+  // Mirrors the on-screen columns: one "Consumed" column per selected table
+  // period (whole period = one column), each followed by its N-1 twin when
+  // "Compare vs N-1" is on, plus a selection total when several are selected.
+  // Share/Avg/Forecast/Variance cover the selected periods combined.
+  const multi = result.tableColumns.length > 1;
+  const numCol = (header: string, redNegative = false): ColumnSpec => ({
+    header,
+    width: Math.max(12, header.length + 2),
+    align: "right",
+    numFmt: NUM_FMT,
+    ...(redNegative ? { redNegative: true } : {}),
+  });
+  const consumedColumns: ColumnSpec[] = result.tableColumns.flatMap((col) => [
+    numCol(`Consumed — ${col.label}`),
+    ...(filters.compareN1 ? [numCol(`N-1 — ${col.prevLabel}`)] : []),
+  ]);
   const columns: ColumnSpec[] = [
     { header: "Code", width: fitWidth("Code", rows.map((r) => r.prCode)) },
     { header: "Description", width: fitWidth("Description", rows.map((r) => r.name)) },
     { header: "Type", width: fitWidth("Type", rows.map((r) => r.caviarType)) },
     { header: "Category", width: fitWidth("Category", rows.map((r) => r.category)) },
     { header: "Unit", width: 8 },
-    {
-      header: consumedHeader,
-      width: Math.max(12, consumedHeader.length + 2),
-      align: "right",
-      numFmt: NUM_FMT,
-    },
+    ...consumedColumns,
+    ...(multi ? [numCol("Total — selection")] : []),
     { header: "Kg (ref)", width: 11, align: "right", numFmt: KG_FMT },
     { header: "Share %", width: 10, align: "right", numFmt: PCT_FMT },
     { header: "Avg / week", width: 12, align: "right", numFmt: NUM_FMT },
     { header: "Forecast", width: 11, align: "right", numFmt: NUM_FMT },
     { header: "Variance", width: 11, align: "right", numFmt: NUM_FMT, redNegative: true },
   ];
+  const consumedCells = (bucketUnits: number[], prevBucketUnits: number[]): number[] =>
+    result.tableColumns.flatMap((_, c) => [
+      bucketUnits[c] ?? 0,
+      ...(filters.compareN1 ? [prevBucketUnits[c] ?? 0] : []),
+    ]);
 
   const ws = wb.addWorksheet("Consumption");
   addTitleBlock(ws, "Kaviari Cellar — Consumption & Forecasts", columns.length, generated);
@@ -95,7 +111,8 @@ export async function POST(request: Request) {
       r.caviarType ?? "",
       r.category,
       r.unit,
-      r.units,
+      ...consumedCells(r.bucketUnits, r.prevBucketUnits),
+      ...(multi ? [r.units] : []),
       r.grams / 1000,
       r.sharePct,
       r.avgPerWeek,
@@ -112,7 +129,8 @@ export async function POST(request: Request) {
     "",
     "",
     "",
-    result.totals.units,
+    ...consumedCells(result.totals.bucketUnits, result.totals.prevBucketUnits),
+    ...(multi ? [result.totals.units] : []),
     result.totals.grams / 1000,
     result.totals.units > 0 ? 100 : 0,
     result.totals.avgPerWeek,
@@ -131,6 +149,9 @@ export async function POST(request: Request) {
       align: "right" as const,
       numFmt: NUM_FMT,
     })),
+    ...(filters.compareN1
+      ? [{ header: "N-1", width: 11, align: "right" as const, numFmt: NUM_FMT }]
+      : []),
     ...(filters.compare
       ? [{ header: "Forecast", width: 11, align: "right" as const, numFmt: NUM_FMT }]
       : []),
@@ -152,6 +173,7 @@ export async function POST(request: Request) {
     ws2.addRow([
       point.label,
       ...result.series.map((s) => Number(point[s.id] ?? 0)),
+      ...(filters.compareN1 ? [Number(point.prev ?? 0)] : []),
       ...(filters.compare ? [Number(point.forecast ?? 0)] : []),
     ]);
   }
@@ -163,7 +185,9 @@ export async function POST(request: Request) {
     ...result.series.map((s) =>
       result.chartData.reduce((sum, point) => sum + Number(point[s.id] ?? 0), 0)
     ),
-    ...(filters.compare ? [result.totals.forecast] : []),
+    ...(filters.compareN1 ? [result.kpis.prevTotalUnits] : []),
+    // Whole-window forecast — sheet 2 always covers the whole window.
+    ...(filters.compare ? [result.kpis.forecastTotal] : []),
   ]);
   styleTotalsRow(ws2, periodColumns, totalsRow2.number);
   finishTable(ws2, headerRow2, lastRow2, periodColumns.length);

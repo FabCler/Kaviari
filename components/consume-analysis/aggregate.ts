@@ -352,11 +352,40 @@ export function buildAnalysis(
   const windowEnd = buckets[buckets.length - 1].end;
   const bucketIndex = new Map(buckets.map((b, i) => [b.key, i]));
 
-  // Table scope: one bucket, or the whole window. Unknown/stale keys (e.g. a
-  // week key after switching to monthly) gracefully fall back to "all".
-  const tableIndex =
-    filters.tableBucket === "all" ? null : (bucketIndex.get(filters.tableBucket) ?? null);
-  const tableBucket = tableIndex != null ? buckets[tableIndex] : null;
+  // N-1 counterparts of every bucket (same period one calendar year earlier;
+  // weekly = exactly 52 weeks earlier). Period keys are canonical, so a
+  // movement's own bucket key looks up which current bucket it is the N-1 of.
+  const prevBuckets = buckets.map((b) => prevBucketOf(b, filters.granularity));
+  const prevIndexByKey = new Map(prevBuckets.map((b, i) => [b.key, i] as const));
+
+  // ---- period labels ----
+  const rangeStart = monthLabel(monthKeyOf(new Date(windowStart)));
+  const rangeEnd = monthLabel(monthKeyOf(now));
+  const rangeLabel = rangeStart === rangeEnd ? rangeStart : `${rangeStart} → ${rangeEnd}`;
+  const prevStart = monthLabel(monthKeyOf(new Date(prevBuckets[0].start)));
+  const prevEnd = monthLabel(monthKeyOf(new Date(prevBuckets[prevBuckets.length - 1].start)));
+  const prevRangeLabel = prevStart === prevEnd ? prevStart : `${prevStart} → ${prevEnd}`;
+
+  // Table scope: the selected buckets (one column each, chronological,
+  // de-duplicated), or the whole window. Unknown/stale keys (e.g. a week key
+  // after switching to monthly) are dropped; none valid = whole period.
+  const selectedIndices = [
+    ...new Set(
+      filters.tableBuckets
+        .map((key) => bucketIndex.get(key))
+        .filter((i): i is number => i !== undefined)
+    ),
+  ].sort((a, b) => a - b);
+  const wholePeriod = selectedIndices.length === 0;
+  /** Bucket index → table column index, for the selected buckets. */
+  const columnOfBucket = new Map(selectedIndices.map((b, c) => [b, c] as const));
+  const tableColumns: TableColumn[] = wholePeriod
+    ? [{ key: "all", label: rangeLabel, prevLabel: prevRangeLabel }]
+    : selectedIndices.map((i) => ({
+        key: buckets[i].key,
+        label: buckets[i].longLabel,
+        prevLabel: prevBuckets[i].longLabel,
+      }));
 
   const types = effectiveTypes(filters);
   const typeSet = new Set(types);
@@ -381,12 +410,14 @@ export function buildAnalysis(
   };
 
   // ---- consumption accumulation ----
-  // Whole-window totals feed the chart and KPIs; when a table bucket is
-  // selected, a second accumulator scopes the per-product rows to it.
+  // Whole-window totals feed the chart and KPIs; when table buckets are
+  // selected, a second accumulator scopes the per-product rows to them.
+  // Per-column accumulators feed the table's per-period columns, and the
+  // "prev" accumulators the N-1 overlay/columns.
   const perProduct = new Map<string, { units: number; grams: number }>();
-  const perProductTable = tableBucket
-    ? new Map<string, { units: number; grams: number }>()
-    : perProduct;
+  const perProductTable = wholePeriod
+    ? perProduct
+    : new Map<string, { units: number; grams: number }>();
   const addConsumed = (
     map: Map<string, { units: number; grams: number }>,
     productId: string,
@@ -398,28 +429,57 @@ export function buildAnalysis(
     acc.grams += grams;
     map.set(productId, acc);
   };
+  const perProductCols = new Map<string, number[]>();
+  const perProductPrevCols = new Map<string, number[]>();
+  const addColUnits = (
+    map: Map<string, number[]>,
+    productId: string,
+    col: number,
+    units: number
+  ) => {
+    let cols = map.get(productId);
+    if (!cols) {
+      cols = tableColumns.map(() => 0);
+      map.set(productId, cols);
+    }
+    cols[col] += units;
+  };
   const perBucketSeries = buckets.map(() => new Map<string, number>());
+  const perBucketPrev = buckets.map(() => 0);
   for (const m of data.movements) {
     const product = productById.get(m.productId);
     if (!product) continue;
     const t = Date.parse(m.date);
-    if (Number.isNaN(t) || t < windowStart || t >= windowEnd) continue;
+    if (Number.isNaN(t)) continue;
     const key =
       filters.granularity === "monthly"
         ? monthKeyOf(new Date(t))
         : filters.granularity === "quarterly"
           ? quarterKeyOf(new Date(t))
           : isoDate(weekStartMs(t));
-    const index = bucketIndex.get(key);
-    if (index === undefined) continue;
 
-    addConsumed(perProduct, product.id, m.units, m.grams);
-    if (tableBucket && index === tableIndex) {
-      addConsumed(perProductTable, product.id, m.units, m.grams);
+    // Current window: chart series, KPIs and the table columns.
+    const index =
+      t >= windowStart && t < windowEnd ? bucketIndex.get(key) : undefined;
+    if (index !== undefined) {
+      addConsumed(perProduct, product.id, m.units, m.grams);
+      const col = wholePeriod ? 0 : columnOfBucket.get(index);
+      if (col !== undefined) {
+        if (!wholePeriod) addConsumed(perProductTable, product.id, m.units, m.grams);
+        addColUnits(perProductCols, product.id, col, m.units);
+      }
+      const sid = seriesIdFor(product);
+      perBucketSeries[index].set(sid, (perBucketSeries[index].get(sid) ?? 0) + m.units);
     }
 
-    const sid = seriesIdFor(product);
-    perBucketSeries[index].set(sid, (perBucketSeries[index].get(sid) ?? 0) + m.units);
+    // N-1: the same movement can also be the year-earlier counterpart of a
+    // later bucket (windows longer than a year overlap their own N-1 range).
+    const prevIndex = prevIndexByKey.get(key);
+    if (prevIndex !== undefined) {
+      perBucketPrev[prevIndex] += m.units;
+      const col = wholePeriod ? 0 : columnOfBucket.get(prevIndex);
+      if (col !== undefined) addColUnits(perProductPrevCols, product.id, col, m.units);
+    }
   }
 
   // ---- forecasts (person-filtered, summed across users otherwise) ----
@@ -470,25 +530,36 @@ export function buildAnalysis(
       const value = bucketForecast(months, bucket);
       perBucketForecast[i] += value;
       productTotal += value;
-      if (tableIndex === i) productTable += value;
+      if (columnOfBucket.has(i)) productTable += value;
     });
     if (productTotal > 0) forecastPerProduct.set(productId, productTotal);
-    const tableValue = tableBucket ? productTable : productTotal;
+    // Forecast/variance collapse to the selected buckets combined.
+    const tableValue = wholePeriod ? productTotal : productTable;
     if (tableValue > 0) forecastPerProductTable.set(productId, tableValue);
   }
 
-  // ---- table rows (scoped to the selected bucket when there is one) ----
+  // ---- table rows (scoped to the selected buckets when there are any) ----
   const totalUnits = [...perProductTable.values()].reduce((sum, v) => sum + v.units, 0);
   const clampedEnd = Math.min(now.getTime(), windowEnd);
   const weeks = Math.max((clampedEnd - windowStart) / WEEK, 1 / 7);
-  const tableWeeks = tableBucket
-    ? Math.max((Math.min(now.getTime(), tableBucket.end) - tableBucket.start) / WEEK, 1 / 7)
-    : weeks;
+  const tableWeeks = wholePeriod
+    ? weeks
+    : Math.max(
+        selectedIndices.reduce(
+          (sum, i) =>
+            sum +
+            Math.max(Math.min(clampedEnd, buckets[i].end) - buckets[i].start, 0) / WEEK,
+          0
+        ),
+        1 / 7
+      );
 
   const rows: AnalysisRow[] = products
     .map((p) => {
       const consumed = perProductTable.get(p.id) ?? { units: 0, grams: 0 };
       const forecast = forecastPerProductTable.get(p.id) ?? 0;
+      const cols = perProductCols.get(p.id);
+      const prevCols = perProductPrevCols.get(p.id);
       return {
         productId: p.id,
         prCode: p.prCode,
@@ -502,6 +573,8 @@ export function buildAnalysis(
         avgPerWeek: round2(consumed.units / tableWeeks),
         forecast: round2(forecast),
         variance: round2(consumed.units - forecast),
+        bucketUnits: tableColumns.map((_, c) => round2(cols?.[c] ?? 0)),
+        prevBucketUnits: tableColumns.map((_, c) => round2(prevCols?.[c] ?? 0)),
       };
     })
     .sort((a, b) => b.units - a.units || a.name.localeCompare(b.name));
@@ -513,13 +586,27 @@ export function buildAnalysis(
       acc.forecast += r.forecast;
       return acc;
     },
-    { units: 0, grams: 0, forecast: 0, variance: 0, avgPerWeek: 0 }
+    {
+      units: 0,
+      grams: 0,
+      forecast: 0,
+      variance: 0,
+      avgPerWeek: 0,
+      bucketUnits: tableColumns.map(() => 0),
+      prevBucketUnits: tableColumns.map(() => 0),
+    }
   );
   totals.units = round2(totals.units);
   totals.grams = round2(totals.grams);
   totals.forecast = round2(totals.forecast);
   totals.variance = round2(totals.units - totals.forecast);
   totals.avgPerWeek = round2(totals.units / tableWeeks);
+  totals.bucketUnits = tableColumns.map((_, c) =>
+    round2(rows.reduce((sum, r) => sum + r.bucketUnits[c], 0))
+  );
+  totals.prevBucketUnits = tableColumns.map((_, c) =>
+    round2(rows.reduce((sum, r) => sum + r.prevBucketUnits[c], 0))
+  );
 
   // ---- chart data ----
   const chartData: ChartRow[] = buckets.map((bucket, i) => {
@@ -528,6 +615,7 @@ export function buildAnalysis(
       row[s.id] = round2(perBucketSeries[i].get(s.id) ?? 0);
     }
     row.forecast = round2(perBucketForecast[i]);
+    row.prev = round2(perBucketPrev[i]);
     return row;
   });
 
@@ -562,17 +650,16 @@ export function buildAnalysis(
     }
   }
 
-  // ---- period labels ----
-  const rangeStart = monthLabel(monthKeyOf(new Date(windowStart)));
-  const rangeEnd = monthLabel(monthKeyOf(now));
-  const rangeLabel = rangeStart === rangeEnd ? rangeStart : `${rangeStart} → ${rangeEnd}`;
+  const prevTotalUnits = round2(perBucketPrev.reduce((sum, v) => sum + v, 0));
 
   return {
     buckets,
     weeks: round2(weeks),
     rangeLabel,
-    periodLabel: tableBucket ? tableBucket.longLabel : rangeLabel,
+    prevRangeLabel,
+    periodLabel: wholePeriod ? rangeLabel : tableColumns.map((c) => c.label).join(", "),
     tableWeeks: round2(tableWeeks),
+    tableColumns,
     series,
     chartData,
     rows,
@@ -585,6 +672,11 @@ export function buildAnalysis(
       bestTypeUnits: round2(bestTypeUnits),
       forecastTotal: allForecast,
       attainmentPct: allForecast > 0 ? Math.round((allUnits / allForecast) * 100) : null,
+      prevTotalUnits,
+      yoyChangePct:
+        prevTotalUnits > 0
+          ? Math.round(((allUnits - prevTotalUnits) / prevTotalUnits) * 100)
+          : null,
     },
   };
 }
@@ -621,5 +713,6 @@ export function describeFilters(
     ["Category", category],
     ["Forecast person", person],
     ["Compare vs forecast", filters.compare ? "On" : "Off"],
+    ["Compare vs N-1", filters.compareN1 ? "On (same period one year earlier)" : "Off"],
   ];
 }

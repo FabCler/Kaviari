@@ -1,17 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -23,21 +25,33 @@ import {
 } from "@/components/ui/table";
 import { formatGrams, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { AnalysisRow, Bucket } from "@/components/consume-analysis/aggregate";
+import type {
+  AnalysisRow,
+  Bucket,
+  TableColumn,
+} from "@/components/consume-analysis/aggregate";
 
-type SortKey =
-  | "prCode"
-  | "name"
-  | "units"
-  | "grams"
-  | "sharePct"
-  | "avgPerWeek"
-  | "forecast"
-  | "variance";
+/**
+ * Sort key: a static row field, or "c<i>" / "p<i>" for the i-th consumed /
+ * N-1 column (aligned with tableColumns).
+ */
+type SortKey = string;
 
 interface SortState {
   key: SortKey;
   dir: "asc" | "desc";
+}
+
+const BUCKET_KEY_RE = /^([cp])(\d+)$/;
+
+function rowValue(row: AnalysisRow, key: SortKey): string | number {
+  const m = BUCKET_KEY_RE.exec(key);
+  if (m) {
+    const index = Number(m[2]);
+    return (m[1] === "c" ? row.bucketUnits[index] : row.prevBucketUnits[index]) ?? 0;
+  }
+  const value = row[key as keyof AnalysisRow];
+  return typeof value === "string" || typeof value === "number" ? value : 0;
 }
 
 function VarianceBadge({ row }: { row: AnalysisRow }) {
@@ -55,12 +69,14 @@ function SortableHead({
   sort,
   onSort,
   align = "right",
+  muted = false,
 }: {
   label: string;
   sortKey: SortKey;
   sort: SortState;
   onSort: (key: SortKey) => void;
   align?: "left" | "right";
+  muted?: boolean;
 }) {
   const active = sort.key === sortKey;
   const Icon = active ? (sort.dir === "desc" ? ArrowDown : ArrowUp) : ArrowUpDown;
@@ -74,7 +90,8 @@ function SortableHead({
         onClick={() => onSort(sortKey)}
         className={cn(
           "inline-flex cursor-pointer items-center gap-1 uppercase hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 rounded-sm outline-none",
-          active && "text-foreground"
+          active && "text-foreground",
+          muted && !active && "opacity-80"
         )}
       >
         {label}
@@ -88,27 +105,48 @@ export function AnalysisTable({
   rows,
   totals,
   avgPerWeekTotal,
-  periodLabel,
+  tableColumns,
+  compareN1,
   buckets,
-  tableBucket,
-  onTableBucketChange,
+  tableBuckets,
+  onTableBucketsChange,
   showAll,
   onShowAllChange,
 }: {
   rows: AnalysisRow[];
-  totals: { units: number; grams: number; forecast: number; variance: number };
+  totals: {
+    units: number;
+    grams: number;
+    forecast: number;
+    variance: number;
+    bucketUnits: number[];
+    prevBucketUnits: number[];
+  };
   avgPerWeekTotal: number;
-  /** Named period the Consumed/Forecast columns cover ("Aug 2026", "Jan 2025 → Aug 2026"). */
-  periodLabel: string;
+  /** Consumed columns: the whole period, or one per selected bucket. */
+  tableColumns: TableColumn[];
+  /** Show the N-1 column(s) next to each consumed column. */
+  compareN1: boolean;
   /** Buckets of the current granularity, for the table-period selector. */
   buckets: Bucket[];
-  /** "all" (whole period) or a bucket key. */
-  tableBucket: string;
-  onTableBucketChange: (value: string) => void;
+  /** Selected bucket keys (empty = whole period). */
+  tableBuckets: string[];
+  onTableBucketsChange: (value: string[]) => void;
   showAll: boolean;
   onShowAllChange: (value: boolean) => void;
 }) {
   const [sort, setSort] = useState<SortState>({ key: "units", dir: "desc" });
+
+  // A stale bucket sort key (column deselected, granularity switched, N-1
+  // turned off) silently falls back to the default total sort.
+  const effectiveSort = useMemo<SortState>(() => {
+    const bucketSort = BUCKET_KEY_RE.exec(sort.key);
+    const valid =
+      !bucketSort ||
+      (Number(bucketSort[2]) < tableColumns.length &&
+        (bucketSort[1] === "c" || compareN1));
+    return valid ? sort : { key: "units", dir: "desc" };
+  }, [sort, tableColumns.length, compareN1]);
 
   const onSort = (key: SortKey) => {
     setSort((prev) =>
@@ -122,41 +160,88 @@ export function AnalysisTable({
 
   const visible = useMemo(() => {
     const base = showAll ? rows : rows.filter((r) => r.units !== 0 || r.forecast !== 0);
-    const factor = sort.dir === "asc" ? 1 : -1;
+    const factor = effectiveSort.dir === "asc" ? 1 : -1;
     return [...base].sort((a, b) => {
-      const va = a[sort.key];
-      const vb = b[sort.key];
+      const va = rowValue(a, effectiveSort.key);
+      const vb = rowValue(b, effectiveSort.key);
       const cmp =
         typeof va === "string" && typeof vb === "string"
           ? va.localeCompare(vb)
           : Number(va) - Number(vb);
       return cmp * factor || a.name.localeCompare(b.name);
     });
-  }, [rows, showAll, sort]);
+  }, [rows, showAll, effectiveSort]);
+
+  const multi = tableColumns.length > 1;
+  const selectedBuckets = buckets.filter((b) => tableBuckets.includes(b.key));
+  const triggerLabel =
+    selectedBuckets.length === 0
+      ? "Whole period"
+      : selectedBuckets.length === 1
+        ? selectedBuckets[0].longLabel
+        : `${selectedBuckets.length} periods`;
+
+  const toggleBucket = (key: string) => {
+    onTableBucketsChange(
+      tableBuckets.includes(key)
+        ? tableBuckets.filter((k) => k !== key)
+        : [...tableBuckets, key]
+    );
+  };
+
+  // 5 identity columns + consumed (+ N-1) per period + optional selection
+  // total + Kg / Share / Avg / Forecast / Variance.
+  const columnCount =
+    5 + tableColumns.length * (compareN1 ? 2 : 1) + (multi ? 1 : 0) + 5;
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pt-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Label
             htmlFor="table-period"
             className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
           >
             Table period
           </Label>
-          <Select value={tableBucket} onValueChange={onTableBucketChange}>
-            <SelectTrigger size="sm" className="min-w-44" id="table-period">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Whole period</SelectItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                id="table-period"
+                variant="outline"
+                size="sm"
+                className="min-w-44 justify-between font-normal"
+              >
+                {triggerLabel}
+                <ChevronDown className="size-4 opacity-50" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-80 w-56 overflow-y-auto">
+              <DropdownMenuItem
+                onSelect={() => onTableBucketsChange([])}
+                className={cn(selectedBuckets.length === 0 && "font-medium")}
+              >
+                Whole period
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               {buckets.map((b) => (
-                <SelectItem key={b.key} value={b.key}>
+                <DropdownMenuCheckboxItem
+                  key={b.key}
+                  checked={tableBuckets.includes(b.key)}
+                  onCheckedChange={() => toggleBucket(b.key)}
+                  onSelect={(e) => e.preventDefault()}
+                >
                   {b.longLabel}
-                </SelectItem>
+                </DropdownMenuCheckboxItem>
               ))}
-            </SelectContent>
-          </Select>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {multi ? (
+            <span className="text-xs text-muted-foreground">
+              One consumed column per selected period — Share %, Avg/wk, Forecast
+              and Variance cover the selected periods combined.
+            </span>
+          ) : null}
         </div>
         {hiddenCount > 0 ? (
           <div className="flex items-center gap-2">
@@ -171,28 +256,49 @@ export function AnalysisTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableHead label="Code" sortKey="prCode" sort={sort} onSort={onSort} align="left" />
-            <SortableHead label="Description" sortKey="name" sort={sort} onSort={onSort} align="left" />
+            <SortableHead label="Code" sortKey="prCode" sort={effectiveSort} onSort={onSort} align="left" />
+            <SortableHead label="Description" sortKey="name" sort={effectiveSort} onSort={onSort} align="left" />
             <TableHead>Type</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Unit</TableHead>
-            <SortableHead
-              label={`Consumed — ${periodLabel}`}
-              sortKey="units"
-              sort={sort}
-              onSort={onSort}
-            />
-            <SortableHead label="Kg ref" sortKey="grams" sort={sort} onSort={onSort} />
-            <SortableHead label="Share %" sortKey="sharePct" sort={sort} onSort={onSort} />
-            <SortableHead label="Avg/wk" sortKey="avgPerWeek" sort={sort} onSort={onSort} />
-            <SortableHead label="Forecast" sortKey="forecast" sort={sort} onSort={onSort} />
-            <SortableHead label="Variance" sortKey="variance" sort={sort} onSort={onSort} />
+            {tableColumns.map((col, c) => (
+              <Fragment key={col.key}>
+                <SortableHead
+                  label={`Consumed — ${col.label}`}
+                  sortKey={multi ? `c${c}` : "units"}
+                  sort={effectiveSort}
+                  onSort={onSort}
+                />
+                {compareN1 ? (
+                  <SortableHead
+                    label={`N-1 — ${col.prevLabel}`}
+                    sortKey={`p${c}`}
+                    sort={effectiveSort}
+                    onSort={onSort}
+                    muted
+                  />
+                ) : null}
+              </Fragment>
+            ))}
+            {multi ? (
+              <SortableHead
+                label="Total — selection"
+                sortKey="units"
+                sort={effectiveSort}
+                onSort={onSort}
+              />
+            ) : null}
+            <SortableHead label="Kg ref" sortKey="grams" sort={effectiveSort} onSort={onSort} />
+            <SortableHead label="Share %" sortKey="sharePct" sort={effectiveSort} onSort={onSort} />
+            <SortableHead label="Avg/wk" sortKey="avgPerWeek" sort={effectiveSort} onSort={onSort} />
+            <SortableHead label="Forecast" sortKey="forecast" sort={effectiveSort} onSort={onSort} />
+            <SortableHead label="Variance" sortKey="variance" sort={effectiveSort} onSort={onSort} />
           </TableRow>
         </TableHeader>
         <TableBody>
           {visible.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="py-10 text-center text-muted-foreground">
+              <TableCell colSpan={columnCount} className="py-10 text-center text-muted-foreground">
                 No products match the current filters
                 {hiddenCount > 0 ? " — toggle “Show all products” to see dormant SKUs." : "."}
               </TableCell>
@@ -211,9 +317,23 @@ export function AnalysisTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{row.category}</TableCell>
                 <TableCell className="text-muted-foreground">{row.unit}</TableCell>
-                <TableCell className="text-right font-medium tnum">
-                  {formatNumber(row.units)}
-                </TableCell>
+                {tableColumns.map((col, c) => (
+                  <Fragment key={col.key}>
+                    <TableCell className="text-right font-medium tnum">
+                      {formatNumber(row.bucketUnits[c] ?? 0)}
+                    </TableCell>
+                    {compareN1 ? (
+                      <TableCell className="text-right text-muted-foreground tnum">
+                        {formatNumber(row.prevBucketUnits[c] ?? 0)}
+                      </TableCell>
+                    ) : null}
+                  </Fragment>
+                ))}
+                {multi ? (
+                  <TableCell className="text-right font-semibold tnum">
+                    {formatNumber(row.units)}
+                  </TableCell>
+                ) : null}
                 <TableCell className="text-right text-muted-foreground tnum">
                   {row.grams > 0 ? formatGrams(row.grams) : "—"}
                 </TableCell>
@@ -245,9 +365,23 @@ export function AnalysisTable({
             <TableCell colSpan={5} className="text-right font-medium">
               Total
             </TableCell>
-            <TableCell className="text-right font-semibold tnum">
-              {formatNumber(totals.units)}
-            </TableCell>
+            {tableColumns.map((col, c) => (
+              <Fragment key={col.key}>
+                <TableCell className="text-right font-semibold tnum">
+                  {formatNumber(totals.bucketUnits[c] ?? 0)}
+                </TableCell>
+                {compareN1 ? (
+                  <TableCell className="text-right text-muted-foreground tnum">
+                    {formatNumber(totals.prevBucketUnits[c] ?? 0)}
+                  </TableCell>
+                ) : null}
+              </Fragment>
+            ))}
+            {multi ? (
+              <TableCell className="text-right font-semibold tnum">
+                {formatNumber(totals.units)}
+              </TableCell>
+            ) : null}
             <TableCell className="text-right tnum">
               {totals.grams > 0 ? formatGrams(totals.grams) : "—"}
             </TableCell>

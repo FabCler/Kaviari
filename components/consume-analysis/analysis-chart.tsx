@@ -24,6 +24,8 @@ const CHART_COLORS = [
 /** Neutral for the folded "Other" series — never a categorical hue. */
 const OTHER_COLOR = "#8a8778";
 const FORECAST_COLOR = "var(--navy-700)";
+/** N-1 overlay: a muted, lighter navy tone — dashed, never a series hue. */
+const N1_COLOR = "#8fa1bd";
 
 const AXIS_TICK = { fontSize: 12, fill: "var(--muted-foreground)" } as const;
 
@@ -56,13 +58,16 @@ export function AnalysisChart({
   data,
   series,
   compare,
+  compareN1,
   chartStyle,
   weeklyNote,
 }: {
   data: ChartRow[];
   series: AnalysisSeries[];
   compare: boolean;
-  /** Consumption series as lines or bars; the forecast overlay stays dashed. */
+  /** Overlay the same window one year earlier ("prev" data key). */
+  compareN1: boolean;
+  /** Consumption series as lines or bars; the overlays stay dashed lines. */
   chartStyle: ChartStyle;
   weeklyNote: string | null;
 }) {
@@ -70,7 +75,8 @@ export function AnalysisChart({
   const hasAny = data.some(
     (row) =>
       series.some((s) => Number(row[s.id] ?? 0) > 0) ||
-      (compare && Number(row.forecast ?? 0) > 0)
+      (compare && Number(row.forecast ?? 0) > 0) ||
+      (compareN1 && Number(row.prev ?? 0) > 0)
   );
 
   if (!hasAny) {
@@ -138,6 +144,19 @@ export function AnalysisChart({
                     isAnimationActive={false}
                   />
                 ))}
+            {compareN1 ? (
+              <Line
+                type="monotone"
+                dataKey="prev"
+                name="N-1"
+                stroke={N1_COLOR}
+                strokeWidth={2}
+                strokeDasharray="3 3"
+                dot={false}
+                activeDot={{ r: 4 }}
+                isAnimationActive={false}
+              />
+            ) : null}
             {compare ? (
               <Line
                 type="monotone"
@@ -166,6 +185,12 @@ export function AnalysisChart({
             {s.label}
           </span>
         ))}
+        {compareN1 ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
+            <LegendSwatch color={N1_COLOR} dashed />
+            N-1
+          </span>
+        ) : null}
         {compare ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
             <LegendSwatch color={FORECAST_COLOR} dashed />
