@@ -2,6 +2,7 @@ import { subDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { getStockOverview } from "@/lib/stock";
 import { DEMAND_MOVEMENT_TYPES } from "@/lib/domain";
+import { getUpcomingForecasts } from "@/lib/forecasts";
 import { shortProductName } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { InventoryTable } from "@/components/inventory/inventory-table";
@@ -9,8 +10,9 @@ import type { InventoryRow } from "@/components/inventory/types";
 
 export default async function InventoryPage() {
   const now = new Date();
-  const [overview, consumedGroups] = await Promise.all([
+  const [overview, forecasts, consumedGroups] = await Promise.all([
     getStockOverview({ now }),
+    getUpcomingForecasts(3, now),
     // Units consumed over the last 30 days per product: demand movements are
     // recorded with negative quantities, so sum and flip the sign.
     prisma.stockMovement.groupBy({
@@ -44,6 +46,7 @@ export default async function InventoryPage() {
     onHandUnits: row.onHandUnits,
     onOrderUnits: row.onOrderUnits,
     consumed30dUnits: consumedByProduct.get(row.product.id) ?? 0,
+    forecastMonths: forecasts.byProduct.get(row.product.id) ?? [0, 0, 0],
     aduUnitsPerDay: row.aduUnitsPerDay,
     aduIsOverride: row.aduIsOverride,
     aduOverrideUnitsPerDay: row.product.aduOverrideUnitsPerDay,
@@ -57,7 +60,7 @@ export default async function InventoryPage() {
         title="Inventory"
         description="On-hand stock, lots and weekly cover across the cellar"
       />
-      <InventoryTable rows={rows} />
+      <InventoryTable rows={rows} forecastMonthLabels={forecasts.monthLabels} />
     </div>
   );
 }

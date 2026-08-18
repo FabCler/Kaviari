@@ -6,10 +6,13 @@ import {
   type ReplenishmentSuggestion,
 } from "@/lib/replenishment";
 import { OPEN_PO_STATUSES } from "@/lib/domain";
+import { getUpcomingForecasts } from "@/lib/forecasts";
 import type { AppSettings } from "@/lib/settings";
 
 export interface PlannerRow extends ProductStockView {
   suggestion: ReplenishmentSuggestion;
+  /** Team forecast per upcoming month (index 0 = current month), 3 entries. */
+  forecastMonths: number[];
 }
 
 export interface PlannerData {
@@ -23,10 +26,15 @@ export interface PlannerData {
   rows: PlannerRow[];
   totalSuggestedValue: number;
   openPoCount: number;
+  /** Short labels of the 3 upcoming forecast months, e.g. ["Aug","Sep","Oct"]. */
+  forecastMonthLabels: string[];
 }
 
 export async function getPlannerData(now = new Date()): Promise<PlannerData> {
-  const overview = await getStockOverview({ now });
+  const [overview, forecasts] = await Promise.all([
+    getStockOverview({ now }),
+    getUpcomingForecasts(3, now),
+  ]);
   const { settings } = overview;
 
   const rows: PlannerRow[] = overview.rows.map((row) => ({
@@ -40,6 +48,7 @@ export async function getPlannerData(now = new Date()): Promise<PlannerData> {
       },
       settings
     ),
+    forecastMonths: forecasts.byProduct.get(row.product.id) ?? [0, 0, 0],
   }));
 
   const lastOrderDate = settings.lastOrderDate
@@ -70,6 +79,7 @@ export async function getPlannerData(now = new Date()): Promise<PlannerData> {
       0
     ),
     openPoCount,
+    forecastMonthLabels: forecasts.monthLabels,
   };
 }
 

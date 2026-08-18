@@ -157,6 +157,49 @@ export function buildBuckets(
   return buckets;
 }
 
+/**
+ * The N-1 counterpart of a bucket: the same month/quarter one calendar year
+ * earlier, or — weekly — the bucket exactly 52 weeks earlier, so Mondays stay
+ * aligned and every current week maps to exactly one previous week.
+ */
+export function prevBucketOf(bucket: Bucket, granularity: Granularity): Bucket {
+  if (granularity === "monthly") {
+    const d = new Date(bucket.start);
+    const start = Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), 1);
+    const end = Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth() + 1, 1);
+    const key = monthKeyOf(new Date(start));
+    const label = monthLabel(key);
+    return { key, label, longLabel: label, start, end };
+  }
+  if (granularity === "quarterly") {
+    const d = new Date(bucket.start);
+    const start = Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), 1);
+    const end = Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth() + 3, 1);
+    const key = quarterKeyOf(new Date(start));
+    const label = quarterLabel(key);
+    return { key, label, longLabel: label, start, end };
+  }
+  const start = bucket.start - 52 * WEEK;
+  const startDate = new Date(start);
+  return {
+    key: isoDate(start),
+    label: startDate.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "2-digit",
+      timeZone: "UTC",
+    }),
+    longLabel: `Wk of ${startDate.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    })}`,
+    start,
+    end: start + WEEK,
+  };
+}
+
 // ---- period presets ----------------------------------------------------------
 
 /**
@@ -205,6 +248,16 @@ export interface AnalysisSeries {
 
 export type ChartRow = { key: string; label: string } & Record<string, number | string>;
 
+/** One "Consumed" column of the table: the whole period, or a selected bucket. */
+export interface TableColumn {
+  /** Bucket key, or "all" for the whole-period single column. */
+  key: string;
+  /** Column heading ("Aug 2026", "Q1 2025", "Wk of 10 Aug 2026", or the range). */
+  label: string;
+  /** N-1 counterpart heading ("Aug 2025", "Jan 2024 → Aug 2025", …). */
+  prevLabel: string;
+}
+
 export interface AnalysisRow {
   productId: string;
   prCode: string;
@@ -212,12 +265,18 @@ export interface AnalysisRow {
   caviarType: string | null;
   category: string;
   unit: string;
+  /** Consumed units over the whole table scope (all selected buckets combined). */
   units: number;
   grams: number;
   sharePct: number;
   avgPerWeek: number;
+  /** Forecast/variance over the whole table scope (selected buckets combined). */
   forecast: number;
   variance: number;
+  /** Consumed units per table column (aligned with result.tableColumns). */
+  bucketUnits: number[];
+  /** N-1 consumed units per column (same period one year earlier). */
+  prevBucketUnits: number[];
 }
 
 export interface AnalysisResult {
@@ -226,15 +285,19 @@ export interface AnalysisResult {
   weeks: number;
   /** Human label of the whole window ("Jan 2025 → Aug 2026"). */
   rangeLabel: string;
-  /** What the TABLE covers: the selected bucket's label, or the whole range. */
+  /** N-1 label of the whole window ("Jan 2024 → Aug 2025"). */
+  prevRangeLabel: string;
+  /** What the TABLE covers: selected bucket label(s), or the whole range. */
   periodLabel: string;
-  /** Elapsed weeks in the table scope (selected bucket, or the whole window). */
+  /** Elapsed weeks in the table scope (selected buckets, or the whole window). */
   tableWeeks: number;
+  /** Columns the table shows: the whole period, or one per selected bucket. */
+  tableColumns: TableColumn[];
   /** Consumption series (one, or one per compared type + "Other"). */
   series: AnalysisSeries[];
-  /** One row per bucket; series values by id, plus "forecast". */
+  /** One row per bucket; series values by id, plus "forecast" and "prev" (N-1). */
   chartData: ChartRow[];
-  /** Per-product rows, scoped to the table bucket when one is selected. */
+  /** Per-product rows, scoped to the selected table buckets when any. */
   rows: AnalysisRow[];
   totals: {
     units: number;
@@ -243,6 +306,9 @@ export interface AnalysisResult {
     variance: number;
     /** Table-scope average, for the table footer / export totals row. */
     avgPerWeek: number;
+    /** Column totals, aligned with tableColumns. */
+    bucketUnits: number[];
+    prevBucketUnits: number[];
   };
   kpis: {
     totalUnits: number;
@@ -253,6 +319,10 @@ export interface AnalysisResult {
     forecastTotal: number;
     /** consumed / forecast, percent; null when there is no forecast. */
     attainmentPct: number | null;
+    /** Consumed one year earlier over the same window (N-1). */
+    prevTotalUnits: number;
+    /** (consumed − N-1) / N-1, percent; null when there is no N-1 data. */
+    yoyChangePct: number | null;
   };
 }
 

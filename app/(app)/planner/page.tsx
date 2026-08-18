@@ -74,6 +74,7 @@ export default async function PlannerPage() {
     suggestedUnits: row.suggestion.suggestedUnits,
     boxes: row.suggestion.boxes,
     lineValue: row.suggestion.suggestedUnits * row.product.unitCost,
+    forecastMonths: row.forecastMonths,
   }));
 
   const days = planner.daysUntilOrder;
@@ -164,7 +165,11 @@ export default async function PlannerPage() {
 
       <Card className="py-2">
         <CardContent className="px-2 sm:px-4">
-          <PlannerTable rows={rows} currency={settings.currency} />
+          <PlannerTable
+            rows={rows}
+            currency={settings.currency}
+            forecastMonthLabels={planner.forecastMonthLabels}
+          />
         </CardContent>
       </Card>
 

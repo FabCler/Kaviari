@@ -3,6 +3,13 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -39,6 +46,8 @@ export interface PlannerRowDto {
   weeksOfCover: number | null;
   orderUpToUnits: number;
   suggestedUnits: number;
+  /** Team forecast per upcoming month (index 0 = current month), 3 entries. */
+  forecastMonths: number[];
   boxes: number | null;
   lineValue: number;
 }
@@ -65,12 +74,19 @@ function isActive(row: PlannerRowDto): boolean {
 export function PlannerTable({
   rows,
   currency,
+  forecastMonthLabels,
 }: {
   rows: PlannerRowDto[];
   currency: string;
+  forecastMonthLabels: string[];
 }) {
   const [category, setCategory] = useState<string>("Caviar");
   const [showAll, setShowAll] = useState(false);
+  const [forecastHorizon, setForecastHorizon] = useState(3);
+  const horizonLabel =
+    forecastHorizon === 1
+      ? forecastMonthLabels[0]
+      : `${forecastMonthLabels[0]}\u2013${forecastMonthLabels[forecastHorizon - 1]}`;
 
   const inCategory = useMemo(
     () =>
@@ -103,6 +119,22 @@ export function PlannerTable({
             </TabsList>
           </Tabs>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            value={String(forecastHorizon)}
+            onValueChange={(value) => setForecastHorizon(Number(value))}
+          >
+            <SelectTrigger size="sm" aria-label="Forecast horizon">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  Forecast: {n} month{n > 1 ? "s" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         {dormantCount > 0 ? (
           <div className="flex items-center gap-2">
             <Switch
@@ -118,6 +150,7 @@ export function PlannerTable({
             </Label>
           </div>
         ) : null}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -129,6 +162,9 @@ export function PlannerTable({
               <TableHead className="text-right">On hand</TableHead>
               <TableHead className="text-right">On order</TableHead>
               <TableHead className="text-center">Cover</TableHead>
+              <TableHead className="text-right">
+                Forecast ({horizonLabel})
+              </TableHead>
               <TableHead className="text-right">Order-up-to S</TableHead>
               <TableHead className="text-right">Suggested</TableHead>
               <TableHead>
@@ -140,7 +176,7 @@ export function PlannerTable({
             {visible.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="py-10 text-center text-muted-foreground"
                 >
                   {inCategory.length === 0
@@ -188,6 +224,17 @@ export function PlannerTable({
                     <CoverBadge weeks={row.weeksOfCover} />
                   </TableCell>
                   <TableCell className="text-right tnum">
+                    {(() => {
+                      const total =
+                        Math.round(
+                          row.forecastMonths
+                            .slice(0, forecastHorizon)
+                            .reduce((sum, units) => sum + units, 0) * 100
+                        ) / 100;
+                      return total > 0 ? formatUnits(total, row.unit) : "—";
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-right tnum">
                     {formatNumber(row.orderUpToUnits, 0)}
                   </TableCell>
                   <TableCell className="text-right">
@@ -225,7 +272,7 @@ export function PlannerTable({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={6} className="text-right font-medium">
+              <TableCell colSpan={7} className="text-right font-medium">
                 Total suggested order value
                 {category !== "All" ? ` — ${category}` : ""}
               </TableCell>

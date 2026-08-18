@@ -79,10 +79,12 @@ export const analysisFiltersSchema = z.object({
   /** Number of buckets in the rolling window (weeks, months or quarters). */
   window: z.number().int().min(1).max(MAX_WINDOW),
   /**
-   * Bucket key the TABLE zooms to ("all" = whole period). Chart and KPIs
-   * always cover the whole window; unknown keys fall back to "all".
+   * Bucket keys the TABLE zooms to (empty = whole period). Each selected
+   * bucket becomes its own "Consumed — <label>" column, ordered
+   * chronologically. Chart and KPIs always cover the whole window; unknown
+   * or stale keys are ignored (all-unknown falls back to the whole period).
    */
-  tableBucket: z.string().min(1).max(16),
+  tableBuckets: z.array(z.string().min(1).max(16)).max(MAX_WINDOW),
   scope: z.enum(["total", "by_type"]),
   /** Caviar types to compare (by_type scope). Empty = all types. */
   types: z.array(z.enum(CAVIAR_TYPES)).max(CAVIAR_TYPES.length),
@@ -91,6 +93,12 @@ export const analysisFiltersSchema = z.object({
   personId: z.string().min(1).max(64),
   /** Overlay forecast series / KPI attainment. */
   compare: z.boolean(),
+  /**
+   * Overlay the same window one year earlier (N-1): monthly buckets compare
+   * to the same month, quarterly to the same quarter of the previous year,
+   * weekly to the bucket exactly 52 weeks earlier (Mondays stay aligned).
+   */
+  compareN1: z.boolean(),
   /** Include zero-consumption, zero-forecast products in the table/export. */
   showAll: z.boolean(),
 });

@@ -32,8 +32,15 @@ function isDormant(row: InventoryRow): boolean {
   );
 }
 
-export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
+export function InventoryTable({
+  rows,
+  forecastMonthLabels,
+}: {
+  rows: InventoryRow[];
+  forecastMonthLabels: string[];
+}) {
   const [category, setCategory] = React.useState<string>(ALL);
+  const [forecastHorizon, setForecastHorizon] = React.useState(3);
   const [caviarType, setCaviarType] = React.useState<string>(ALL);
   const [showDormant, setShowDormant] = React.useState(false);
 
@@ -100,6 +107,28 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
               ))}
             </SelectContent>
           </Select>
+          <Label htmlFor="forecast-horizon" className="sr-only">
+            Forecast horizon
+          </Label>
+          <Select
+            value={String(forecastHorizon)}
+            onValueChange={(value) => setForecastHorizon(Number(value))}
+          >
+            <SelectTrigger
+              id="forecast-horizon"
+              size="sm"
+              aria-label="Forecast horizon"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  Forecast: {n} month{n > 1 ? "s" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         {dormantRows.length > 0 ? (
           <div className="flex items-center gap-2">
@@ -118,12 +147,28 @@ export function InventoryTable({ rows }: { rows: InventoryRow[] }) {
         ) : null}
       </div>
 
-      <ProductsTable rows={visibleRows} />
+      <ProductsTable
+        rows={visibleRows}
+        forecastHorizon={forecastHorizon}
+        forecastMonthLabels={forecastMonthLabels}
+      />
     </div>
   );
 }
 
-function ProductsTable({ rows }: { rows: InventoryRow[] }) {
+function ProductsTable({
+  rows,
+  forecastHorizon,
+  forecastMonthLabels,
+}: {
+  rows: InventoryRow[];
+  forecastHorizon: number;
+  forecastMonthLabels: string[];
+}) {
+  const horizonLabel =
+    forecastHorizon === 1
+      ? forecastMonthLabels[0]
+      : `${forecastMonthLabels[0]}\u2013${forecastMonthLabels[forecastHorizon - 1]}`;
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
@@ -144,6 +189,9 @@ function ProductsTable({ rows }: { rows: InventoryRow[] }) {
             <TableHead className="text-right">Stock on hand</TableHead>
             <TableHead className="text-right">On order</TableHead>
             <TableHead className="text-right">Consumed (30 d)</TableHead>
+            <TableHead className="text-right">
+              Forecast ({horizonLabel})
+            </TableHead>
             <TableHead className="text-right">Cover</TableHead>
           </TableRow>
         </TableHeader>
@@ -186,6 +234,21 @@ function ProductsTable({ rows }: { rows: InventoryRow[] }) {
                 ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
+              </TableCell>
+              <TableCell className="tnum text-right">
+                {(() => {
+                  const total =
+                    Math.round(
+                      row.forecastMonths
+                        .slice(0, forecastHorizon)
+                        .reduce((sum, units) => sum + units, 0) * 100
+                    ) / 100;
+                  return total > 0 ? (
+                    formatUnits(total, row.unit)
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  );
+                })()}
               </TableCell>
               <TableCell className="text-right">
                 <CoverBadge weeks={row.weeksOfCover} />
