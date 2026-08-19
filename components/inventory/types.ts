@@ -14,7 +14,7 @@ export interface InventoryRow {
   onOrderUnits: number;
   /** Units consumed over the last 30 days (demand movements, positive). */
   consumed30dUnits: number;
-  /** Team forecast per upcoming month (index 0 = current month), 3 entries. */
+  /** Team forecast per upcoming month (index 0 = next month), 3 entries. */
   forecastMonths: number[];
   aduUnitsPerDay: number;
   aduIsOverride: boolean;

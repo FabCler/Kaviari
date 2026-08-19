@@ -46,7 +46,7 @@ export interface PlannerRowDto {
   weeksOfCover: number | null;
   orderUpToUnits: number;
   suggestedUnits: number;
-  /** Team forecast per upcoming month (index 0 = current month), 3 entries. */
+  /** Team forecast per upcoming month (index 0 = next month), 3 entries. */
   forecastMonths: number[];
   boxes: number | null;
   lineValue: number;
@@ -83,10 +83,6 @@ export function PlannerTable({
   const [category, setCategory] = useState<string>("Caviar");
   const [showAll, setShowAll] = useState(false);
   const [forecastHorizon, setForecastHorizon] = useState(3);
-  const horizonLabel =
-    forecastHorizon === 1
-      ? forecastMonthLabels[0]
-      : `${forecastMonthLabels[0]}\u2013${forecastMonthLabels[forecastHorizon - 1]}`;
 
   const inCategory = useMemo(
     () =>
@@ -162,9 +158,11 @@ export function PlannerTable({
               <TableHead className="text-right">On hand</TableHead>
               <TableHead className="text-right">On order</TableHead>
               <TableHead className="text-center">Cover</TableHead>
-              <TableHead className="text-right">
-                Forecast ({horizonLabel})
-              </TableHead>
+              {forecastMonthLabels.slice(0, forecastHorizon).map((label) => (
+                <TableHead key={label} className="text-right">
+                  Forecast {label}
+                </TableHead>
+              ))}
               <TableHead className="text-right">Order-up-to S</TableHead>
               <TableHead className="text-right">Suggested</TableHead>
               <TableHead>
@@ -176,7 +174,7 @@ export function PlannerTable({
             {visible.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={8 + forecastHorizon}
                   className="py-10 text-center text-muted-foreground"
                 >
                   {inCategory.length === 0
@@ -223,17 +221,13 @@ export function PlannerTable({
                   <TableCell className="text-center">
                     <CoverBadge weeks={row.weeksOfCover} />
                   </TableCell>
-                  <TableCell className="text-right tnum">
-                    {(() => {
-                      const total =
-                        Math.round(
-                          row.forecastMonths
-                            .slice(0, forecastHorizon)
-                            .reduce((sum, units) => sum + units, 0) * 100
-                        ) / 100;
-                      return total > 0 ? formatUnits(total, row.unit) : "—";
-                    })()}
-                  </TableCell>
+                  {row.forecastMonths
+                    .slice(0, forecastHorizon)
+                    .map((units, index) => (
+                      <TableCell key={index} className="text-right tnum">
+                        {units > 0 ? formatUnits(units, row.unit) : "—"}
+                      </TableCell>
+                    ))}
                   <TableCell className="text-right tnum">
                     {formatNumber(row.orderUpToUnits, 0)}
                   </TableCell>
@@ -272,7 +266,7 @@ export function PlannerTable({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={7} className="text-right font-medium">
+              <TableCell colSpan={6 + forecastHorizon} className="text-right font-medium">
                 Total suggested order value
                 {category !== "All" ? ` — ${category}` : ""}
               </TableCell>

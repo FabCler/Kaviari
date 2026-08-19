@@ -2,12 +2,12 @@ import { prisma } from "@/lib/db";
 
 /**
  * Team forecasts for the upcoming months (summed across users), used by the
- * Inventory and Order Planner tables. Months start at the current calendar
- * month: index 0 = this month, 1 = next month, 2 = the month after.
+ * Inventory and Order Planner tables. Months start at the NEXT calendar
+ * month: in August, index 0 = September, 1 = October, 2 = November.
  */
 
 export interface UpcomingForecasts {
-  /** Short month labels, e.g. ["Aug", "Sep", "Oct"]. */
+  /** Short month labels, e.g. ["Sep", "Oct", "Nov"]. */
   monthLabels: string[];
   /** productId -> per-month forecast units (same order as monthLabels). */
   byProduct: Map<string, number[]>;
@@ -22,15 +22,17 @@ export async function getUpcomingForecasts(
   monthsCount = 3,
   now = new Date()
 ): Promise<UpcomingForecasts> {
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  );
   const end = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + monthsCount, 1)
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1 + monthsCount, 1)
   );
   const monthLabels: string[] = [];
   for (let i = 0; i < monthsCount; i++) {
     monthLabels.push(
       MONTH_NAMES[new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i, 1)
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1 + i, 1)
       ).getUTCMonth()]
     );
   }

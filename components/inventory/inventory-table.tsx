@@ -165,10 +165,6 @@ function ProductsTable({
   forecastHorizon: number;
   forecastMonthLabels: string[];
 }) {
-  const horizonLabel =
-    forecastHorizon === 1
-      ? forecastMonthLabels[0]
-      : `${forecastMonthLabels[0]}\u2013${forecastMonthLabels[forecastHorizon - 1]}`;
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
@@ -189,9 +185,11 @@ function ProductsTable({
             <TableHead className="text-right">Stock on hand</TableHead>
             <TableHead className="text-right">On order</TableHead>
             <TableHead className="text-right">Consumed (30 d)</TableHead>
-            <TableHead className="text-right">
-              Forecast ({horizonLabel})
-            </TableHead>
+            {forecastMonthLabels.slice(0, forecastHorizon).map((label) => (
+              <TableHead key={label} className="text-right">
+                Forecast {label}
+              </TableHead>
+            ))}
             <TableHead className="text-right">Cover</TableHead>
           </TableRow>
         </TableHeader>
@@ -235,21 +233,17 @@ function ProductsTable({
                   <span className="text-muted-foreground">-</span>
                 )}
               </TableCell>
-              <TableCell className="tnum text-right">
-                {(() => {
-                  const total =
-                    Math.round(
-                      row.forecastMonths
-                        .slice(0, forecastHorizon)
-                        .reduce((sum, units) => sum + units, 0) * 100
-                    ) / 100;
-                  return total > 0 ? (
-                    formatUnits(total, row.unit)
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  );
-                })()}
-              </TableCell>
+              {row.forecastMonths
+                .slice(0, forecastHorizon)
+                .map((units, index) => (
+                  <TableCell key={index} className="tnum text-right">
+                    {units > 0 ? (
+                      formatUnits(units, row.unit)
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                ))}
               <TableCell className="text-right">
                 <CoverBadge weeks={row.weeksOfCover} />
               </TableCell>

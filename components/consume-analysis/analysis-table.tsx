@@ -264,14 +264,14 @@ export function AnalysisTable({
             {tableColumns.map((col, c) => (
               <Fragment key={col.key}>
                 <SortableHead
-                  label={`Consumed — ${col.label}`}
+                  label={multi ? col.label : "Consumed"}
                   sortKey={multi ? `c${c}` : "units"}
                   sort={effectiveSort}
                   onSort={onSort}
                 />
                 {compareN1 ? (
                   <SortableHead
-                    label={`N-1 — ${col.prevLabel}`}
+                    label={multi ? col.prevLabel : "N-1"}
                     sortKey={`p${c}`}
                     sort={effectiveSort}
                     onSort={onSort}
@@ -282,7 +282,7 @@ export function AnalysisTable({
             ))}
             {multi ? (
               <SortableHead
-                label="Total — selection"
+                label="Total"
                 sortKey="units"
                 sort={effectiveSort}
                 onSort={onSort}
