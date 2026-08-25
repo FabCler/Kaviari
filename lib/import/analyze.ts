@@ -232,6 +232,7 @@ async function analyzeStockTake(
       return {
         productId,
         productName: product.name,
+        prCode: product.prCode,
         gramsPerUnit: product.gramsPerUnit,
         countedTins,
         systemTins,
@@ -322,6 +323,7 @@ async function analyzeSalesExport(
     rows.push({
       productId: product.id,
       productName: product.name,
+      prCode: product.prCode,
       gramsPerUnit: product.gramsPerUnit,
       period,
       tins: round2(row.tins),

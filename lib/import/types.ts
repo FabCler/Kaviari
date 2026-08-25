@@ -37,6 +37,7 @@ export interface PriceListPreviewRow {
 export interface StockTakePreviewRow {
   productId: string;
   productName: string;
+  prCode: string;
   gramsPerUnit: number | null;
   countedTins: number;
   /** Recomputed server-side from in-stock lots — never trusted from the AI. */
@@ -47,6 +48,7 @@ export interface StockTakePreviewRow {
 export interface SalesPreviewRow {
   productId: string;
   productName: string;
+  prCode: string;
   gramsPerUnit: number | null;
   /**
    * When the movement happened: an ISO date ("2025-03-14") for daily rows, or

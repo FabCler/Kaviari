@@ -140,6 +140,7 @@ export function PriceListPreview({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Code</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">Old</TableHead>
                 <TableHead className="text-right">New</TableHead>
@@ -151,6 +152,9 @@ export function PriceListPreview({
                 const up = row.oldUnitCost != null && row.unitCost > row.oldUnitCost;
                 return (
                   <TableRow key={`chg-${i}`}>
+                    <TableCell className="tnum text-muted-foreground">
+                      {row.prCode ?? "—"}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {shortProductName(row.matchedProductName ?? row.name)}
                       <span className="ml-2 text-xs text-muted-foreground tnum">
@@ -236,6 +240,7 @@ export function StockTakePreview({ rows }: { rows: StockTakePreviewRow[] }) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Code</TableHead>
             <TableHead>Product</TableHead>
             <TableHead className="text-right">Counted</TableHead>
             <TableHead className="text-right">System</TableHead>
@@ -245,6 +250,9 @@ export function StockTakePreview({ rows }: { rows: StockTakePreviewRow[] }) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.productId}>
+              <TableCell className="tnum text-muted-foreground">
+                {row.prCode}
+              </TableCell>
               <TableCell className="font-medium">
                 {shortProductName(row.productName)}
                 <span className="ml-2 text-xs text-muted-foreground tnum">
@@ -280,11 +288,12 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
   const monthlyCount = rows.filter((row) => isMonthPeriod(row.period)).length;
   const totals = new Map<
     string,
-    { name: string; tins: number; grams: number }
+    { name: string; prCode: string; tins: number; grams: number }
   >();
   for (const row of rows) {
     const entry = totals.get(row.productId) ?? {
       name: row.productName,
+      prCode: row.prCode,
       tins: 0,
       grams: 0,
     };
@@ -300,6 +309,7 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Code</TableHead>
               <TableHead>Product</TableHead>
               <TableHead className="text-right">Tins</TableHead>
               <TableHead className="text-right">Grams</TableHead>
@@ -308,6 +318,9 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
           <TableBody>
             {[...totals.values()].map((entry) => (
               <TableRow key={entry.name}>
+                <TableCell className="tnum text-muted-foreground">
+                  {entry.prCode}
+                </TableCell>
                 <TableCell className="font-medium">
                   {shortProductName(entry.name)}
                 </TableCell>
@@ -340,6 +353,7 @@ export function SalesPreview({ rows }: { rows: SalesPreviewRow[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Period</TableHead>
+              <TableHead>Code</TableHead>
               <TableHead>Product</TableHead>
               <TableHead className="text-right">Tins</TableHead>
               <TableHead>Channel</TableHead>

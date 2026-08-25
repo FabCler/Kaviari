@@ -507,6 +507,7 @@ export function PoDetailClient({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Code</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead className="text-right">Qty (units)</TableHead>
                     <TableHead className="text-right">Boxes</TableHead>
@@ -525,10 +526,13 @@ export function PoDetailClient({
                     const boxes = lineBoxes(qty, line.packingPerBox);
                     return (
                       <TableRow key={line.productId}>
+                        <TableCell className="tnum text-muted-foreground">
+                          {line.prCode}
+                        </TableCell>
                         <TableCell>
                           <div className="font-medium">{line.productName}</div>
                           <div className="text-xs text-muted-foreground tnum">
-                            {line.prCode} · {line.unit}
+                            {line.unit}
                             {line.packingPerBox
                               ? ` · box of ${line.packingPerBox}`
                               : ""}
@@ -600,7 +604,9 @@ export function PoDetailClient({
                 </TableBody>
                 <TableFooter>
                   <TableRow>
-                    <TableCell className="font-medium">Total</TableCell>
+                    <TableCell colSpan={2} className="font-medium">
+                      Total
+                    </TableCell>
                     <TableCell className="text-right font-semibold tnum">
                       {formatNumber(totals.units)}{" "}
                       {totals.units === 1 ? "unit" : "units"}

@@ -7,7 +7,9 @@
  * movements and lots. v6 imports the confirmed consumption history
  * (data/consumption_2025.json — Jan 2025 → Jul 2026 monthly totals per PR
  * code, spread as whole numbers across each month's ISO weeks, no lot).
- * August 2026 onward is recorded through the website.
+ * August 2026 onward is recorded through the website. v7 syncs the product
+ * catalog from data/products_db.json (upsert by PR code, deactivate removed
+ * codes) without touching movements, lots, forecasts or accounts.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -17,7 +19,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 6;
+const VERSION = 7;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -26,11 +28,81 @@ interface MonthlyRow {
   tins: number;
 }
 
+interface CatalogProduct {
+  prCode: string;
+  name: string;
+  caviarType: string | null;
+  category: string;
+  unit: string;
+  packingPerBox: number | null;
+  gramsPerUnit: number | null;
+  unitCost: number;
+  currency: string;
+}
+
+/** Upsert every catalog product by PR code; deactivate codes not in the file. */
+async function syncCatalog(): Promise<string> {
+  const file = join(__dirname, "..", "data", "products_db.json");
+  if (!existsSync(file)) return "no catalog file";
+  const catalog: CatalogProduct[] = JSON.parse(readFileSync(file, "utf8"));
+  const codes = new Set(catalog.map((p) => p.prCode));
+
+  let created = 0;
+  let updated = 0;
+  for (const entry of catalog) {
+    const data = {
+      name: entry.name,
+      caviarType: entry.caviarType,
+      category: entry.category,
+      unit: entry.unit,
+      packingPerBox: entry.packingPerBox,
+      gramsPerUnit: entry.gramsPerUnit,
+      unitCost: entry.unitCost,
+      currency: entry.currency,
+      active: true,
+    };
+    const existing = await prisma.product.findUnique({
+      where: { prCode: entry.prCode },
+    });
+    if (existing) {
+      await prisma.product.update({ where: { id: existing.id }, data });
+      updated += 1;
+    } else {
+      await prisma.product.create({ data: { prCode: entry.prCode, ...data } });
+      created += 1;
+    }
+  }
+  const deactivated = await prisma.product.updateMany({
+    where: { prCode: { notIn: [...codes] }, active: true },
+    data: { active: false },
+  });
+  return `catalog synced: ${created} created, ${updated} updated, ${deactivated.count} deactivated`;
+}
+
 async function main() {
   const done = await prisma.setting.findUnique({ where: { key: GUARD_KEY } });
   const doneVersion = done ? Number(done.value.split("|")[0]) || 1 : 0;
   if (doneVersion >= VERSION) {
     console.log("consumption-maintenance: up to date — skipping.");
+    return;
+  }
+
+  const catalogResult = await syncCatalog();
+  console.log(`consumption-maintenance: ${catalogResult}`);
+
+  if (doneVersion >= 6) {
+    // Only the catalog changed — keep the imported history as is.
+    await prisma.setting.upsert({
+      where: { key: GUARD_KEY },
+      create: {
+        key: GUARD_KEY,
+        value: `${VERSION}|${new Date().toISOString()}`,
+      },
+      update: { value: `${VERSION}|${new Date().toISOString()}` },
+    });
+    console.log(
+      `consumption-maintenance: v${doneVersion} -> v${VERSION} — catalog refresh only.`
+    );
     return;
   }
 

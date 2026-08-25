@@ -153,6 +153,7 @@ export function PlannerTable({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Code</TableHead>
               <TableHead>Product</TableHead>
               <TableHead className="text-right">ADU units/day</TableHead>
               <TableHead className="text-right">On hand</TableHead>
@@ -174,7 +175,7 @@ export function PlannerTable({
             {visible.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8 + forecastHorizon}
+                  colSpan={9 + forecastHorizon}
                   className="py-10 text-center text-muted-foreground"
                 >
                   {inCategory.length === 0
@@ -190,12 +191,13 @@ export function PlannerTable({
                     row.suggestedUnits > 0 ? "bg-gold/[0.04]" : undefined
                   }
                 >
+                  <TableCell className="tnum text-muted-foreground">
+                    {row.prCode}
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium">{row.name}</div>
                     <div className="text-xs text-muted-foreground tnum">
-                      {row.prCode}
-                      {row.gramsPerUnit ? ` · ${row.gramsPerUnit} g` : ""}
-                      {" · "}
+                      {row.gramsPerUnit ? `${row.gramsPerUnit} g · ` : ""}
                       {formatMoney(row.unitCost, currency)}
                       {row.packingPerBox
                         ? ` · box of ${row.packingPerBox}`
@@ -266,7 +268,7 @@ export function PlannerTable({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={6 + forecastHorizon} className="text-right font-medium">
+              <TableCell colSpan={7 + forecastHorizon} className="text-right font-medium">
                 Total suggested order value
                 {category !== "All" ? ` — ${category}` : ""}
               </TableCell>

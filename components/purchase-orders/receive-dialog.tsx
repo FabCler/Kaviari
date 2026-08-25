@@ -19,6 +19,7 @@ import { formatTins } from "@/lib/format";
 import type { PoDto } from "@/components/purchase-orders/types";
 
 interface ReceiveLineState {
+  prCode: string;
   lineId: string;
   productName: string;
   orderedTins: number;
@@ -37,6 +38,7 @@ function buildInitialLines(po: PoDto): ReceiveLineState[] {
   );
   return po.lines.map((line, index) => ({
     lineId: line.id,
+    prCode: line.prCode,
     productName: line.productName,
     orderedTins: line.quantityTins,
     receivedTins: String(line.quantityTins),
@@ -142,7 +144,12 @@ export function ReceiveDialog({
               className="rounded-lg border bg-pearl/50 p-3"
             >
               <div className="mb-2 flex items-baseline justify-between gap-2">
-                <p className="text-sm font-medium">{line.productName}</p>
+                <p className="text-sm font-medium">
+                  <span className="tnum text-muted-foreground">
+                    {line.prCode}
+                  </span>{" "}
+                  · {line.productName}
+                </p>
                 <p className="text-xs text-muted-foreground tnum">
                   ordered {formatTins(line.orderedTins)}
                 </p>
