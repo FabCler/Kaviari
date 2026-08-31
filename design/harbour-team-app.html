@@ -344,7 +344,11 @@
   }
   .check:hover { border-color: var(--st-done); }
   .check.on { background: var(--st-done); border-color: var(--st-done); color: #fff; }
-  .task-title { font-size: 13.5px; line-height: 1.35; }
+  .task-title {
+    font-size: 13.5px; line-height: 1.35; text-align: left; display: block;
+    border: 0; background: none; padding: 0; cursor: pointer; font-family: inherit; color: inherit;
+  }
+  .task-title:hover { text-decoration: underline; text-underline-offset: 2px; }
   .task-meta { margin-top: 3px; min-height: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-muted); }
   .chip-repeat { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 99px; padding: 0 7px 0 5px; height: 17px; color: var(--ink-2); }
   .task-note { color: var(--danger); }
@@ -386,6 +390,92 @@
   .group.collapsed .addrow { display: none; }
 
   .empty { padding: 40px 16px; text-align: center; color: var(--ink-muted); font-size: 13px; }
+
+  /* ---------- Task drawer, rich text, comments ---------- */
+  .scrim { position: fixed; inset: 0; background: rgb(7 51 61 / 0.42); z-index: 70; }
+  /* an author display value would otherwise beat the hidden attribute */
+  .scrim[hidden], .drawer[hidden] { display: none !important; }
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100dvh; width: min(560px, 100vw); z-index: 71;
+    background: var(--surface); border-left: 1px solid var(--line);
+    box-shadow: -20px 0 52px -26px rgb(7 51 61 / 0.55);
+    display: flex; flex-direction: column;
+  }
+  .dhead { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-bottom: 1px solid var(--line-soft); }
+  .streamtag { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--sc); }
+  .streamtag i { width: 9px; height: 9px; border-radius: 3px; background: var(--sc); }
+  .dhead .iconbtn-sm { margin-left: auto; font-size: 17px; }
+  .dbody { overflow-y: auto; padding: 16px 18px 44px; display: flex; flex-direction: column; gap: 18px; }
+  .dtitle {
+    font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    font-size: 22px; font-weight: 700; line-height: 1.22; letter-spacing: -0.01em;
+    outline: none; border-radius: 8px; padding: 3px 5px; margin: -3px -5px;
+  }
+  .dtitle:focus { background: var(--bg); box-shadow: 0 0 0 2px var(--tide); }
+  .colorrow { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+  .colorrow .lbl { font-size: 11px; color: var(--ink-muted); margin-right: 2px; }
+  .swatchbtn { width: 19px; height: 19px; border-radius: 99px; border: 2px solid transparent; padding: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12); }
+  .swatchbtn.on { border-color: var(--ink); }
+  .swatchbtn.none { background: var(--surface); position: relative; }
+  .swatchbtn.none::after { content: ""; position: absolute; inset: 3px; border-top: 1.5px solid var(--danger); transform: rotate(45deg); }
+
+  .dmeta { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 9px 12px; align-items: center; font-size: 13px; }
+  .dmeta .k { color: var(--ink-muted); font-size: 12px; }
+  .dmeta .status { width: 148px; }
+  .dmeta input[type="date"], .dmeta input[type="number"] {
+    border: 1px solid var(--line); background: var(--bg); border-radius: 7px; padding: 5px 8px;
+    font: inherit; font-size: 13px; color: inherit; width: 168px;
+  }
+  .dsec > h3 { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); font-weight: 700; margin-bottom: 9px; display: flex; align-items: center; gap: 8px; }
+  .dsec > h3 .n { color: var(--ink-2); }
+
+  .rt { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+  .rttoolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 5px 6px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .rtbtn { width: 27px; height: 26px; border: 0; background: none; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; }
+  .rtbtn:hover { background: var(--line-soft); color: var(--ink); }
+  .rtbtn b { font-weight: 700; }
+  .rtbtn i { font-style: italic; font-family: Georgia, serif; }
+  .rtbtn u { text-decoration: underline; }
+  .rtbtn s { text-decoration: line-through; }
+  .rtsep { width: 1px; height: 18px; background: var(--line); margin: 0 5px; }
+  .rtcolor { width: 17px; height: 17px; border-radius: 99px; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15); }
+  .rtarea { padding: 10px 12px; min-height: 78px; font-size: 13.5px; line-height: 1.55; outline: none; }
+  .rtarea:focus { box-shadow: inset 0 0 0 2px var(--tide); }
+  [data-ph]:empty::before { content: attr(data-ph); color: var(--ink-muted); }
+  .rtbody { font-size: 13.5px; line-height: 1.55; }
+  .rtbody ul, .rtarea ul { padding-left: 20px; list-style: disc; }
+  .rtbody ol, .rtarea ol { padding-left: 20px; list-style: decimal; }
+  .rtbody:empty::before { content: "No description yet."; color: var(--ink-muted); }
+
+  .comment { padding: 11px 0; border-top: 1px solid var(--line-soft); }
+  .comment:first-child { border-top: 0; }
+  .comment > header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .comment > header b { font-size: 12.5px; font-weight: 600; }
+  .comment > header span { font-size: 11px; color: var(--ink-muted); }
+  .comment > header .iconbtn-sm { margin-left: auto; opacity: 0; }
+  .comment:hover > header .iconbtn-sm, .comment > header .iconbtn-sm:focus-visible { opacity: 1; }
+  .composer { margin-top: 10px; }
+  .crow { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 10px 10px; background: var(--surface-2); }
+  .crow .hint { font-size: 11px; color: var(--ink-muted); margin-right: auto; }
+  .composer .rt { border-radius: 10px 10px 0 0; }
+
+  .dropbox { border: 1px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; font-size: 12px; color: var(--ink-muted); }
+  .dropbox.filedrop { border-color: var(--coral); background: var(--tide-wash); color: var(--coral-deep); outline: 0; }
+  .dropbox .btn { margin-top: 8px; }
+
+  .subpanel.bare { background: none; border: 0; padding: 0; }
+  .subrow.compact { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; }
+  .subrow.compact .scell { padding-left: 0; flex: 1; }
+  .subrow.compact .owner-cell .nm { display: none; }
+
+  .chipcount { display: inline-flex; align-items: center; gap: 4px; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .rtbody [style*="background-color"],
+    :root:not([data-theme="light"]) .rtarea [style*="background-color"] { color: #0d1524; }
+  }
+  :root[data-theme="dark"] .rtbody [style*="background-color"],
+  :root[data-theme="dark"] .rtarea [style*="background-color"] { color: #0d1524; }
 
   /* ---------- Cards and the pages behind the rail ---------- */
   .card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
@@ -682,6 +772,9 @@
   </main>
 </div>
 
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Task details" tabindex="-1"></aside>
+
 <dialog id="dlg">
   <form method="dialog" id="dlg-form">
     <header>
@@ -833,6 +926,33 @@
     { g: "intake", t: "Sustainability claim for the tuna line", o: "beam", s: "todo", p: "normal", d: "2026-09-16", e: 4 }
   ];
 
+
+  talk("Quote the hotel banquet order (200 pax)",
+    '<p>Banquet on <b>Saturday 12 September</b>, 200 covers, served at the pool deck.</p>' +
+    '<ul><li>Cold platters: prawn, salmon, scallop</li><li><span style="color:#d1503c">No live shellfish</span> — no holding tank on site</li>' +
+    '<li>Delivery window 15:00–16:00, chilled truck</li></ul>',
+    "#d1503c",
+    [
+      { id: "c1", o: "ploy", at: "Wednesday 16:40", html: '<p>Banquet manager confirmed <b>200 covers</b>, not 180. Costing needs redoing.</p>' },
+      { id: "c2", o: "krit", at: "Thursday 09:12", html: '<p>Landed cost is up <span style="color:#d1503c"><b>6%</b></span> on prawn this week. I would quote at <span style="background-color:#ffe08a">THB 1,150 a head</span> to keep the margin.</p>' },
+      { id: "c3", o: "fab", at: "Today 08:05", html: '<p>Agreed. Send it today so they can sign before the weekend.</p>' }
+    ]);
+
+  talk("Replace the chiller-room door seal",
+    '<p>Seal is split along the hinge side. Room holds temperature during the day but drifts <b>overnight</b>.</p>' +
+    '<p><span style="background-color:#ffe08a">Two-hour shutdown needed</span> — plan it before the 05:00 landing.</p>',
+    "",
+    [
+      { id: "c1", o: "ton", at: "Tuesday 11:20", html: '<p>Supplier says the part ships from Rayong, <span style="color:#d1503c">two weeks out</span>.</p>' },
+      { id: "c2", o: "pim", at: "Wednesday 08:45", html: '<p>QA note: if it drifts again we log a deviation. Can we get a temporary gasket?</p>' }
+    ]);
+
+  talk("BRC audit prep — gap analysis",
+    '<p>Target: audit-ready by <b>15 November</b>. Working through the checklist section by section.</p>' +
+    '<ol><li>Traceability</li><li>Temperature records</li><li>Staff training files</li></ol>',
+    "#27946f",
+    [{ id: "c1", o: "pim", at: "Monday 15:02", html: '<p>Sections 1 and 2 are clean. <span style="color:#b57d10">Training files are the weak point</span> — five people missing a refresher.</p>' }]);
+
   var PROJECTS = [
     { name: "Sashimi counter refresh", stage: "In progress", o: "nut", health: "on", ms: "Thonglor relaunch", msd: "2026-09-03", done: 3, total: 9 },
     { name: "Chiller room upgrade", stage: "In progress", o: "ton", health: "block", ms: "Door seal replaced", msd: "2026-08-26", done: 2, total: 7 },
@@ -859,9 +979,26 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {} };
+  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {} };
 
-  TASKS.forEach(function (t, i) { t.id = "t" + i; t.sub = t.sub || []; t.files = t.files || []; });
+  TASKS.forEach(function (t, i) {
+    t.id = "t" + i;
+    t.sub = t.sub || [];
+    t.files = t.files || [];
+    t.comments = t.comments || [];
+    t.desc = t.desc || "";
+    t.color = t.color || "";
+  });
+
+  function talk(title, desc, color, comments) {
+    for (var i = 0; i < TASKS.length; i++) {
+      if (TASKS[i].t === title) {
+        TASKS[i].desc = desc || "";
+        TASKS[i].color = color || "";
+        TASKS[i].comments = comments || [];
+      }
+    }
+  }
 
   function seed(title, sub, files) {
     for (var i = 0; i < TASKS.length; i++) {
@@ -976,7 +1113,11 @@
     if (first) first.focus();
   }
   document.addEventListener("click", function (e) { if (openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }, true);
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (openMenuEl) { closeMenu(); return; }
+    if (state.open) closeDrawer();
+  });
   window.addEventListener("resize", closeMenu);
   window.addEventListener("scroll", closeMenu, true);
 
@@ -1142,11 +1283,11 @@
     }).join("") + "</div>";
   }
 
-  function subPanel(t) {
-    var h = '<div class="subpanel">';
+  function subPanel(t, compact) {
+    var h = '<div class="subpanel' + (compact ? " bare" : "") + '">';
     t.sub.forEach(function (sb) {
       var o = person(sb.o);
-      h += '<div class="subrow' + (sb.done ? " done" : "") + '" data-sub="' + t.id + "|" + sb.id + '">' +
+      h += '<div class="subrow' + (compact ? " compact" : "") + (sb.done ? " done" : "") + '" data-sub="' + t.id + "|" + sb.id + '">' +
         '<div class="scell">' +
           '<button class="check sm' + (sb.done ? " on" : "") + '" data-subcheck="' + t.id + "|" + sb.id +
             '" aria-label="Mark subtask done" aria-pressed="' + !!sb.done + '">' + (sb.done ? TICK : "") + "</button>" +
@@ -1187,7 +1328,8 @@
         '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id +
           '" aria-label="Mark done" aria-pressed="' + (t.s === "done") + '">' + (t.s === "done" ? TICK : "") + "</button>" +
         "<div>" +
-          '<div class="task-title">' + esc(t.t) + "</div>" +
+          '<button class="task-title" data-open="' + t.id + '"' +
+            (t.color ? ' style="color:' + t.color + '"' : "") + ' title="Open details">' + esc(t.t) + "</button>" +
           '<div class="task-meta">' +
             (t.r ? '<span class="chip-repeat"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>' + (t.r === "daily" ? "Daily" : "Weekly") + "</span>" : "") +
             '<button class="metachip' + (t.sub.length ? "" : " ghost") + '" data-toggle="' + t.id +
@@ -1196,6 +1338,9 @@
             '<button class="metachip' + (t.files.length ? "" : " ghost") + '" data-attach="' + t.id +
               '" title="Attach a document">' + PIN +
               (t.files.length ? t.files.length + " file" + (t.files.length === 1 ? "" : "s") : "Attach") + "</button>" +
+            (t.comments.length ? '<button class="metachip" data-open="' + t.id + '" title="Open the discussion">' +
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>' +
+              t.comments.length + "</button>" : "") +
             (t.n ? '<span class="task-note">' + esc(t.n) + "</span>" : "") +
           "</div>" +
           fileRow(t.files, t.id + "|") +
@@ -1267,7 +1412,9 @@
     var f = state.focus, node = null;
     if (f.kind === "grip") node = document.querySelector('[data-grip="' + f.id + '"]');
     if (f.kind === "addsub") {
-      var form = document.querySelector('[data-addsub="' + f.id + '"]');
+      var scope = state.open ? document.getElementById("drawer") : document;
+      var form = scope.querySelector('[data-addsub="' + f.id + '"]') ||
+        document.querySelector('[data-addsub="' + f.id + '"]');
       node = form ? form.querySelector("input") : null;
     }
     state.focus = null;
@@ -1633,10 +1780,52 @@
     renderRail();
     pg.render();
     document.getElementById("foot").textContent =
-      "Prototype — sample content. Every entry in the left rail opens a working page. On the board, drag a task by its grip to reorder it or move it to another stream, open a task to add subtasks, and drop documents onto a task or a subtask. Nothing is saved and no file is uploaded — changes live in this browser tab only.";
+      "Prototype — sample content. Every entry in the left rail opens a working page. Click a task title to open it: description and comments take bold, italic, colours, highlight and lists; documents drop onto the task or onto a single subtask. On the board, drag a task by its grip to reorder it or move it to another stream. Nothing is saved and no file is uploaded — changes live in this browser tab only.";
   }
 
   document.addEventListener("click", function (e) {
+    var cmd = closestEl(e.target, "[data-cmd]");
+    if (cmd) {
+      var cName = cmd.dataset.cmd, cArg = cmd.dataset.arg || null;
+      try { document.execCommand("styleWithCSS", false, true); } catch (err) { /* older engines */ }
+      if (cName === "foreColor" && !cArg) cArg = themeInk();
+      document.execCommand(cName, false, cArg);
+      saveEditors();
+      return;
+    }
+
+    var opener = closestEl(e.target, "[data-open]");
+    if (opener) { openDrawer(opener.dataset.open); return; }
+
+    if (closestEl(e.target, "[data-dclose]") || e.target.id === "scrim") { closeDrawer(); return; }
+
+    var prb = closestEl(e.target, "[data-prio]");
+    if (prb) {
+      var pt = findTask(prb.dataset.prio);
+      openMenu(prb, PRIOS.map(function (x) { return { label: x.label, id: x.id, color: x.color }; }),
+        function (it) { if (pt) pt.p = it.id; refresh(); });
+      return;
+    }
+
+    var tc = closestEl(e.target, "[data-tcolor]");
+    if (tc) {
+      var ct = findTask(state.open);
+      if (ct) ct.color = tc.dataset.tcolor;
+      refresh();
+      return;
+    }
+
+    var post = closestEl(e.target, "[data-cpost]");
+    if (post) { postComment(post.dataset.cpost); return; }
+
+    var cdel = closestEl(e.target, "[data-cdel]");
+    if (cdel) {
+      var cq = cdel.dataset.cdel.split("|"), ctask = findTask(cq[0]);
+      if (ctask) ctask.comments = ctask.comments.filter(function (x) { return x.id !== cq[1]; });
+      refresh();
+      return;
+    }
+
     var tool = closestEl(e.target, "[data-tool]");
     if (tool) {
       var kind = tool.dataset.tool;
@@ -1684,7 +1873,7 @@
     if (chk) {
       var t = TASKS.filter(function (x) { return x.id === chk.dataset.check; })[0];
       t.s = t.s === "done" ? "doing" : "done";
-      render();
+      refresh();
       return;
     }
 
@@ -1692,7 +1881,7 @@
     if (stBtn) {
       var task = TASKS.filter(function (x) { return x.id === stBtn.dataset.status; })[0];
       openMenu(stBtn, STATUS.map(function (s) { return { label: s.label, id: s.id, color: s.color }; }),
-        function (it) { task.s = it.id; render(); });
+        function (it) { task.s = it.id; refresh(); });
       return;
     }
 
@@ -1700,12 +1889,12 @@
     if (ownBtn) {
       var tk = TASKS.filter(function (x) { return x.id === ownBtn.dataset.owner; })[0];
       openMenu(ownBtn, PEOPLE.map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }),
-        function (it) { tk.o = it.id; render(); });
+        function (it) { tk.o = it.id; refresh(); });
       return;
     }
 
     var tog = closestEl(e.target, "[data-toggle]");
-    if (tog) { var tid = tog.dataset.toggle; state.expanded[tid] = !state.expanded[tid]; renderBoard(); return; }
+    if (tog) { var tid = tog.dataset.toggle; state.expanded[tid] = !state.expanded[tid]; refresh(); return; }
 
     var att = closestEl(e.target, "[data-attach]");
     if (att) { pickFilesFor(att.dataset.attach, null); return; }
@@ -1717,7 +1906,7 @@
     if (sck) {
       var q2 = sck.dataset.subcheck.split("|"), sb = findSub(q2[0], q2[1]);
       if (sb) sb.done = !sb.done;
-      renderBoard();
+      refresh();
       return;
     }
 
@@ -1725,7 +1914,7 @@
     if (sow) {
       var q3 = sow.dataset.subowner.split("|"), sb2 = findSub(q3[0], q3[1]);
       openMenu(sow, PEOPLE.map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
-        function (it) { if (sb2) sb2.o = it.id; renderBoard(); });
+        function (it) { if (sb2) sb2.o = it.id; refresh(); });
       return;
     }
 
@@ -1733,7 +1922,7 @@
     if (sdl) {
       var q4 = sdl.dataset.subdel.split("|"), tk2 = findTask(q4[0]);
       if (tk2) tk2.sub = tk2.sub.filter(function (x) { return x.id !== q4[1]; });
-      renderBoard();
+      refresh();
       return;
     }
 
@@ -1742,7 +1931,7 @@
       var q5 = fdl.dataset.filedel.split("|");
       var host = q5[1] ? findSub(q5[0], q5[1]) : findTask(q5[0]);
       if (host && host.files) host.files.splice(parseInt(q5[2], 10), 1);
-      renderBoard();
+      refresh();
       return;
     }
 
@@ -1759,8 +1948,23 @@
   // a settings field lives inside the page it re-renders, so let the change
   // event finish before the node it fired from is replaced
   function laterRender() { setTimeout(render, 0); }
+  function laterRefresh() { setTimeout(refresh, 0); }
 
   document.addEventListener("change", function (e) {
+    var dd = closestEl(e.target, "[data-ddue]");
+    if (dd) {
+      var t1 = findTask(state.open);
+      if (t1 && dd.value) t1.d = dd.value;
+      laterRefresh();
+      return;
+    }
+    var de = closestEl(e.target, "[data-dest]");
+    if (de) {
+      var t2 = findTask(state.open);
+      if (t2) t2.e = Math.max(0, parseFloat(de.value) || 0);
+      laterRefresh();
+      return;
+    }
     var gn = closestEl(e.target, "[data-gname]");
     if (gn) {
       var g = group(gn.dataset.gname);
@@ -1860,6 +2064,161 @@
     go("projects");
   });
 
+  function postComment(taskId) {
+    var t = findTask(taskId);
+    var box = document.querySelector("[data-comment]");
+    if (!t || !box) return;
+    var html = clean(box.innerHTML).trim();
+    if (!html || html === "<br>") return;
+    t.comments.push({ id: "c" + Date.now(), o: state.me, at: "Just now", html: html });
+    state.draft[t.id] = "";
+    refresh();
+  }
+
+  // ---------- rich text ----------
+  var TEXT_COLORS = [
+    { hex: "", label: "Theme default" },
+    { hex: "#17909f", label: "Tide" },
+    { hex: "#e0664a", label: "Coral" },
+    { hex: "#d1503c", label: "Red" },
+    { hex: "#b57d10", label: "Amber" },
+    { hex: "#27946f", label: "Green" },
+    { hex: "#8d6ce0", label: "Violet" },
+    { hex: "#63797f", label: "Grey" }
+  ];
+
+  function themeInk() { return getComputedStyle(document.body).color; }
+
+  function clean(html) {
+    var d = document.createElement("div");
+    d.innerHTML = html;
+    var nodes = d.querySelectorAll("*");
+    for (var i = nodes.length - 1; i >= 0; i--) {
+      var n = nodes[i];
+      if (/^(script|style|iframe|object|embed|link|meta|form)$/i.test(n.tagName)) { n.parentNode.removeChild(n); continue; }
+      for (var j = n.attributes.length - 1; j >= 0; j--) {
+        var a = n.attributes[j].name;
+        if (a.indexOf("on") === 0) n.removeAttribute(a);
+        if (a === "href" && /^\s*javascript:/i.test(n.getAttribute("href") || "")) n.removeAttribute(a);
+      }
+    }
+    return d.innerHTML;
+  }
+
+  function rtToolbar() {
+    return '<div class="rttoolbar">' +
+      '<button type="button" class="rtbtn" data-cmd="bold" title="Bold"><b>B</b></button>' +
+      '<button type="button" class="rtbtn" data-cmd="italic" title="Italic"><i>I</i></button>' +
+      '<button type="button" class="rtbtn" data-cmd="underline" title="Underline"><u>U</u></button>' +
+      '<button type="button" class="rtbtn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>' +
+      '<span class="rtsep"></span>' +
+      TEXT_COLORS.map(function (c) {
+        return '<button type="button" class="rtcolor" data-cmd="foreColor" data-arg="' + c.hex +
+          '" title="Text colour — ' + c.label + '" style="background:' + (c.hex || "var(--ink)") + '"></button>';
+      }).join("") +
+      '<button type="button" class="rtbtn" data-cmd="hiliteColor" data-arg="#ffe08a" title="Highlight" ' +
+        'style="font-weight:700"><span style="background:#ffe08a;color:#10262c;border-radius:3px;padding:0 3px">A</span></button>' +
+      '<span class="rtsep"></span>' +
+      '<button type="button" class="rtbtn" data-cmd="insertUnorderedList" title="Bulleted list">•</button>' +
+      '<button type="button" class="rtbtn" data-cmd="insertOrderedList" title="Numbered list">1.</button>' +
+      '<button type="button" class="rtbtn" data-cmd="removeFormat" title="Clear formatting">⌫</button>' +
+      "</div>";
+  }
+
+  function saveEditors() {
+    var t = findTask(state.open);
+    if (!t) return;
+    var d = document.querySelector("[data-desc]");
+    if (d) t.desc = clean(d.innerHTML);
+    var c = document.querySelector("[data-comment]");
+    if (c) state.draft[t.id] = c.innerHTML;
+  }
+
+  // ---------- task drawer ----------
+  function openDrawer(id) {
+    state.open = id;
+    renderDrawer();
+  }
+  function closeDrawer() {
+    saveEditors();
+    state.open = null;
+    document.getElementById("drawer").hidden = true;
+    document.getElementById("scrim").hidden = true;
+    render();
+  }
+  function refresh() {
+    render();
+    if (state.open) renderDrawer();
+  }
+
+  function renderDrawer() {
+    var dr = document.getElementById("drawer"), scrim = document.getElementById("scrim");
+    var t = findTask(state.open);
+    if (!t) { dr.hidden = true; scrim.hidden = true; return; }
+    saveEditors();
+
+    var g = group(t.g), p = person(t.o), pr = prio(t.p), dm = dueMeta(t);
+    var doneN = t.sub.filter(function (sb) { return sb.done; }).length;
+
+    var meta =
+      '<div class="dmeta">' +
+        '<span class="k">Owner</span><span><button class="owner-cell" data-owner="' + t.id + '">' +
+          avatar(p) + '<span class="nm">' + esc(p.full) + "</span></button></span>" +
+        '<span class="k">Status</span><span>' + statusCell(t) + "</span>" +
+        '<span class="k">Priority</span><span><button class="btn" data-prio="' + t.id + '">' +
+          pr.label + " ▾</button></span>" +
+        '<span class="k">Due</span><span><input type="date" data-ddue value="' + t.d + '"> ' +
+          '<span class="due tnum ' + dm.cls + '" style="margin-left:8px">' + dm.hint + "</span></span>" +
+        '<span class="k">Estimate</span><span><input type="number" step="0.5" min="0" data-dest value="' + t.e + '"> h</span>' +
+      "</div>";
+
+    var swatches = '<div class="colorrow"><span class="lbl">Title colour</span>' +
+      TEXT_COLORS.map(function (c) {
+        return '<button type="button" class="swatchbtn' + (c.hex === t.color ? " on" : "") + (c.hex ? "" : " none") +
+          '" data-tcolor="' + c.hex + '" title="' + c.label + '"' +
+          (c.hex ? ' style="background:' + c.hex + '"' : "") + "></button>";
+      }).join("") + "</div>";
+
+    var comments = t.comments.map(function (c) {
+      var o = person(c.o);
+      return '<article class="comment"><header>' + avatar(o) + "<b>" + esc(o.full) + "</b><span>" + esc(c.at) + "</span>" +
+        '<button class="iconbtn-sm" data-cdel="' + t.id + "|" + c.id + '" aria-label="Delete comment">×</button></header>' +
+        '<div class="rtbody">' + c.html + "</div></article>";
+    }).join("") || '<p class="cempty" style="padding:6px 0">No comments yet. Start the thread.</p>';
+
+    dr.innerHTML =
+      '<header class="dhead"><span class="streamtag" style="--sc:' + g.color + '"><i></i>' + esc(g.name) + "</span>" +
+        '<button class="iconbtn-sm" data-dclose aria-label="Close">×</button></header>' +
+      '<div class="dbody">' +
+        "<div>" +
+          '<h2 class="dtitle" contenteditable="true" data-dtitle' +
+            (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</h2>" +
+          swatches +
+        "</div>" +
+        meta +
+        '<section class="dsec"><h3>Description</h3>' +
+          '<div class="rt">' + rtToolbar() +
+          '<div class="rtarea" data-desc contenteditable="true" data-ph="What does done look like?">' + t.desc + "</div></div></section>" +
+        '<section class="dsec"><h3>Subtasks <span class="n tnum">' + doneN + " / " + t.sub.length + "</span></h3>" +
+          subPanel(t, true) + "</section>" +
+        '<section class="dsec"><h3>Documents <span class="n tnum">' + t.files.length + "</span></h3>" +
+          '<div class="dropbox" data-dropzone="' + t.id + '">Drop documents here' +
+            '<br><button class="btn" data-attach="' + t.id + '">Choose files</button></div>' +
+          fileRow(t.files, t.id + "|") + "</section>" +
+        '<section class="dsec"><h3>Comments <span class="n tnum">' + t.comments.length + "</span></h3>" +
+          comments +
+          '<div class="composer"><div class="rt">' + rtToolbar() +
+            '<div class="rtarea" data-comment contenteditable="true" data-ph="Write a comment…">' +
+            (state.draft[t.id] || "") + "</div></div>" +
+            '<div class="crow"><span class="hint">Ctrl or ⌘ + Enter to post</span>' +
+            '<button class="btn btn-primary" data-cpost="' + t.id + '">Comment</button></div></div>' +
+        "</section>" +
+      "</div>";
+
+    dr.hidden = false;
+    scrim.hidden = false;
+  }
+
   // ---------- lookups, files, drag and drop ----------
   function closestEl(node, sel) {
     var n = node && node.nodeType === 3 ? node.parentNode : node;
@@ -1901,7 +2260,7 @@
     if (pickTarget && picker.files && picker.files.length) {
       addFiles(pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : findTask(pickTarget.task), picker.files);
       state.expanded[pickTarget.task] = state.expanded[pickTarget.task] || !!pickTarget.sub;
-      renderBoard();
+      refresh();
     }
     picker.value = "";
     pickTarget = null;
@@ -1918,7 +2277,30 @@
     if (!t || !title) return;
     t.sub.push({ id: "s" + Date.now(), t: title, o: t.o, done: false, files: [] });
     state.focus = { kind: "addsub", id: t.id };
-    renderBoard();
+    refresh();
+  });
+
+  document.addEventListener("input", function (e) {
+    var ti = closestEl(e.target, "[data-dtitle]");
+    if (ti) {
+      var t = findTask(state.open);
+      if (t) t.t = ti.textContent.replace(/\s+/g, " ").trim() || t.t;
+      return;
+    }
+    if (closestEl(e.target, "[data-desc]") || closestEl(e.target, "[data-comment]")) saveEditors();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && closestEl(e.target, "[data-comment]")) {
+      e.preventDefault();
+      if (state.open) postComment(state.open);
+      return;
+    }
+    if (e.key === "Enter" && closestEl(e.target, "[data-dtitle]")) { e.preventDefault(); e.target.blur(); }
+  });
+
+  document.addEventListener("focusout", function (e) {
+    if (closestEl(e.target, "[data-dtitle]")) laterRefresh();
   });
 
   // reorder: drag from the grip, or move with the arrow keys while it has focus
@@ -1965,6 +2347,7 @@
   }
 
   document.addEventListener("mousedown", function (e) {
+    if (closestEl(e.target, "[data-cmd]")) { e.preventDefault(); return; }
     var g = closestEl(e.target, "[data-grip]");
     if (g) { var it = closestEl(g, ".titem"); if (it) it.draggable = true; }
   });
@@ -1997,10 +2380,11 @@
   document.addEventListener("dragover", function (e) {
     var item = closestEl(e.target, ".titem");
     var sub = closestEl(e.target, ".subrow");
+    var box = closestEl(e.target, "[data-dropzone]");
     if (hasFiles(e.dataTransfer)) {
       e.preventDefault();
       clearMarks();
-      var zone = sub || item;
+      var zone = sub || box || item;
       if (zone) { e.dataTransfer.dropEffect = "copy"; zone.classList.add("filedrop"); }
       return;
     }
@@ -2024,13 +2408,17 @@
     if (hasFiles(e.dataTransfer)) {
       e.preventDefault();
       clearMarks();
+      var box2 = closestEl(e.target, "[data-dropzone]");
       if (sub) {
         var q = sub.dataset.sub.split("|");
         addFiles(findSub(q[0], q[1]), e.dataTransfer.files);
-        renderBoard();
+        refresh();
+      } else if (box2) {
+        addFiles(findTask(box2.dataset.dropzone), e.dataTransfer.files);
+        refresh();
       } else if (item) {
         addFiles(findTask(item.dataset.item), e.dataTransfer.files);
-        renderBoard();
+        refresh();
       }
       return;
     }
