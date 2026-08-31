@@ -451,7 +451,7 @@
   .comment:first-child { border-top: 0; }
   .comment > header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
   .comment > header b { font-size: 12.5px; font-weight: 600; }
-  .comment > header span { font-size: 11px; color: var(--ink-muted); }
+  .comment > header .at { font-size: 11px; color: var(--ink-muted); }
   .comment > header .iconbtn-sm { margin-left: auto; opacity: 0; }
   .comment:hover > header .iconbtn-sm, .comment > header .iconbtn-sm:focus-visible { opacity: 1; }
   .composer { margin-top: 10px; }
@@ -468,6 +468,17 @@
   .subrow.compact .scell { padding-left: 0; flex: 1; }
   .subrow.compact .owner-cell .nm { display: none; }
 
+  .subitem { border-radius: 8px; }
+  .sthread {
+    margin: 0 0 10px; padding: 8px 10px 10px 34px;
+    border-left: 2px solid var(--line); margin-left: 8px;
+  }
+  .sthread .comment { padding: 8px 0; }
+  .sthread .comment:first-child { border-top: 0; }
+  .sthread .rtarea { min-height: 54px; }
+  .iconbtn-sm.on { color: var(--tide-600); }
+  .iconbtn-sm .cn { font-size: 10px; font-weight: 700; margin-left: 3px; }
+  .iconbtn-sm:has(.cn) { width: auto; padding: 0 6px; gap: 1px; }
   .chipcount { display: inline-flex; align-items: center; gap: 4px; }
 
   @media (prefers-color-scheme: dark) {
@@ -979,7 +990,7 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {} };
+  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {} };
 
   TASKS.forEach(function (t, i) {
     t.id = "t" + i;
@@ -989,6 +1000,15 @@
     t.desc = t.desc || "";
     t.color = t.color || "";
   });
+
+  function normaliseSubs() {
+    TASKS.forEach(function (t) {
+      t.sub.forEach(function (sb) {
+        sb.files = sb.files || [];
+        sb.comments = sb.comments || [];
+      });
+    });
+  }
 
   function talk(title, desc, color, comments) {
     for (var i = 0; i < TASKS.length; i++) {
@@ -1006,8 +1026,13 @@
     }
   }
   seed("Quote the hotel banquet order (200 pax)", [
-    { id: "s1", t: "Confirm the final guest count with the banquet manager", o: "ploy", done: true, files: [] },
-    { id: "s2", t: "Price the platter mix on this week's landed cost", o: "krit", done: false, files: [{ name: "Platter costing.xlsx", size: 48120 }] },
+    { id: "s1", t: "Confirm the final guest count with the banquet manager", o: "ploy", done: true, files: [],
+      comments: [{ id: "sc1", o: "ploy", at: "Wednesday 16:44", html: '<p>Confirmed by email — <b>200</b>, with a hard cut-off on Thursday.</p>' }] },
+    { id: "s2", t: "Price the platter mix on this week's landed cost", o: "krit", done: false, files: [{ name: "Platter costing.xlsx", size: 48120 }],
+      comments: [
+        { id: "sc1", o: "krit", at: "Thursday 09:05", html: '<p>Using <span style="background-color:#ffe08a">Thursday landing prices</span>, not last week\'s.</p>' },
+        { id: "sc2", o: "fab", at: "Today 08:07", html: '<p>Right. Add <b>4%</b> for the ice and the transport.</p>' }
+      ] },
     { id: "s3", t: "Send the quote and follow up on Monday", o: "ploy", done: false, files: [] }
   ], [{ name: "Banquet brief.pdf", size: 284000 }, { name: "Menu photos.zip", size: 5400000 }]);
 
@@ -1284,32 +1309,67 @@
     }).join("") + "</div>";
   }
 
+  var BUBBLE = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>';
+
+  function commentArticle(c, delAttr) {
+    var o = person(c.o);
+    return '<article class="comment"><header>' + avatar(o) + "<b>" + esc(o.full) + '</b><span class="at">' + esc(c.at) + "</span>" +
+      '<button class="iconbtn-sm" ' + delAttr + ' aria-label="Delete comment">×</button></header>' +
+      '<div class="rtbody">' + c.html + "</div></article>";
+  }
+
+  function subThread(t, sb) {
+    var key = t.id + "|" + sb.id;
+    return '<div class="sthread">' +
+      (sb.comments.length
+        ? sb.comments.map(function (c) { return commentArticle(c, 'data-scdel="' + key + "|" + c.id + '"'); }).join("")
+        : '<p class="cempty" style="padding:2px 0 6px">No comments on this subtask yet.</p>') +
+      '<div class="composer"><div class="rt">' + rtToolbar() +
+        '<div class="rtarea" data-scomment="' + key + '" contenteditable="true" data-ph="Comment on this subtask…">' +
+        (state.draft[key] || "") + "</div></div>" +
+        '<div class="crow"><span class="hint">Ctrl or ⌘ + Enter to post</span>' +
+        '<button class="btn btn-primary" data-scpost="' + key + '">Comment</button></div></div>' +
+      "</div>";
+  }
+
   function subPanel(t, compact) {
     var h = '<div class="subpanel' + (compact ? " bare" : "") + '">';
     t.sub.forEach(function (sb) {
       var o = person(sb.o);
-      h += '<div class="subrow' + (compact ? " compact" : "") + (sb.done ? " done" : "") + '" data-sub="' + t.id + "|" + sb.id + '">' +
-        '<div class="scell">' +
-          '<button class="check sm' + (sb.done ? " on" : "") + '" data-subcheck="' + t.id + "|" + sb.id +
-            '" aria-label="Mark subtask done" aria-pressed="' + !!sb.done + '">' + (sb.done ? TICK : "") + "</button>" +
-          '<div class="sbody"><span class="stitle">' + esc(sb.t) + "</span>" +
-          fileRow(sb.files, t.id + "|" + sb.id) + "</div>" +
+      var key = t.id + "|" + sb.id;
+      var talking = !!state.subOpen[key];
+      h += '<div class="subitem">' +
+        '<div class="subrow' + (compact ? " compact" : "") + (sb.done ? " done" : "") + '" data-sub="' + key + '">' +
+          '<div class="scell">' +
+            '<button class="check sm' + (sb.done ? " on" : "") + '" data-subcheck="' + key +
+              '" aria-label="Mark subtask done" aria-pressed="' + !!sb.done + '">' + (sb.done ? TICK : "") + "</button>" +
+            '<div class="sbody"><span class="stitle">' + esc(sb.t) + "</span>" +
+            fileRow(sb.files, key) + "</div>" +
+          "</div>" +
+          '<button class="owner-cell sm" data-subowner="' + key +
+            '" aria-label="Owner: ' + esc(o.full) + '. Reassign">' + avatar(o) +
+            '<span class="nm">' + esc(o.name) + "</span></button>" +
+          '<div class="subacts">' +
+            '<button class="iconbtn-sm' + (talking || sb.comments.length ? " on" : "") + '" data-scom="' + key +
+              '" aria-expanded="' + talking + '" aria-label="Comments on this subtask" title="Comments">' +
+              BUBBLE + (sb.comments.length ? '<span class="cn tnum">' + sb.comments.length + "</span>" : "") + "</button>" +
+            '<button class="iconbtn-sm" data-subattach="' + key +
+              '" aria-label="Attach a document to this subtask" title="Attach a document">' + PIN + "</button>" +
+            '<button class="iconbtn-sm" data-subdel="' + key +
+              '" aria-label="Delete subtask" title="Delete subtask">×</button>' +
+          "</div>" +
         "</div>" +
-        '<button class="owner-cell sm" data-subowner="' + t.id + "|" + sb.id +
-          '" aria-label="Owner: ' + esc(o.full) + '. Reassign">' + avatar(o) +
-          '<span class="nm">' + esc(o.name) + "</span></button>" +
-        '<div class="subacts">' +
-          '<button class="iconbtn-sm" data-subattach="' + t.id + "|" + sb.id +
-            '" aria-label="Attach a document to this subtask" title="Attach a document">' + PIN + "</button>" +
-          '<button class="iconbtn-sm" data-subdel="' + t.id + "|" + sb.id +
-            '" aria-label="Delete subtask" title="Delete subtask">×</button>' +
-        "</div>" +
+        (talking ? subThread(t, sb) : "") +
       "</div>";
     });
     h += '<form class="addsub" data-addsub="' + t.id + '">' +
       '<input type="text" placeholder="Add a subtask, then press Enter" aria-label="New subtask">' +
       '<button class="btn" type="submit">Add</button></form>';
     return h + "</div>";
+  }
+
+  function talkCount(t) {
+    return t.comments.length + t.sub.reduce(function (a, sb) { return a + (sb.comments ? sb.comments.length : 0); }, 0);
   }
 
   function taskRow(t) {
@@ -1339,9 +1399,8 @@
             '<button class="metachip' + (t.files.length ? "" : " ghost") + '" data-attach="' + t.id +
               '" title="Attach a document">' + PIN +
               (t.files.length ? t.files.length + " file" + (t.files.length === 1 ? "" : "s") : "Attach") + "</button>" +
-            (t.comments.length ? '<button class="metachip" data-open="' + t.id + '" title="Open the discussion">' +
-              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>' +
-              t.comments.length + "</button>" : "") +
+            (talkCount(t) ? '<button class="metachip" data-open="' + t.id + '" title="Open the discussion">' +
+              BUBBLE + talkCount(t) + "</button>" : "") +
             (t.n ? '<span class="task-note">' + esc(t.n) + "</span>" : "") +
           "</div>" +
           fileRow(t.files, t.id + "|") +
@@ -1412,6 +1471,14 @@
     if (!state.focus) return;
     var f = state.focus, node = null;
     if (f.kind === "grip") node = document.querySelector('[data-grip="' + f.id + '"]');
+    if (f.kind === "scomment") {
+      var fscope = state.open ? document.getElementById("drawer") : document;
+      node = fscope.querySelector('[data-scomment="' + f.id + '"]') ||
+        document.querySelector('[data-scomment="' + f.id + '"]');
+      state.focus = null;
+      if (node) node.focus();
+      return;
+    }
     if (f.kind === "addsub") {
       var scope = state.open ? document.getElementById("drawer") : document;
       var form = scope.querySelector('[data-addsub="' + f.id + '"]') ||
@@ -1830,6 +1897,26 @@
       return;
     }
 
+    var scom = closestEl(e.target, "[data-scom]");
+    if (scom) {
+      var sk = scom.dataset.scom;
+      state.subOpen[sk] = !state.subOpen[sk];
+      if (state.subOpen[sk]) state.expanded[sk.split("|")[0]] = true;
+      refresh();
+      return;
+    }
+
+    var spost = closestEl(e.target, "[data-scpost]");
+    if (spost) { postSubComment(spost.dataset.scpost); return; }
+
+    var scdel = closestEl(e.target, "[data-scdel]");
+    if (scdel) {
+      var sq = scdel.dataset.scdel.split("|"), ssb = findSub(sq[0], sq[1]);
+      if (ssb) ssb.comments = ssb.comments.filter(function (x) { return x.id !== sq[2]; });
+      refresh();
+      return;
+    }
+
     var post = closestEl(e.target, "[data-cpost]");
     if (post) { postComment(post.dataset.cpost); return; }
 
@@ -2079,6 +2166,22 @@
     go("projects");
   });
 
+  function postSubComment(key) {
+    var q = key.split("|"), sb = findSub(q[0], q[1]);
+    // the same thread can be on screen twice — board and drawer — so read the one in front
+    var scope = state.open ? document.getElementById("drawer") : document;
+    var box = scope.querySelector('[data-scomment="' + key + '"]') ||
+      document.querySelector('[data-scomment="' + key + '"]');
+    if (!sb || !box) return;
+    var html = clean(box.innerHTML).trim();
+    if (!html || html === "<br>") return;
+    if (!sb.comments) sb.comments = [];
+    sb.comments.push({ id: "c" + Date.now(), o: state.me, at: "Just now", html: html });
+    state.draft[key] = "";
+    state.focus = { kind: "scomment", id: key };
+    refresh();
+  }
+
   function postComment(taskId) {
     var t = findTask(taskId);
     var box = document.querySelector("[data-comment]");
@@ -2174,11 +2277,15 @@
 
   function saveEditors() {
     var t = findTask(state.open);
-    if (!t) return;
-    var d = document.querySelector("[data-desc]");
-    if (d) t.desc = clean(d.innerHTML);
-    var c = document.querySelector("[data-comment]");
-    if (c) state.draft[t.id] = c.innerHTML;
+    if (t) {
+      var d = document.querySelector("[data-desc]");
+      if (d) t.desc = clean(d.innerHTML);
+      var c = document.querySelector("[data-comment]");
+      if (c) state.draft[t.id] = c.innerHTML;
+    }
+    var scope = state.open ? document.getElementById("drawer") : document;
+    var subs = scope.querySelectorAll("[data-scomment]");
+    for (var i = 0; i < subs.length; i++) state.draft[subs[i].getAttribute("data-scomment")] = subs[i].innerHTML;
   }
 
   // ---------- task drawer ----------
@@ -2227,10 +2334,7 @@
       }).join("") + "</div>";
 
     var comments = t.comments.map(function (c) {
-      var o = person(c.o);
-      return '<article class="comment"><header>' + avatar(o) + "<b>" + esc(o.full) + "</b><span>" + esc(c.at) + "</span>" +
-        '<button class="iconbtn-sm" data-cdel="' + t.id + "|" + c.id + '" aria-label="Delete comment">×</button></header>' +
-        '<div class="rtbody">' + c.html + "</div></article>";
+      return commentArticle(c, 'data-cdel="' + t.id + "|" + c.id + '"');
     }).join("") || '<p class="cempty" style="padding:6px 0">No comments yet. Start the thread.</p>';
 
     dr.innerHTML =
@@ -2322,7 +2426,7 @@
     var input = form.querySelector("input");
     var title = input.value.trim();
     if (!t || !title) return;
-    t.sub.push({ id: "s" + Date.now(), t: title, o: t.o, done: false, files: [] });
+    t.sub.push({ id: "s" + Date.now(), t: title, o: t.o, done: false, files: [], comments: [] });
     state.focus = { kind: "addsub", id: t.id };
     refresh();
   });
@@ -2334,14 +2438,19 @@
       if (t) t.t = ti.textContent.replace(/\s+/g, " ").trim() || t.t;
       return;
     }
-    if (closestEl(e.target, "[data-desc]") || closestEl(e.target, "[data-comment]")) saveEditors();
+    if (closestEl(e.target, "[data-desc]") || closestEl(e.target, "[data-comment]") ||
+        closestEl(e.target, "[data-scomment]")) saveEditors();
   });
 
   document.addEventListener("keydown", function (e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && closestEl(e.target, "[data-comment]")) {
-      e.preventDefault();
-      if (state.open) postComment(state.open);
-      return;
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      var sbox = closestEl(e.target, "[data-scomment]");
+      if (sbox) { e.preventDefault(); postSubComment(sbox.getAttribute("data-scomment")); return; }
+      if (closestEl(e.target, "[data-comment]")) {
+        e.preventDefault();
+        if (state.open) postComment(state.open);
+        return;
+      }
     }
     if (e.key === "Enter" && closestEl(e.target, "[data-dtitle]")) { e.preventDefault(); e.target.blur(); }
   });
@@ -2493,6 +2602,7 @@
     renderBoard();
   });
 
+  normaliseSubs();
   renderRail();
   render();
 })();
