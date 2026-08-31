@@ -1,136 +1,138 @@
-<title>Kaviari Team Board</title>
+<title>Thammachart Harbour</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 
 <style>
   :root {
-    /* Chrome */
-    --navy: #0f192b;
-    --navy-soft: #16233c;
-    --rail-ink: #d6d2c6;
-    --rail-ink-dim: rgba(214, 210, 198, 0.62);
-    --rail-line: rgba(232, 213, 163, 0.14);
-    --pearl: #f7f5f0;
+    /* Deep sea → ice */
+    --sea-900: #07333d;
+    --sea-800: #0b4552;
+    --tide: #0f7383;
+    --tide-600: #0c5f6d;
+    --tide-wash: #e2eff0;
+    --coral: #e0664a;
+    --coral-deep: #c14a30;
 
-    /* Surfaces + ink */
-    --bg: #f7f5f0;
-    --surface: #fffefb;
-    --surface-2: #f2efe6;
-    --ink: #171a20;
-    --ink-2: #4a4d55;
-    --ink-muted: #6d6f74;
-    --line: #e3dfd2;
-    --line-soft: #ece8dc;
+    --bg: #eef3f2;
+    --surface: #ffffff;
+    --surface-2: #f5f8f7;
+    --ink: #10262c;
+    --ink-2: #3c5158;
+    --ink-muted: #63797f;
+    --line: #d9e3e2;
+    --line-soft: #e8efee;
 
-    /* Accent */
-    --gold: #c9a227;
-    --gold-deep: #a9861c;
-    --gold-wash: #f3ead3;
-    --champagne: #e8d5a3;
+    --bar-ink: #d3e4e4;
+    --bar-ink-dim: rgba(211, 228, 228, 0.6);
 
     /* Status */
-    --st-todo: #7b7f88;
-    --st-doing: #2a78d6;
-    --st-wait: #b07e00;
-    --st-block: #c2452f;
-    --st-done: #2f7d5c;
+    --st-todo: #6b7b82;
+    --st-doing: #2f7fa8;
+    --st-wait: #b8791b;
+    --st-block: #c2412f;
+    --st-done: #177a5e;
     --st-ink: #ffffff;
 
-    /* Streams */
-    --stream-ops: #1b9e8f;
-    --stream-festive: #b07e00;
-    --stream-retail: #6d5bd0;
-    --stream-supply: #2a78d6;
-    --stream-intake: #c2452f;
+    /* Streams — categorical, separated for CVD */
+    --s-ops: #0f7383;
+    --s-retail: #7b57c9;
+    --s-food: #b04a8a;
+    --s-source: #2f6fb5;
+    --s-quality: #2f7d4a;
+    --s-intake: #c2681f;
 
-    --danger: #b3261e;
-    --warning: #b97e10;
-    --success: #2f7d5c;
+    --danger: #c2412f;
+    --warning: #a86e10;
+    --success: #177a5e;
 
-    --radius: 8px;
-    --shadow: 0 1px 2px rgb(15 25 43 / 0.06), 0 8px 24px -14px rgb(15 25 43 / 0.28);
+    --radius: 10px;
+    --shadow: 0 1px 2px rgb(7 51 61 / 0.05), 0 10px 26px -18px rgb(7 51 61 / 0.4);
     --row-cols: minmax(300px, 1fr) 152px 150px 116px 128px 78px;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --navy: #0a1120;
-      --navy-soft: #131e33;
-      --rail-ink: #c9c4b6;
-      --rail-ink-dim: rgba(201, 196, 182, 0.6);
-      --rail-line: rgba(232, 213, 163, 0.12);
+      --sea-900: #05202a;
+      --sea-800: #0a3340;
+      --tide: #38a6b8;
+      --tide-600: #2b8b9b;
+      --tide-wash: rgba(56, 166, 184, 0.14);
+      --coral: #f0836a;
+      --coral-deep: #e0664a;
 
-      --bg: #0f192b;
-      --surface: #16233c;
-      --surface-2: #1b2a45;
-      --ink: #ece7d9;
-      --ink-2: #bfc5d1;
-      --ink-muted: #98a1b1;
-      --line: rgba(232, 213, 163, 0.15);
-      --line-soft: rgba(232, 213, 163, 0.09);
+      --bg: #06222a;
+      --surface: #0d323c;
+      --surface-2: #113c48;
+      --ink: #e6f0ef;
+      --ink-2: #b3c8cb;
+      --ink-muted: #8ba3a8;
+      --line: rgba(178, 216, 218, 0.16);
+      --line-soft: rgba(178, 216, 218, 0.09);
 
-      --gold: #d9b64a;
-      --gold-deep: #c9a227;
-      --gold-wash: rgba(201, 162, 39, 0.14);
+      --bar-ink: #cfe3e3;
+      --bar-ink-dim: rgba(207, 227, 227, 0.58);
 
-      --st-todo: #8b93a2;
-      --st-doing: #4b8fe4;
-      --st-wait: #cf9c1c;
-      --st-block: #dc6552;
-      --st-done: #3f9d75;
-      --st-ink: #0d1524;
+      --st-todo: #7e8f96;
+      --st-doing: #4796bd;
+      --st-wait: #cf9226;
+      --st-block: #db6150;
+      --st-done: #2e9a78;
+      --st-ink: #04191f;
 
-      --stream-ops: #35bdad;
-      --stream-festive: #cf9c1c;
-      --stream-retail: #9182e6;
-      --stream-supply: #4b8fe4;
-      --stream-intake: #dc6552;
+      --s-ops: #3ea7b7;
+      --s-retail: #a68ae0;
+      --s-food: #dd7ab6;
+      --s-source: #5f9ce0;
+      --s-quality: #4faa73;
+      --s-intake: #e0904a;
 
-      --danger: #e0705f;
-      --warning: #d7a12f;
-      --success: #4fae84;
-      --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -16px rgb(0 0 0 / 0.7);
+      --danger: #e2705e;
+      --warning: #d3a03a;
+      --success: #3ea583;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 30px -20px rgb(0 0 0 / 0.8);
     }
   }
 
   :root[data-theme="dark"] {
-    --navy: #0a1120;
-    --navy-soft: #131e33;
-    --rail-ink: #c9c4b6;
-    --rail-ink-dim: rgba(201, 196, 182, 0.6);
-    --rail-line: rgba(232, 213, 163, 0.12);
+    --sea-900: #05202a;
+    --sea-800: #0a3340;
+    --tide: #38a6b8;
+    --tide-600: #2b8b9b;
+    --tide-wash: rgba(56, 166, 184, 0.14);
+    --coral: #f0836a;
+    --coral-deep: #e0664a;
 
-    --bg: #0f192b;
-    --surface: #16233c;
-    --surface-2: #1b2a45;
-    --ink: #ece7d9;
-    --ink-2: #bfc5d1;
-    --ink-muted: #98a1b1;
-    --line: rgba(232, 213, 163, 0.15);
-    --line-soft: rgba(232, 213, 163, 0.09);
+    --bg: #06222a;
+    --surface: #0d323c;
+    --surface-2: #113c48;
+    --ink: #e6f0ef;
+    --ink-2: #b3c8cb;
+    --ink-muted: #8ba3a8;
+    --line: rgba(178, 216, 218, 0.16);
+    --line-soft: rgba(178, 216, 218, 0.09);
 
-    --gold: #d9b64a;
-    --gold-deep: #c9a227;
-    --gold-wash: rgba(201, 162, 39, 0.14);
+    --bar-ink: #cfe3e3;
+    --bar-ink-dim: rgba(207, 227, 227, 0.58);
 
-    --st-todo: #8b93a2;
-    --st-doing: #4b8fe4;
-    --st-wait: #cf9c1c;
-    --st-block: #dc6552;
-    --st-done: #3f9d75;
-    --st-ink: #0d1524;
+    --st-todo: #7e8f96;
+    --st-doing: #4796bd;
+    --st-wait: #cf9226;
+    --st-block: #db6150;
+    --st-done: #2e9a78;
+    --st-ink: #04191f;
 
-    --stream-ops: #35bdad;
-    --stream-festive: #cf9c1c;
-    --stream-retail: #9182e6;
-    --stream-supply: #4b8fe4;
-    --stream-intake: #dc6552;
+    --s-ops: #3ea7b7;
+    --s-retail: #a68ae0;
+    --s-food: #dd7ab6;
+    --s-source: #5f9ce0;
+    --s-quality: #4faa73;
+    --s-intake: #e0904a;
 
-    --danger: #e0705f;
-    --warning: #d7a12f;
-    --success: #4fae84;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -16px rgb(0 0 0 / 0.7);
+    --danger: #e2705e;
+    --warning: #d3a03a;
+    --success: #3ea583;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 30px -20px rgb(0 0 0 / 0.8);
   }
 
   * { box-sizing: border-box; }
@@ -139,324 +141,226 @@
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: Inter, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, p, ul, ol { margin: 0; }
+  h1, h2, h3, h4, p, ul { margin: 0; }
   ul { padding: 0; list-style: none; }
   button { font: inherit; color: inherit; }
 
   :where(a, button, input, select, [tabindex]):focus-visible {
-    outline: 2px solid var(--gold);
+    outline: 2px solid var(--coral);
     outline-offset: 2px;
     border-radius: 4px;
   }
 
-  .tnum { font-variant-numeric: tabular-nums lining-nums; }
+  .tnum { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; font-variant-numeric: tabular-nums; }
 
   .label {
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
     color: var(--ink-muted);
   }
 
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 16px;
+    height: 54px; padding: 0 18px;
+    background: var(--sea-900);
+    color: var(--bar-ink);
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg, var(--tide), var(--coral) 65%, var(--sea-800)) 1;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .brand .mark {
+    font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    font-size: 20px; font-weight: 700; letter-spacing: 0.02em; color: #fff;
+  }
+  .brand .mark em { color: var(--coral); font-style: normal; }
+  .brand .org { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--bar-ink-dim); white-space: nowrap; }
+  .topbar .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgb(255 255 255 / 0.08); border: 1px solid rgb(255 255 255 / 0.1);
+    border-radius: 99px; padding: 4px 11px; font-size: 12px; color: var(--bar-ink); cursor: pointer;
+  }
+  .topbar .chip:hover { background: rgb(255 255 255 / 0.14); }
+  .topbar .spacer { flex: 1; }
+  .topbar .iconbtn {
+    border: 0; background: rgb(255 255 255 / 0.07); color: var(--bar-ink);
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .topbar .iconbtn:hover { background: rgb(255 255 255 / 0.15); }
+  .topbar .me { display: flex; align-items: center; gap: 9px; }
+  .topbar .me span.n { font-size: 12.5px; color: var(--bar-ink); }
+
   /* ---------- Shell ---------- */
-  .app { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 100dvh; }
+  .app { display: grid; grid-template-columns: 236px minmax(0, 1fr); align-items: start; }
 
   .rail {
-    background: var(--navy);
-    background-image: radial-gradient(circle at 1px 1px, rgb(232 213 163 / 0.13) 1px, transparent 0);
-    background-size: 14px 14px;
-    color: var(--rail-ink);
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: 0;
-    height: 100dvh;
+    position: sticky; top: 54px;
+    height: calc(100dvh - 54px);
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    padding: 16px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+    overflow-y: auto;
   }
-
-  .wordmark { padding: 26px 24px 18px; }
-  .wordmark b {
-    display: block;
-    font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
-    font-size: 27px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    line-height: 1;
-    color: var(--pearl);
-  }
-  .wordmark span {
-    display: block;
-    margin-top: 6px;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.42em;
-    text-transform: uppercase;
-    color: var(--gold);
-  }
-  .gold-rule {
-    height: 1px;
-    margin-top: 16px;
-    background: linear-gradient(90deg, transparent, var(--gold) 18%, var(--champagne) 50%, var(--gold) 82%, transparent);
-    opacity: 0.7;
-  }
-
-  .rail nav { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; flex: 1; overflow-y: auto; }
-  .rail nav a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 9px 12px;
-    border-radius: 6px;
-    font-size: 13.5px;
-    color: var(--rail-ink);
-    text-decoration: none;
+  .rail .sect { padding: 14px 10px 6px; }
+  .rail a {
+    display: flex; align-items: center; gap: 11px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 13.5px; color: var(--ink-2); text-decoration: none;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
-  .rail nav a:hover { background: rgb(255 255 255 / 0.06); color: var(--pearl); }
-  .rail nav a[aria-current="page"] {
-    background: rgb(201 162 39 / 0.14);
-    color: var(--champagne);
-    font-weight: 600;
+  .rail a:hover { background: var(--surface-2); color: var(--ink); }
+  .rail a[aria-current="page"] { background: var(--tide-wash); color: var(--tide-600); font-weight: 600; }
+  .rail a .ico { width: 17px; height: 17px; flex: none; opacity: 0.75; }
+  .rail a[aria-current="page"] .ico { opacity: 1; color: var(--tide); }
+  .rail a .badge {
+    margin-left: auto; font-size: 11px; font-weight: 600;
+    background: var(--coral); color: #fff; border-radius: 99px; padding: 0 6px;
   }
-  .rail nav a .ico { width: 16px; height: 16px; flex: none; opacity: 0.85; }
-  .rail nav a[aria-current="page"] .ico { color: var(--gold); opacity: 1; }
-  .rail nav .sep { height: 1px; background: var(--rail-line); margin: 10px 12px; }
-  .rail nav .new { color: var(--gold); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; margin-left: auto; }
-
-  .rail-foot {
-    border-top: 1px solid var(--rail-line);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  .rail .streams { display: flex; flex-direction: column; gap: 1px; }
+  .rail .streams button {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    border: 0; background: none; cursor: pointer; text-align: left;
+    padding: 6px 10px; border-radius: 8px; font-size: 13px; color: var(--ink-2);
   }
-  .rail-foot .who { min-width: 0; }
-  .rail-foot .who b { display: block; font-size: 13px; font-weight: 500; color: var(--pearl); }
-  .rail-foot .who span { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rail-ink-dim); }
+  .rail .streams button:hover { background: var(--surface-2); color: var(--ink); }
+  .rail .streams i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .rail .streams .c { margin-left: auto; font-size: 11.5px; color: var(--ink-muted); }
 
-  main { min-width: 0; padding: 30px 34px 56px; }
+  main { min-width: 0; padding: 26px 30px 60px; }
 
   /* ---------- Page head ---------- */
   .pagehead { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; justify-content: space-between; }
   .pagehead h1 {
-    font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
-    font-size: 38px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    line-height: 1.05;
+    font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    font-size: 34px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.05;
+    text-wrap: balance;
   }
-  .pagehead .sub { margin-top: 4px; color: var(--ink-muted); font-size: 13px; }
+  .pagehead .sub { margin-top: 5px; color: var(--ink-muted); font-size: 13px; }
   .headtools { display: flex; align-items: center; gap: 10px; }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    border: 1px solid var(--line);
-    background: var(--surface);
-    color: var(--ink);
-    border-radius: 6px;
-    padding: 7px 13px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 8px; padding: 7px 13px; font-size: 13px; font-weight: 500; cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
-  .btn:hover { background: var(--surface-2); }
-  .btn-primary {
-    background: var(--navy);
-    border-color: var(--navy);
-    color: var(--pearl);
-    font-weight: 600;
-  }
-  .btn-primary:hover { background: var(--navy-soft); }
-  .btn-primary .plus { color: var(--gold); font-size: 15px; line-height: 1; }
+  .btn:hover { background: var(--surface-2); border-color: var(--ink-muted); }
+  .btn-primary { background: var(--coral); border-color: var(--coral); color: #fff; font-weight: 600; }
+  .btn-primary:hover { background: var(--coral-deep); border-color: var(--coral-deep); }
 
   /* ---------- KPI strip ---------- */
-  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
   .kpi {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 13px 15px 14px;
-    box-shadow: var(--shadow);
-    position: relative;
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px 14px; box-shadow: var(--shadow); position: relative; overflow: hidden;
   }
-  .kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--kpi-color, var(--line)); }
-  .kpi .v { font-size: 27px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
-  .kpi .k { margin-top: 2px; }
+  .kpi::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--kpi-color, var(--line)); }
+  .kpi .v { font-family: "Bricolage Grotesque", ui-sans-serif, sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .kpi .k { margin-top: 1px; }
   .kpi .hint { margin-top: 5px; font-size: 11.5px; color: var(--ink-muted); }
 
   /* ---------- Toolbar ---------- */
   .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-    margin-top: 26px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    margin-top: 24px; padding-bottom: 11px; border-bottom: 1px solid var(--line);
   }
-  .tabs { display: flex; gap: 2px; }
+  .tabs { display: flex; gap: 3px; }
   .tab {
-    border: 0;
-    background: none;
-    padding: 7px 13px 10px;
-    cursor: pointer;
-    color: var(--ink-muted);
-    font-size: 13.5px;
-    font-weight: 500;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -13px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
+    border: 0; background: none; padding: 7px 12px 10px; cursor: pointer;
+    color: var(--ink-muted); font-size: 13.5px; font-weight: 500;
+    border-bottom: 2px solid transparent; margin-bottom: -12px;
+    display: inline-flex; align-items: center; gap: 7px;
   }
   .tab:hover { color: var(--ink); }
-  .tab[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--gold); }
-  .tab .n {
-    font-size: 11px;
-    padding: 1px 6px;
-    border-radius: 99px;
-    background: var(--surface-2);
-    color: var(--ink-muted);
-    font-weight: 600;
-  }
-  .tab[aria-selected="true"] .n { background: var(--gold-wash); color: var(--gold-deep); }
+  .tab[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--coral); }
+  .tab .n { font-size: 11px; padding: 1px 6px; border-radius: 99px; background: var(--surface-2); color: var(--ink-muted); font-weight: 600; border: 1px solid var(--line-soft); }
+  .tab[aria-selected="true"] .n { background: var(--tide-wash); color: var(--tide-600); border-color: transparent; }
 
   .spacer { flex: 1; }
 
-  .search {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 6px 10px;
-  }
+  .search { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
   .search input { border: 0; background: none; outline: none; color: inherit; font-size: 13px; width: 168px; }
   .search input::placeholder { color: var(--ink-muted); }
 
   .facepile { display: flex; align-items: center; gap: 5px; }
   .facepile .avatar-btn {
-    border: 0;
-    padding: 0;
-    background: none;
-    cursor: pointer;
-    border-radius: 99px;
-    line-height: 0;
-    opacity: 0.42;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    border: 0; padding: 0; background: none; cursor: pointer; border-radius: 99px; line-height: 0;
+    opacity: 0.4; transition: opacity 0.15s ease;
   }
   .facepile .avatar-btn:hover { opacity: 0.8; }
-  .facepile .avatar-btn.on { opacity: 1; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--gold); }
+  .facepile .avatar-btn.on { opacity: 1; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--coral); }
 
-  .toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 12.5px;
-    color: var(--ink-2);
-    cursor: pointer;
-    user-select: none;
-  }
-  .toggle input { accent-color: var(--gold-deep); width: 15px; height: 15px; }
+  .toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; user-select: none; }
+  .toggle input { accent-color: var(--tide); width: 15px; height: 15px; }
 
   /* ---------- Avatars ---------- */
   .avatar {
-    width: 26px;
-    height: 26px;
-    border-radius: 99px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: #fff;
-    flex: none;
+    width: 26px; height: 26px; border-radius: 99px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 700; color: #fff; flex: none;
   }
   .avatar.lg { width: 34px; height: 34px; font-size: 12px; }
-  .avatar.owner { box-shadow: inset 0 0 0 1.5px var(--gold); }
+  .avatar.lead { box-shadow: inset 0 0 0 1.5px var(--coral); }
 
   /* ---------- Board ---------- */
   .scroller { overflow-x: auto; margin-top: 18px; padding-bottom: 4px; }
-  .board { min-width: 900px; display: flex; flex-direction: column; gap: 20px; }
+  .board { min-width: 900px; display: flex; flex-direction: column; gap: 18px; }
 
   .group { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
-  .group-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-left: 3px solid var(--gc);
-    background: var(--surface);
-  }
-  .group-head .caret {
-    border: 0;
-    background: none;
-    cursor: pointer;
-    color: var(--gc);
-    padding: 2px;
-    line-height: 0;
-    transition: transform 0.18s ease;
-  }
+  .group-head { display: flex; align-items: center; gap: 10px; padding: 12px 15px; }
+  .group-head .caret { border: 0; background: none; cursor: pointer; color: var(--ink-muted); padding: 2px; line-height: 0; transition: transform 0.18s ease; }
   .group.collapsed .caret { transform: rotate(-90deg); }
-  .group-head h3 { font-size: 14.5px; font-weight: 600; color: var(--gc); letter-spacing: 0.01em; }
+  .group-head .tag { width: 10px; height: 10px; border-radius: 3px; background: var(--gc); flex: none; }
+  .group-head h3 { font-size: 14.5px; font-weight: 600; color: var(--gc); }
   .group-head .count { font-size: 11.5px; color: var(--ink-muted); }
   .group-head .mini { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--ink-muted); }
   .group-head .mini .dotstat { display: inline-flex; align-items: center; gap: 5px; }
   .group-head .mini i { width: 7px; height: 7px; border-radius: 99px; display: inline-block; }
 
   .cols, .row { display: grid; grid-template-columns: var(--row-cols); align-items: center; column-gap: 12px; }
-  .cols { padding: 7px 14px 7px 17px; border-top: 1px solid var(--line-soft); background: var(--surface-2); }
+  .cols { padding: 7px 15px; border-top: 1px solid var(--line-soft); background: var(--surface-2); }
   .group.collapsed .cols, .group.collapsed .rows { display: none; }
 
-  .row {
-    padding: 9px 14px 9px 17px;
-    border-top: 1px solid var(--line-soft);
-    transition: background-color 0.12s ease;
-  }
+  .row { padding: 9px 15px; border-top: 1px solid var(--line-soft); transition: background-color 0.12s ease; }
   .row:hover { background: var(--surface-2); }
   .row.is-done .task-title { color: var(--ink-muted); text-decoration: line-through; text-decoration-color: var(--line); }
 
   .task { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
   .check {
     width: 17px; height: 17px; margin-top: 2px; flex: none;
-    border-radius: 4px; border: 1.5px solid var(--line); background: var(--surface);
+    border-radius: 5px; border: 1.5px solid var(--line); background: var(--surface);
     cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
   .check:hover { border-color: var(--st-done); }
   .check.on { background: var(--st-done); border-color: var(--st-done); color: #fff; }
   .task-title { font-size: 13.5px; line-height: 1.35; }
   .task-meta { margin-top: 3px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-muted); }
-  .chip-repeat {
-    display: inline-flex; align-items: center; gap: 4px;
-    border: 1px solid var(--line); border-radius: 99px; padding: 0 7px 0 5px; height: 17px;
-    color: var(--ink-2);
-  }
-  .task-note { color: var(--st-block); }
+  .chip-repeat { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 99px; padding: 0 7px 0 5px; height: 17px; color: var(--ink-2); }
+  .task-note { color: var(--danger); }
 
-  .owner-cell { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 3px 5px; border-radius: 6px; cursor: pointer; min-width: 0; text-align: left; }
+  .owner-cell { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 3px 5px; border-radius: 8px; cursor: pointer; min-width: 0; text-align: left; }
   .owner-cell:hover { background: var(--line-soft); }
   .owner-cell .nm { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .status {
-    border: 0; cursor: pointer; width: 100%; height: 29px; border-radius: 5px;
+    border: 0; cursor: pointer; width: 100%; height: 29px; border-radius: 6px;
     color: var(--st-ink); background: var(--sc);
-    font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 12px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
     transition: filter 0.15s ease;
   }
-  .status:hover { filter: brightness(1.07); }
+  .status:hover { filter: brightness(1.08); }
 
   .prio { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
   .prio i { width: 3px; height: 13px; border-radius: 2px; background: var(--pc); display: inline-block; }
@@ -468,16 +372,15 @@
   .due small { display: block; font-size: 10.5px; color: var(--ink-muted); }
   .due.overdue { color: var(--danger); font-weight: 600; }
   .due.overdue small { color: var(--danger); opacity: 0.85; }
-  .due.today { color: var(--gold-deep); font-weight: 600; }
+  .due.today { color: var(--tide-600); font-weight: 600; }
 
   .est { font-size: 12.5px; color: var(--ink-muted); text-align: right; }
 
   .addrow {
     display: flex; align-items: center; gap: 8px;
-    padding: 9px 14px 11px 34px;
-    border-top: 1px solid var(--line-soft);
+    padding: 9px 15px 11px 34px; border-top: 1px solid var(--line-soft);
     color: var(--ink-muted); font-size: 12.5px;
-    border-width: 0 0 0 0; background: none; cursor: pointer; width: 100%;
+    border-width: 0; background: none; cursor: pointer; width: 100%;
   }
   .addrow:hover { color: var(--ink); background: var(--surface-2); }
   .group.collapsed .addrow { display: none; }
@@ -485,18 +388,18 @@
   .empty { padding: 40px 16px; text-align: center; color: var(--ink-muted); font-size: 13px; }
 
   /* ---------- My week ---------- */
-  .week { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+  .week { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
   .daycard { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
   .daycard > header { display: flex; align-items: baseline; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); }
   .daycard > header h3 { font-size: 13.5px; font-weight: 600; }
   .daycard > header .when { font-size: 11.5px; color: var(--ink-muted); }
   .daycard > header .tot { margin-left: auto; font-size: 11.5px; color: var(--ink-muted); }
   .daycard.alert > header h3 { color: var(--danger); }
-  .daycard.decide > header h3 { color: var(--warning); }
+  .daycard.decide > header h3 { color: var(--coral-deep); }
   .wrow { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line-soft); }
   .wrow:first-of-type { border-top: 0; }
   .wrow .grow { min-width: 0; flex: 1; }
-  .wrow .stream { font-size: 11px; color: var(--sc2); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .wrow .stream { font-size: 10.5px; color: var(--sc2); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
   .wrow .t { font-size: 13.5px; }
   .wrow .status { width: 132px; flex: none; }
 
@@ -504,10 +407,10 @@
   .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(208px, 1fr); gap: 14px; min-width: 900px; }
   .lane { display: flex; flex-direction: column; gap: 10px; }
   .lane > header { display: flex; align-items: center; gap: 8px; padding: 0 2px 8px; border-bottom: 2px solid var(--lc); }
-  .lane > header h3 { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .lane > header h3 { font-size: 11.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
   .lane > header .n { font-size: 11.5px; color: var(--ink-muted); margin-left: auto; }
   .pcard {
-    border: 1px solid var(--line); border-left: 3px solid var(--hc);
+    border: 1px solid var(--line); border-top: 3px solid var(--hc);
     border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
     padding: 12px 13px; display: flex; flex-direction: column; gap: 9px;
   }
@@ -522,19 +425,19 @@
   .bar > span { display: block; height: 100%; background: var(--hc); border-radius: 99px; }
 
   /* ---------- Team load ---------- */
-  .loadwrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); margin-top: 20px; overflow: hidden; }
+  .loadwrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); margin-top: 18px; overflow: hidden; }
   .loadwrap > header { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); flex-wrap: wrap; }
   .legend { display: flex; gap: 14px; margin-left: auto; font-size: 11.5px; color: var(--ink-muted); }
   .legend span { display: inline-flex; align-items: center; gap: 5px; }
   .legend i { width: 9px; height: 9px; border-radius: 2px; }
-  .lrow { display: grid; grid-template-columns: 210px minmax(220px, 1fr) 96px 128px; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line-soft); }
+  .lrow { display: grid; grid-template-columns: 210px minmax(220px, 1fr) 100px 128px; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line-soft); }
   .lrow:first-of-type { border-top: 0; }
   .who2 { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .who2 > div > b { font-size: 13.5px; font-weight: 600; display: block; }
   .who2 > div > span { font-size: 11px; color: var(--ink-muted); display: block; }
-  .stack { display: flex; height: 22px; border-radius: 4px; overflow: hidden; background: var(--line-soft); position: relative; }
+  .stack { display: flex; height: 22px; border-radius: 5px; overflow: hidden; background: var(--line-soft); position: relative; }
   .stack > i { display: block; height: 100%; }
-  .stack .cap { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: 0.45; }
+  .stack .cap { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: 0.42; }
   .hours { font-size: 13px; text-align: right; }
   .hours small { color: var(--ink-muted); }
   .flag { font-size: 11.5px; font-weight: 600; text-align: right; }
@@ -546,85 +449,78 @@
   .menu {
     position: fixed; z-index: 60; min-width: 176px;
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-    box-shadow: 0 12px 32px -10px rgb(15 25 43 / 0.35); padding: 5px;
+    box-shadow: 0 14px 36px -12px rgb(7 51 61 / 0.4); padding: 5px;
   }
-  .menu button {
-    display: flex; align-items: center; gap: 9px; width: 100%;
-    border: 0; background: none; text-align: left; cursor: pointer;
-    padding: 7px 9px; border-radius: 5px; font-size: 13px;
-  }
+  .menu button { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; text-align: left; cursor: pointer; padding: 7px 9px; border-radius: 7px; font-size: 13px; }
   .menu button:hover { background: var(--surface-2); }
   .menu .swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
 
   /* ---------- Dialog ---------- */
   dialog {
-    border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
-    padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: 0 30px 70px -24px rgb(15 25 43 / 0.6);
-    margin: auto; /* keep it centred even under a host reset that zeroes margins */
+    border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink);
+    padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: 0 30px 70px -24px rgb(7 51 61 / 0.55);
+    margin: auto;
   }
-  dialog::backdrop { background: rgb(15 25 43 / 0.42); backdrop-filter: blur(2px); }
+  dialog::backdrop { background: rgb(7 51 61 / 0.45); backdrop-filter: blur(2px); }
   dialog header { padding: 18px 22px 14px; border-bottom: 1px solid var(--line-soft); }
-  dialog header h2 { font-family: "Cormorant Garamond", ui-serif, Georgia, serif; font-size: 25px; font-weight: 600; }
-  dialog header p { margin-top: 2px; font-size: 12.5px; color: var(--ink-muted); }
+  dialog header h2 { font-family: "Bricolage Grotesque", ui-sans-serif, sans-serif; font-size: 23px; font-weight: 700; letter-spacing: -0.01em; }
+  dialog header p { margin-top: 3px; font-size: 12.5px; color: var(--ink-muted); }
   dialog .body { padding: 18px 22px; display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
   dialog .body .full { grid-column: 1 / -1; }
   dialog label { display: block; }
   dialog label .label { display: block; margin-bottom: 5px; }
   dialog input[type="text"], dialog input[type="date"], dialog select {
     width: 100%; padding: 8px 10px; font: inherit; font-size: 13px;
-    color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
   }
   dialog footer { display: flex; justify-content: flex-end; gap: 9px; padding: 14px 22px 18px; border-top: 1px solid var(--line-soft); }
 
-  .foot { margin-top: 28px; font-size: 11.5px; color: var(--ink-muted); max-width: 76ch; }
+  .foot { margin-top: 26px; font-size: 11.5px; color: var(--ink-muted); max-width: 76ch; }
 
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
-  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
-  @media (max-width: 1180px) {
-    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
+  @media (max-width: 1180px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 900px) {
     .app { grid-template-columns: minmax(0, 1fr); }
-    .rail { position: static; height: auto; min-width: 0; }
-    .rail nav { flex-direction: row; overflow-x: auto; min-width: 0; padding: 0 12px 12px; }
-    .rail nav .sep, .rail nav .new { display: none; }
-    .rail nav a { white-space: nowrap; }
-    .rail-foot { display: none; }
-    main { padding: 22px 16px 44px; }
-    .pagehead h1 { font-size: 30px; }
+    .rail { position: static; height: auto; min-width: 0; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px 12px; }
+    .rail .sect, .rail .streams { display: none; }
+    .rail a { white-space: nowrap; }
+    main { padding: 20px 16px 44px; }
+    .pagehead h1 { font-size: 27px; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .topbar .org, .topbar .chip { display: none; }
     dialog .body { grid-template-columns: 1fr; }
   }
 </style>
 
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">Harbour<em>.</em></span>
+    <span class="org">Thammachart Seafood</span>
+  </div>
+  <button class="chip" id="ws">Bangkok operations ▾</button>
+  <div class="spacer"></div>
+  <button class="iconbtn" aria-label="Notifications" title="Notifications">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+  </button>
+  <div class="me">
+    <span class="avatar lead" style="background:#0f7383">FC</span>
+    <span class="n">Fabien</span>
+  </div>
+</header>
+
 <div class="app">
-  <aside class="rail">
-    <div class="wordmark">
-      <b>KAVIARI</b>
-      <span>Cellar</span>
-      <div class="gold-rule"></div>
-    </div>
-    <nav aria-label="Main navigation" id="rail-nav"></nav>
-    <div class="rail-foot">
-      <span class="avatar owner" style="background:#8a6d1f">FC</span>
-      <div class="who">
-        <b>Fabien Clermont</b>
-        <span>Owner</span>
-      </div>
-    </div>
-  </aside>
+  <aside class="rail" id="rail"></aside>
 
   <main>
     <div class="pagehead">
       <div>
-        <h1>Team Board</h1>
-        <p class="sub">Week of 24 – 28 August 2026 · 9 people · 5 active streams</p>
+        <h1>Team board</h1>
+        <p class="sub">Week of 24 – 28 August 2026 · 9 people · 6 streams</p>
       </div>
       <div class="headtools">
         <button class="btn" id="btn-week">This week ▾</button>
-        <button class="btn btn-primary" id="btn-new"><span class="plus">+</span> New task</button>
+        <button class="btn btn-primary" id="btn-new">+ New task</button>
       </div>
     </div>
 
@@ -654,7 +550,7 @@
       <p>It lands at the top of the stream you pick, and shows up in that person's week.</p>
     </header>
     <div class="body">
-      <label class="full"><span class="label">Task</span><input type="text" id="f-title" required placeholder="e.g. Confirm the Sofitel tasting date"></label>
+      <label class="full"><span class="label">Task</span><input type="text" id="f-title" required placeholder="e.g. Confirm the banquet order for Saturday"></label>
       <label><span class="label">Stream</span><select id="f-group"></select></label>
       <label><span class="label">Owner</span><select id="f-owner"></select></label>
       <label><span class="label">Status</span><select id="f-status"></select></label>
@@ -679,44 +575,47 @@
 
   var TODAY = "2026-08-28";
 
-  var NAV = [
-    ["Dashboard", "grid"], ["Inventory", "box"], ["Consumption", "fork"],
-    ["Order Planner", "clock"], ["Purchase Orders", "doc"], ["Import & Analyze", "up"],
-    ["Marketing", "mega"], ["Assistant", "spark"], ["SEP"],
-    ["Team Board", "board", true], ["Settings", "gear"]
-  ];
-
   var ICONS = {
-    grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-    box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>',
-    fork: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10"/><path d="M17 3c-2 3-2 6 0 8v10"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
-    up: '<path d="M12 15V4m0 0-4 4m4-4 4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
-    mega: '<path d="M3 11v2a1 1 0 0 0 1 1h3l7 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M18 9a4 4 0 0 1 0 6"/>',
-    spark: '<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+    home: '<path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/>',
     board: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>',
-    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7.5"/>'
+    my: '<path d="M20 6 9 17l-5-5"/>',
+    projects: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    team: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 8.2a3 3 0 0 1 0 5.6M18.5 20a5.5 5.5 0 0 0-2.2-4.4"/>',
+    reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M4.5 8.5 6 9m12 6 1.5.5M8.5 19.5 9 18m6-12 .5-1.5M4.5 15.5 6 15m12-6 1.5-.5M8.5 4.5 9 6m6 12 .5 1.5"/>'
   };
 
+  var NAV = [
+    ["Home", "home"],
+    ["Team board", "board", true],
+    ["My work", "my", false, 6],
+    ["Projects", "projects"],
+    ["Calendar", "cal"],
+    ["People", "team"],
+    ["Reports", "reports"],
+    ["Settings", "gear"]
+  ];
+
   var PEOPLE = [
-    { id: "fab",  name: "Fabien",  full: "Fabien Clermont", role: "Head of business", color: "#8a6d1f", owner: true },
-    { id: "ploy", name: "Ploy",    full: "Ploy S.",  role: "Key accounts · food service", color: "#2a78d6" },
-    { id: "nut",  name: "Nut",     full: "Nut T.",   role: "Hotels & events",            color: "#1b9e8f" },
-    { id: "beam", name: "Beam",    full: "Beam K.",  role: "Marketing & content",        color: "#6d5bd0" },
-    { id: "fah",  name: "Fah",     full: "Fah W.",   role: "Purchasing & supply",        color: "#b0553a" },
-    { id: "ton",  name: "Ton",     full: "Ton P.",   role: "Warehouse & logistics",      color: "#3f6f8f" },
-    { id: "mint", name: "Mint",    full: "Mint L.",  role: "Chef liaison & training",    color: "#4f7a71" },
-    { id: "krit", name: "Krit",    full: "Krit A.",  role: "Finance & admin",            color: "#7b6a52" },
-    { id: "pim",  name: "Pim",     full: "Pim R.",   role: "Quality & compliance",       color: "#a34a6a" }
+    { id: "fab",  full: "Fabien Clermont", name: "Fabien", role: "Head of business", color: "#0f7383", lead: true },
+    { id: "ploy", full: "Ploy S.",  name: "Ploy", role: "Key accounts · food service", color: "#b04a8a" },
+    { id: "nut",  full: "Nut T.",   name: "Nut",  role: "Retail counters",            color: "#7b57c9" },
+    { id: "beam", full: "Beam K.",  name: "Beam", role: "Marketing & e-commerce",     color: "#2f6fb5" },
+    { id: "fah",  full: "Fah W.",   name: "Fah",  role: "Sourcing & imports",         color: "#c2681f" },
+    { id: "ton",  full: "Ton P.",   name: "Ton",  role: "Logistics & cold chain",     color: "#2f7fa8" },
+    { id: "mint", full: "Mint L.",  name: "Mint", role: "Chef liaison & training",    color: "#177a5e" },
+    { id: "krit", full: "Krit A.",  name: "Krit", role: "Finance & admin",            color: "#6b7b82" },
+    { id: "pim",  full: "Pim R.",   name: "Pim",  role: "QA & food safety",           color: "#2f7d4a" }
   ];
 
   var GROUPS = [
-    { id: "ops",     name: "Daily operations",        color: "var(--stream-ops)" },
-    { id: "festive", name: "Festive season 2026",     color: "var(--stream-festive)" },
-    { id: "retail",  name: "Retail & e-commerce",     color: "var(--stream-retail)" },
-    { id: "supply",  name: "Supply & cold chain",     color: "var(--stream-supply)" },
-    { id: "intake",  name: "New requests",            color: "var(--stream-intake)" }
+    { id: "ops",     name: "Daily operations",      color: "var(--s-ops)" },
+    { id: "retail",  name: "Retail counters",       color: "var(--s-retail)" },
+    { id: "food",    name: "Food service accounts", color: "var(--s-food)" },
+    { id: "source",  name: "Sourcing & cold chain", color: "var(--s-source)" },
+    { id: "quality", name: "Quality & food safety", color: "var(--s-quality)" },
+    { id: "intake",  name: "New requests",          color: "var(--s-intake)" }
   ];
 
   var STATUS = [
@@ -735,64 +634,61 @@
   ];
 
   var TASKS = [
-    // Daily operations
-    { g: "ops", t: "Log yesterday's consumption for every outlet", o: "ton",  s: "done",  p: "normal",   d: "2026-08-28", e: 0.5, r: "daily" },
-    { g: "ops", t: "Cold-room temperature check (−2 °C to +2 °C)", o: "pim",  s: "doing", p: "high",     d: "2026-08-28", e: 0.5, r: "daily" },
-    { g: "ops", t: "Confirm today's chef deliveries with the drivers", o: "ton", s: "todo", p: "high",  d: "2026-08-28", e: 1,   r: "daily" },
-    { g: "ops", t: "Review low-stock alerts and flag the reorders", o: "fah",  s: "doing", p: "normal",  d: "2026-08-28", e: 1,   r: "daily" },
-    { g: "ops", t: "Answer the food-service inbox (quotes & samples)", o: "ploy", s: "doing", p: "normal", d: "2026-08-28", e: 1.5, r: "daily" },
-    { g: "ops", t: "Weekly stock count — Osciètre & Baeri tins", o: "pim",   s: "todo",  p: "normal",   d: "2026-08-31", e: 3,   r: "weekly" },
-    { g: "ops", t: "Send the weekly consumption report to the team", o: "fab", s: "todo", p: "high",    d: "2026-08-28", e: 1,   r: "weekly" },
+    { g: "ops", t: "Check the 05:00 landing against the receiving sheet", o: "ton", s: "done", p: "high", d: "2026-08-28", e: 1, r: "daily" },
+    { g: "ops", t: "Cutting-room yield log — salmon and tuna loins", o: "mint", s: "doing", p: "normal", d: "2026-08-28", e: 1, r: "daily" },
+    { g: "ops", t: "Dispatch the restaurant deliveries before 09:00", o: "ton", s: "doing", p: "critical", d: "2026-08-28", e: 1.5, r: "daily" },
+    { g: "ops", t: "Counter display and ice refresh — all three stores", o: "nut", s: "todo", p: "high", d: "2026-08-28", e: 1, r: "daily" },
+    { g: "ops", t: "Close the daily shrinkage report", o: "krit", s: "todo", p: "normal", d: "2026-08-28", e: 0.5, r: "daily" },
+    { g: "ops", t: "Production plan for next week's cutting room", o: "mint", s: "todo", p: "normal", d: "2026-08-31", e: 3, r: "weekly" },
+    { g: "ops", t: "Send the weekly operations report to the team", o: "fab", s: "todo", p: "high", d: "2026-08-28", e: 1, r: "weekly" },
     { g: "ops", t: "One-to-ones with the team (9 slots)", o: "fab", s: "todo", p: "normal", d: "2026-08-31", e: 4, r: "weekly" },
-    { g: "ops", t: "Review the August P&L pack with Krit", o: "fab", s: "doing", p: "high", d: "2026-09-02", e: 2 },
 
-    // Festive season
-    { g: "festive", t: "Lock the festive assortment with Kaviari Paris", o: "fab", s: "doing", p: "critical", d: "2026-09-04", e: 4 },
-    { g: "festive", t: "Forecast December volumes per outlet", o: "fah", s: "wait", p: "high", d: "2026-09-02", e: 5, n: "Waiting on the hotel forecasts" },
-    { g: "festive", t: "Price list v2 — festive tins & gift boxes", o: "krit", s: "doing", p: "high", d: "2026-09-01", e: 3 },
-    { g: "festive", t: "Shoot the gift-box visuals", o: "beam", s: "todo", p: "normal", d: "2026-09-08", e: 6 },
-    { g: "festive", t: "Book the tasting for the hotel buyers", o: "nut", s: "block", p: "critical", d: "2026-08-31", e: 2, n: "Venue unconfirmed" },
-    { g: "festive", t: "Brief the chefs on the festive pairings", o: "mint", s: "todo", p: "normal", d: "2026-09-09", e: 3 },
-    { g: "festive", t: "Call Kaviari Paris about the December allocation", o: "fab", s: "todo", p: "high", d: "2026-08-31", e: 1 },
+    { g: "retail", t: "Relaunch the sashimi set at the Thonglor counter", o: "nut", s: "doing", p: "high", d: "2026-09-03", e: 5 },
+    { g: "retail", t: "Update price tags and POS for the new pack sizes", o: "krit", s: "wait", p: "normal", d: "2026-09-02", e: 2, n: "Waiting on the pricing sign-off" },
+    { g: "retail", t: "Train the two new counter staff on filleting", o: "mint", s: "todo", p: "high", d: "2026-09-07", e: 6 },
+    { g: "retail", t: "Weekend tasting — grilled river prawn", o: "beam", s: "todo", p: "normal", d: "2026-09-05", e: 4 },
 
-    // Retail & e-commerce
-    { g: "retail", t: "Draft the retail listing pack (5 SKUs)", o: "ploy", s: "doing", p: "high", d: "2026-09-03", e: 5 },
-    { g: "retail", t: "Cold-chain packaging test — 24 h transit", o: "ton", s: "todo", p: "high", d: "2026-09-09", e: 4 },
-    { g: "retail", t: "E-shop product photos and copy", o: "beam", s: "todo", p: "normal", d: "2026-09-11", e: 8 },
-    { g: "retail", t: "Margin model for the retail price points", o: "krit", s: "wait", p: "normal", d: "2026-09-07", e: 3, n: "Needs the landed cost" },
+    { g: "food", t: "Quote the hotel banquet order (200 pax)", o: "ploy", s: "doing", p: "critical", d: "2026-08-31", e: 3 },
+    { g: "food", t: "October menu tasting with Chef Anan", o: "mint", s: "doing", p: "normal", d: "2026-09-07", e: 4 },
+    { g: "food", t: "Win back the two accounts lost in July", o: "ploy", s: "todo", p: "high", d: "2026-09-11", e: 6 },
+    { g: "food", t: "Set up the standing order for the sushi chain", o: "ploy", s: "wait", p: "high", d: "2026-09-04", e: 3, n: "Waiting on their volume forecast" },
 
-    // Supply & cold chain
-    { g: "supply", t: "Send PO-2026-0142 to Kaviari", o: "fah", s: "done", p: "high", d: "2026-08-27", e: 1 },
-    { g: "supply", t: "Clear customs paperwork for the 3 Sep shipment", o: "krit", s: "doing", p: "critical", d: "2026-09-01", e: 2 },
-    { g: "supply", t: "Replace the backup generator sensor", o: "ton", s: "block", p: "critical", d: "2026-08-26", e: 3, n: "Part on back-order" },
-    { g: "supply", t: "Renew the import health certificate", o: "pim", s: "wait", p: "high", d: "2026-08-25", e: 2, n: "Filed 12 Aug, no reply yet" },
-    { g: "supply", t: "Reconcile the August delivery notes", o: "krit", s: "todo", p: "low", d: "2026-09-04", e: 2 },
-    { g: "supply", t: "Approve the September purchase plan", o: "fab", s: "doing", p: "critical", d: "2026-09-01", e: 1.5 },
+    { g: "source", t: "Confirm the September salmon allocation", o: "fah", s: "doing", p: "critical", d: "2026-09-01", e: 3 },
+    { g: "source", t: "Air-freight cost review with the forwarder", o: "fah", s: "todo", p: "normal", d: "2026-09-08", e: 3 },
+    { g: "source", t: "Replace the chiller-room door seal", o: "ton", s: "block", p: "critical", d: "2026-08-26", e: 3, n: "Part on back-order" },
+    { g: "source", t: "Trial a second Phuket lobster supplier", o: "fah", s: "todo", p: "low", d: "2026-09-14", e: 4 },
+    { g: "source", t: "Approve the September purchase plan", o: "fab", s: "doing", p: "high", d: "2026-09-01", e: 1.5 },
 
-    // New requests
-    { g: "intake", t: "Caviar service training — Sofitel kitchen team", o: "mint", s: "doing", p: "high", d: "2026-09-04", e: 6 },
-    { g: "intake", t: "October tasting menu with Chef Anan", o: "mint", s: "todo", p: "normal", d: "2026-09-07", e: 4 },
-    { g: "intake", t: "Supplier proposal — smoked eel", o: "ploy", s: "todo", p: "low", d: "2026-09-10", e: 2 },
-    { g: "intake", t: "Scope the loyalty offer for repeat buyers", o: "nut", s: "todo", p: "normal", d: "2026-09-12", e: 3 }
+    { g: "quality", t: "BRC audit prep — gap analysis", o: "pim", s: "doing", p: "high", d: "2026-09-15", e: 8 },
+    { g: "quality", t: "Renew the export health certificate", o: "pim", s: "wait", p: "high", d: "2026-08-25", e: 2, n: "Filed 12 Aug, no reply yet" },
+    { g: "quality", t: "Audit the cold-chain temperature logs (−1 °C to +2 °C)", o: "pim", s: "todo", p: "normal", d: "2026-08-31", e: 2, r: "weekly" },
+    { g: "quality", t: "Refresh HACCP training for the cutting room", o: "mint", s: "todo", p: "normal", d: "2026-09-10", e: 4 },
+    { g: "quality", t: "Trace test: one lot from landing to counter", o: "pim", s: "todo", p: "high", d: "2026-09-04", e: 3 },
+
+    { g: "intake", t: "Seafood platters for a 300-pax corporate event", o: "ploy", s: "todo", p: "high", d: "2026-09-04", e: 3 },
+    { g: "intake", t: "Supplier proposal — Hokkaido scallops", o: "fah", s: "todo", p: "low", d: "2026-09-10", e: 2 },
+    { g: "intake", t: "Next-day delivery zone for the e-shop", o: "beam", s: "todo", p: "normal", d: "2026-09-12", e: 5 },
+    { g: "intake", t: "Sustainability claim for the tuna line", o: "beam", s: "todo", p: "normal", d: "2026-09-16", e: 4 }
   ];
 
   var PROJECTS = [
-    { name: "Festive season 2026", stage: "In progress", o: "fab",  health: "on",    ms: "Assortment locked", msd: "2026-09-04", done: 4, total: 13 },
-    { name: "Cold-chain upgrade", stage: "In progress", o: "ton",   health: "block", ms: "Generator sensor", msd: "2026-08-26", done: 2, total: 7 },
-    { name: "Central Food Hall listing", stage: "Scoping", o: "ploy", health: "risk", ms: "Listing pack", msd: "2026-09-03", done: 1, total: 6 },
-    { name: "ISO 22000 audit prep", stage: "Scoping", o: "pim",     health: "on",    ms: "Gap analysis", msd: "2026-09-15", done: 0, total: 9 },
-    { name: "E-shop relaunch", stage: "Intake", o: "beam",          health: "on",    ms: "Brief signed off", msd: "2026-09-07", done: 0, total: 4 },
-    { name: "Loyalty offer", stage: "Intake", o: "nut",             health: "on",    ms: "Scope agreed", msd: "2026-09-12", done: 0, total: 3 },
-    { name: "Chef training program", stage: "Review", o: "mint",    health: "on",    ms: "Sofitel session", msd: "2026-09-04", done: 5, total: 6 },
-    { name: "Hotel partnership — Mandarin", stage: "Live", o: "nut", health: "on",   ms: "Monthly review", msd: "2026-09-30", done: 8, total: 8 }
+    { name: "Sashimi counter refresh", stage: "In progress", o: "nut", health: "on", ms: "Thonglor relaunch", msd: "2026-09-03", done: 3, total: 9 },
+    { name: "Chiller room upgrade", stage: "In progress", o: "ton", health: "block", ms: "Door seal replaced", msd: "2026-08-26", done: 2, total: 7 },
+    { name: "Cutting-room yield program", stage: "In progress", o: "mint", health: "risk", ms: "Baseline agreed", msd: "2026-09-05", done: 2, total: 8 },
+    { name: "BRC certification 2027", stage: "Scoping", o: "pim", health: "on", ms: "Gap analysis", msd: "2026-09-15", done: 1, total: 12 },
+    { name: "Own-brand smoked salmon", stage: "Scoping", o: "fah", health: "on", ms: "Second tasting panel", msd: "2026-09-18", done: 2, total: 10 },
+    { name: "Next-day delivery zone", stage: "Intake", o: "beam", health: "on", ms: "Scope agreed", msd: "2026-09-12", done: 0, total: 4 },
+    { name: "Hokkaido scallop line", stage: "Intake", o: "fah", health: "on", ms: "Supplier visit", msd: "2026-09-22", done: 0, total: 3 },
+    { name: "Hotel banquet contract", stage: "Review", o: "ploy", health: "risk", ms: "Final pricing", msd: "2026-08-31", done: 5, total: 6 },
+    { name: "Sushi chain standing order", stage: "Live", o: "ploy", health: "on", ms: "Monthly review", msd: "2026-09-30", done: 7, total: 7 }
   ];
 
   var STAGES = [
-    { id: "Intake", color: "var(--stream-intake)" },
-    { id: "Scoping", color: "var(--stream-retail)" },
-    { id: "In progress", color: "var(--stream-supply)" },
-    { id: "Review", color: "var(--stream-festive)" },
-    { id: "Live", color: "var(--stream-ops)" }
+    { id: "Intake", color: "var(--s-intake)" },
+    { id: "Scoping", color: "var(--s-retail)" },
+    { id: "In progress", color: "var(--s-source)" },
+    { id: "Review", color: "var(--s-food)" },
+    { id: "Live", color: "var(--s-ops)" }
   ];
 
   var HEALTH = {
@@ -801,18 +697,10 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = {
-    view: "board",
-    q: "",
-    people: {},
-    showDone: false,
-    collapsed: {},
-    me: "fab"
-  };
+  var state = { view: "board", q: "", people: {}, showDone: false, collapsed: {}, me: "fab" };
 
   TASKS.forEach(function (t, i) { t.id = "t" + i; });
 
-  // ---------- helpers ----------
   function el(html) {
     var tpl = document.createElement("template");
     tpl.innerHTML = html.trim();
@@ -823,28 +711,16 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  function person(id) {
-    for (var i = 0; i < PEOPLE.length; i++) if (PEOPLE[i].id === id) return PEOPLE[i];
-    return PEOPLE[0];
-  }
-  function status(id) {
-    for (var i = 0; i < STATUS.length; i++) if (STATUS[i].id === id) return STATUS[i];
-    return STATUS[0];
-  }
-  function prio(id) {
-    for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].id === id) return PRIOS[i];
-    return PRIOS[1];
-  }
-  function group(id) {
-    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i];
-    return GROUPS[0];
-  }
+  function person(id) { for (var i = 0; i < PEOPLE.length; i++) if (PEOPLE[i].id === id) return PEOPLE[i]; return PEOPLE[0]; }
+  function status(id) { for (var i = 0; i < STATUS.length; i++) if (STATUS[i].id === id) return STATUS[i]; return STATUS[0]; }
+  function prio(id) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].id === id) return PRIOS[i]; return PRIOS[1]; }
+  function group(id) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i]; return GROUPS[0]; }
   function initials(p) {
     var parts = p.full.split(" ");
     return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
   }
   function avatar(p, cls) {
-    return '<span class="avatar ' + (cls || "") + (p.owner ? " owner" : "") + '" style="background:' + p.color +
+    return '<span class="avatar ' + (cls || "") + (p.lead ? " lead" : "") + '" style="background:' + p.color +
       '" title="' + esc(p.full + " — " + p.role) + '">' + initials(p) + "</span>";
   }
   function days(from, to) {
@@ -868,8 +744,7 @@
   }
   function isOverdue(t) { return t.s !== "done" && days(TODAY, t.d) < 0; }
   function activePeople() {
-    var ids = Object.keys(state.people).filter(function (k) { return state.people[k]; });
-    return ids;
+    return Object.keys(state.people).filter(function (k) { return state.people[k]; });
   }
   function visible(t) {
     if (!state.showDone && t.s === "done") return false;
@@ -882,11 +757,8 @@
     return true;
   }
 
-  // ---------- floating menu ----------
   var openMenuEl = null;
-  function closeMenu() {
-    if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; }
-  }
+  function closeMenu() { if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; } }
   function openMenu(anchor, items, pick) {
     closeMenu();
     var m = el('<div class="menu" role="menu"></div>');
@@ -901,32 +773,45 @@
     var r = anchor.getBoundingClientRect();
     var top = r.bottom + 6;
     if (top + m.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - m.offsetHeight - 6);
-    var left = Math.min(r.left, window.innerWidth - m.offsetWidth - 10);
     m.style.top = top + "px";
-    m.style.left = Math.max(8, left) + "px";
+    m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - m.offsetWidth - 10)) + "px";
     openMenuEl = m;
     var first = m.querySelector("button");
     if (first) first.focus();
   }
-  document.addEventListener("click", function (e) {
-    if (openMenuEl && !openMenuEl.contains(e.target)) closeMenu();
-  }, true);
+  document.addEventListener("click", function (e) { if (openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }, true);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
   window.addEventListener("resize", closeMenu);
   window.addEventListener("scroll", closeMenu, true);
 
-  // ---------- chrome ----------
   function renderRail() {
-    var nav = document.getElementById("rail-nav");
-    nav.innerHTML = NAV.map(function (n) {
-      if (n[0] === "SEP") return '<div class="sep"></div>';
+    var rail = document.getElementById("rail");
+    var html = NAV.map(function (n) {
       var svg = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n[1]] + "</svg>";
-      return '<a href="#" ' + (n[2] ? 'aria-current="page"' : "") + '>' + svg + n[0] +
-        (n[2] ? '<span class="new">New</span>' : "") + "</a>";
+      return '<a href="#" ' + (n[2] ? 'aria-current="page"' : "") + ">" + svg + n[0] +
+        (n[3] ? '<span class="badge tnum">' + n[3] + "</span>" : "") + "</a>";
     }).join("");
-    nav.addEventListener("click", function (e) {
+
+    html += '<div class="sect label">Streams</div><div class="streams">' +
+      GROUPS.map(function (g) {
+        var n = TASKS.filter(function (t) { return t.g === g.id && t.s !== "done"; }).length;
+        return '<button type="button" data-stream="' + g.id + '"><i style="background:' + g.color + '"></i>' +
+          esc(g.name) + '<span class="c tnum">' + n + "</span></button>";
+      }).join("") + "</div>";
+
+    rail.innerHTML = html;
+    rail.addEventListener("click", function (e) {
       var a = e.target.closest("a");
       if (a) e.preventDefault();
+      var s = e.target.closest("[data-stream]");
+      if (s) {
+        var id = s.dataset.stream;
+        state.q = "";
+        document.getElementById("q").value = "";
+        state.view = "board";
+        GROUPS.forEach(function (g) { state.collapsed[g.id] = g.id !== id; });
+        render();
+      }
     });
   }
 
@@ -934,15 +819,15 @@
     var open = TASKS.filter(function (t) { return t.s !== "done"; });
     var dueToday = open.filter(function (t) { return days(TODAY, t.d) === 0; });
     var overdue = open.filter(isOverdue);
-    var blocked = TASKS.filter(function (t) { return t.s === "block" || t.s === "wait"; });
-    var doneWeek = TASKS.filter(function (t) { return t.s === "done"; });
+    var stuck = TASKS.filter(function (t) { return t.s === "block" || t.s === "wait"; });
+    var done = TASKS.filter(function (t) { return t.s === "done"; });
 
     var cards = [
-      { v: open.length, k: "Open tasks", hint: "across 5 streams", c: "var(--st-doing)" },
-      { v: dueToday.length, k: "Due today", hint: "Friday 28 August", c: "var(--gold)" },
+      { v: open.length, k: "Open tasks", hint: "across 6 streams", c: "var(--tide)" },
+      { v: dueToday.length, k: "Due today", hint: "Friday 28 August", c: "var(--coral)" },
       { v: overdue.length, k: "Overdue", hint: overdue.length ? overdue.map(function (t) { return person(t.o).name; }).join(", ") : "nothing late", c: "var(--danger)" },
-      { v: blocked.length, k: "Blocked / waiting", hint: "needs a decision", c: "var(--st-wait)" },
-      { v: doneWeek.length, k: "Done this week", hint: "since Monday", c: "var(--success)" }
+      { v: stuck.length, k: "Blocked / waiting", hint: "needs a decision", c: "var(--st-wait)" },
+      { v: done.length, k: "Done this week", hint: "since Monday", c: "var(--success)" }
     ];
     document.getElementById("kpis").innerHTML = cards.map(function (c) {
       return '<article class="kpi" style="--kpi-color:' + c.c + '">' +
@@ -966,22 +851,19 @@
       projects: PROJECTS.length,
       load: PEOPLE.length
     };
-    var wrap = document.getElementById("tabs");
-    wrap.innerHTML = VIEWS.map(function (v) {
-      return '<button class="tab" role="tab" data-view="' + v.id + '" aria-selected="' +
-        (state.view === v.id) + '">' + v.label + '<span class="n tnum">' + counts[v.id] + "</span></button>";
+    document.getElementById("tabs").innerHTML = VIEWS.map(function (v) {
+      return '<button class="tab" role="tab" data-view="' + v.id + '" aria-selected="' + (state.view === v.id) +
+        '">' + v.label + '<span class="n tnum">' + counts[v.id] + "</span></button>";
     }).join("");
   }
 
   function renderFacepile() {
     document.getElementById("facepile").innerHTML = PEOPLE.map(function (p) {
       return '<button class="avatar-btn' + (state.people[p.id] ? " on" : "") + '" data-person="' + p.id +
-        '" aria-pressed="' + !!state.people[p.id] + '" aria-label="Filter by ' + esc(p.full) + '">' +
-        avatar(p) + "</button>";
+        '" aria-pressed="' + !!state.people[p.id] + '" aria-label="Filter by ' + esc(p.full) + '">' + avatar(p) + "</button>";
     }).join("");
   }
 
-  // ---------- board ----------
   function statusCell(t) {
     var s = status(t.s);
     return '<button class="status" style="--sc:' + s.color + '" data-status="' + t.id +
@@ -1014,7 +896,6 @@
   }
 
   function renderBoard() {
-    var host = document.getElementById("view");
     var any = false;
     var html = '<div class="scroller"><div class="board">';
 
@@ -1032,7 +913,7 @@
           '<button class="caret" data-collapse="' + g.id + '" aria-expanded="' + !state.collapsed[g.id] + '" aria-label="Collapse ' + esc(g.name) + '">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>' +
           "</button>" +
-          "<h3>" + esc(g.name) + "</h3>" +
+          '<span class="tag"></span><h3>' + esc(g.name) + "</h3>" +
           '<span class="count tnum">' + rows.length + " task" + (rows.length === 1 ? "" : "s") + "</span>" +
           '<div class="mini">' +
             (lateN ? '<span class="dotstat"><i style="background:var(--st-block)"></i>' + lateN + " late</span>" : "") +
@@ -1051,22 +932,21 @@
 
     html += "</div></div>";
     if (!any) html = '<div class="empty">No task matches this filter. Clear the search or the people filter.</div>';
-    host.innerHTML = html;
+    document.getElementById("view").innerHTML = html;
   }
 
-  // ---------- my week ----------
   function renderWeek() {
     var me = person(state.me);
     var mine = TASKS.filter(function (t) { return t.o === state.me && visible(t); });
     var buckets = [
-      { key: "late", title: "Overdue", when: "needs attention now", alert: true, f: function (t) { return isOverdue(t); } },
-      { key: "today", title: "Today", when: "Friday 28 August", f: function (t) { return days(TODAY, t.d) === 0 && t.s !== "done"; } },
-      { key: "soon", title: "Next week", when: "31 Aug – 4 Sep", f: function (t) { var d = days(TODAY, t.d); return d > 0 && d <= 7 && t.s !== "done"; } },
-      { key: "later", title: "Later", when: "beyond 4 September", f: function (t) { return days(TODAY, t.d) > 7 && t.s !== "done"; } },
-      { key: "done", title: "Closed this week", when: "", f: function (t) { return t.s === "done"; } }
+      { title: "Overdue", when: "needs attention now", alert: true, f: isOverdue },
+      { title: "Today", when: "Friday 28 August", f: function (t) { return days(TODAY, t.d) === 0 && t.s !== "done"; } },
+      { title: "Next week", when: "31 Aug – 4 Sep", f: function (t) { var d = days(TODAY, t.d); return d > 0 && d <= 7 && t.s !== "done"; } },
+      { title: "Later", when: "beyond 4 September", f: function (t) { return days(TODAY, t.d) > 7 && t.s !== "done"; } },
+      { title: "Closed this week", when: "", f: function (t) { return t.s === "done"; } }
     ];
 
-    var html = '<div class="pagehead" style="margin-top:20px;align-items:center">' +
+    var html = '<div class="pagehead" style="margin-top:18px;align-items:center">' +
       '<div style="display:flex;align-items:center;gap:12px">' + avatar(me, "lg") +
       '<div><div style="font-weight:600;font-size:15px">' + esc(me.full) + "</div>" +
       '<div class="sub" style="margin:0">' + esc(me.role) + "</div></div></div>" +
@@ -1075,7 +955,7 @@
     html += '<div class="week">';
     var shown = 0;
 
-    if (me.owner) {
+    if (me.lead) {
       var stuck = TASKS.filter(function (t) { return (t.s === "block" || t.s === "wait") && t.o !== state.me; });
       if (stuck.length) {
         html += '<section class="daycard decide"><header><h3>Needs a decision from you</h3>' +
@@ -1094,13 +974,13 @@
         html += "</section>";
       }
     }
+
     buckets.forEach(function (b) {
       var rows = mine.filter(b.f);
       if (!rows.length) return;
       shown += rows.length;
       var hours = rows.reduce(function (a, t) { return a + t.e; }, 0);
-      html += '<section class="daycard' + (b.alert ? " alert" : "") + '">' +
-        "<header><h3>" + b.title + "</h3>" +
+      html += '<section class="daycard' + (b.alert ? " alert" : "") + '"><header><h3>' + b.title + "</h3>" +
         (b.when ? '<span class="when">' + b.when + "</span>" : "") +
         '<span class="tot tnum">' + rows.length + " task" + (rows.length === 1 ? "" : "s") + " · " + hours + " h</span></header>";
       rows.forEach(function (t) {
@@ -1120,13 +1000,11 @@
 
     var btn = document.getElementById("switch-person");
     btn.addEventListener("click", function () {
-      openMenu(btn, PEOPLE.map(function (p) {
-        return { label: p.full + " — " + p.role, id: p.id, avatar: avatar(p) };
-      }), function (it) { state.me = it.id; renderTabs(); renderWeek(); });
+      openMenu(btn, PEOPLE.map(function (p) { return { label: p.full + " — " + p.role, id: p.id, avatar: avatar(p) }; }),
+        function (it) { state.me = it.id; renderTabs(); renderWeek(); });
     });
   }
 
-  // ---------- projects ----------
   function renderProjects() {
     var html = '<div class="scroller"><div class="kanban">';
     STAGES.forEach(function (st) {
@@ -1138,7 +1016,7 @@
         html += '<article class="pcard" style="--hc:' + h.color + '">' +
           '<span class="health"><i></i>' + h.label + "</span>" +
           "<h4>" + esc(p.name) + "</h4>" +
-          '<div class="ms">Next: <b>' + esc(p.ms) + "</b><br><span class=\"tnum\" style=\"color:" +
+          '<div class="ms">Next: <b>' + esc(p.ms) + '</b><br><span class="tnum" style="color:' +
             (late ? "var(--danger)" : "var(--ink-muted)") + '">' + fmtDate(p.msd) + (late ? " · late" : "") + "</span></div>" +
           '<div class="bar"><span style="width:' + Math.round((p.done / p.total) * 100) + '%"></span></div>' +
           "<footer>" + avatar(o) + '<span style="font-size:12px">' + esc(o.name) + "</span>" +
@@ -1151,9 +1029,8 @@
     document.getElementById("view").innerHTML = html;
   }
 
-  // ---------- team load ----------
   function renderLoad() {
-    var CAP = 20; // hours of task work per week
+    var CAP = 20;
     var rows = PEOPLE.map(function (p) {
       var mine = TASKS.filter(function (t) { return t.o === p.id && t.s !== "done"; });
       var byStatus = {};
@@ -1165,8 +1042,7 @@
         hours: mine.reduce(function (a, t) { return a + t.e; }, 0),
         late: mine.filter(isOverdue).length,
         n: mine.length,
-        byStatus: byStatus,
-        done: TASKS.filter(function (t) { return t.o === p.id && t.s === "done"; }).length
+        byStatus: byStatus
       };
     }).sort(function (a, b) { return b.hours - a.hours; });
 
@@ -1193,7 +1069,7 @@
           }).join("") +
           '<span class="cap" style="left:' + ((CAP / max) * 100) + '%"></span>' +
         "</div>" +
-        '<div class="hours tnum">' + r.hours + ' h <small>/ ' + r.n + " open</small></div>" +
+        '<div class="hours tnum">' + r.hours + " h <small>/ " + r.n + " open</small></div>" +
         '<div class="flag ' + flag.cls + '">' + flag.txt + "</div></div>";
     });
     html += "</div>";
@@ -1210,10 +1086,9 @@
     else renderLoad();
     document.querySelector(".search").style.display = (state.view === "projects" || state.view === "load") ? "none" : "";
     document.getElementById("foot").textContent =
-      "Prototype for the Kaviari Cellar team module — sample content. People, streams, tasks and estimates are placeholders to be replaced with the real team. Status, owner, tick-boxes, filters and “New task” are live in this mock-up; changes are not saved.";
+      "Prototype — sample content. People, streams, tasks and estimates are placeholders to be replaced with the real team. Status, owner, tick-boxes, filters and “New task” are live in this mock-up; changes are not saved.";
   }
 
-  // ---------- events ----------
   document.addEventListener("click", function (e) {
     var tab = e.target.closest(".tab");
     if (tab) { state.view = tab.dataset.view; render(); return; }
@@ -1235,18 +1110,16 @@
     var stBtn = e.target.closest("[data-status]");
     if (stBtn) {
       var task = TASKS.filter(function (x) { return x.id === stBtn.dataset.status; })[0];
-      openMenu(stBtn, STATUS.map(function (s) { return { label: s.label, id: s.id, color: s.color }; }), function (it) {
-        task.s = it.id; render();
-      });
+      openMenu(stBtn, STATUS.map(function (s) { return { label: s.label, id: s.id, color: s.color }; }),
+        function (it) { task.s = it.id; render(); });
       return;
     }
 
     var ownBtn = e.target.closest("[data-owner]");
     if (ownBtn) {
       var tk = TASKS.filter(function (x) { return x.id === ownBtn.dataset.owner; })[0];
-      openMenu(ownBtn, PEOPLE.map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }), function (it) {
-        tk.o = it.id; render();
-      });
+      openMenu(ownBtn, PEOPLE.map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }),
+        function (it) { tk.o = it.id; render(); });
       return;
     }
 
@@ -1258,18 +1131,21 @@
     state.q = e.target.value;
     if (state.view === "board") renderBoard(); else if (state.view === "week") renderWeek();
   });
-  document.getElementById("showdone").addEventListener("change", function (e) {
-    state.showDone = e.target.checked;
-    render();
-  });
+  document.getElementById("showdone").addEventListener("change", function (e) { state.showDone = e.target.checked; render(); });
   document.getElementById("btn-week").addEventListener("click", function (e) {
     openMenu(e.currentTarget, [
       { label: "This week", id: "w0" }, { label: "Next week", id: "w1" },
       { label: "This month", id: "m0" }, { label: "Everything", id: "all" }
-    ], function () { /* prototype: single period */ });
+    ], function () {});
+  });
+  document.getElementById("ws").addEventListener("click", function (e) {
+    openMenu(e.currentTarget, [
+      { label: "Bangkok operations", id: "bkk" },
+      { label: "Retail counters", id: "retail" },
+      { label: "Food service", id: "fs" }
+    ], function () {});
   });
 
-  // ---------- dialog ----------
   var dlg = document.getElementById("dlg");
   function fillSelect(sel, items, val) {
     sel.innerHTML = items.map(function (i) {
@@ -1302,6 +1178,7 @@
     });
     document.getElementById("f-title").value = "";
     state.view = "board";
+    state.collapsed = {};
     render();
   });
 
