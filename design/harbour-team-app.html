@@ -48,7 +48,7 @@
 
     --radius: 10px;
     --shadow: 0 1px 2px rgb(7 51 61 / 0.05), 0 10px 26px -18px rgb(7 51 61 / 0.4);
-    --row-cols: minmax(300px, 1fr) 152px 150px 116px 128px 78px;
+    --row-cols: minmax(280px, 1fr) 124px 140px 144px 104px 120px 70px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -315,7 +315,7 @@
 
   /* ---------- Board ---------- */
   .scroller { overflow-x: auto; margin-top: 18px; padding-bottom: 4px; }
-  .board { min-width: 900px; display: flex; flex-direction: column; gap: 18px; }
+  .board { min-width: 1090px; display: flex; flex-direction: column; gap: 18px; }
 
   .group { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
   .group-head { display: flex; align-items: center; gap: 10px; padding: 12px 15px; }
@@ -366,6 +366,21 @@
   }
   .status:hover { filter: brightness(1.08); }
 
+  .buchip {
+    display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 99px;
+    padding: 3px 10px 3px 8px; font-size: 12px; color: var(--ink-2); cursor: pointer;
+    justify-self: start;
+  }
+  .buchip i { width: 8px; height: 8px; border-radius: 2px; background: var(--bc); flex: none; }
+  .buchip:hover { border-color: var(--bc, var(--ink-muted)); color: var(--ink); background: var(--surface-2); }
+  .buchip.empty { border-style: dashed; color: var(--ink-muted); opacity: 0; }
+  .row:hover .buchip.empty, .buchip.empty:focus-visible { opacity: 1; }
+  @media (hover: none) { .buchip.empty { opacity: 1; } }
+  .selfilter {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 13px; cursor: pointer;
+  }
   .prio { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
   .prio i { width: 3px; height: 13px; border-radius: 2px; background: var(--pc); display: inline-block; }
   .prio.p-critical { color: var(--danger); font-weight: 600; }
@@ -773,6 +788,12 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
         <input type="search" id="q" placeholder="Search tasks" aria-label="Search tasks">
       </div>
+      <select class="selfilter" id="bufilter" aria-label="Filter by business unit">
+        <option value="">All business units</option>
+        <option value="fs">Food Service</option>
+        <option value="retail">Retail</option>
+        <option value="fnb">F&amp;B</option>
+      </select>
       <div class="facepile" id="facepile" aria-label="Filter by person"></div>
       <label class="toggle"><input type="checkbox" id="showdone"> Show done</label>
     </div>
@@ -795,6 +816,7 @@
     <div class="body">
       <label class="full"><span class="label">Task</span><input type="text" id="f-title" required placeholder="e.g. Confirm the banquet order for Saturday"></label>
       <label><span class="label">Stream</span><select id="f-group"></select></label>
+      <label><span class="label">Business unit</span><select id="f-bu"></select></label>
       <label><span class="label">Owner</span><select id="f-owner"></select></label>
       <label><span class="label">Status</span><select id="f-status"></select></label>
       <label><span class="label">Priority</span><select id="f-prio"></select></label>
@@ -883,6 +905,41 @@
     { id: "quality", name: "Quality & food safety", color: "var(--s-quality)" },
     { id: "intake",  name: "New requests",          color: "var(--s-intake)" }
   ];
+
+  var BUS = [
+    { id: "fs", name: "Food Service", color: "#0e7c86" },
+    { id: "retail", name: "Retail", color: "#8a5cc4" },
+    { id: "fnb", name: "F&B", color: "#b06a2c" }
+  ];
+
+  var BU_BY_TITLE = {
+    "Check the 05:00 landing against the receiving sheet": "fs",
+    "Cutting-room yield log — salmon and tuna loins": "fs",
+    "Dispatch the restaurant deliveries before 09:00": "fs",
+    "Counter display and ice refresh — all three stores": "retail",
+    "Close the daily shrinkage report": "retail",
+    "Production plan for next week's cutting room": "fs",
+    "Send the weekly operations report to the team": "fs",
+    "Relaunch the sashimi set at the Thonglor counter": "retail",
+    "Update price tags and POS for the new pack sizes": "retail",
+    "Train the two new counter staff on filleting": "retail",
+    "Weekend tasting — grilled river prawn": "retail",
+    "Quote the hotel banquet order (200 pax)": "fs",
+    "October menu tasting with Chef Anan": "fnb",
+    "Win back the two accounts lost in July": "fs",
+    "Set up the standing order for the sushi chain": "fs",
+    "Confirm the September salmon allocation": "fs",
+    "Air-freight cost review with the forwarder": "fs",
+    "Trial a second Phuket lobster supplier": "fnb",
+    "Renew the export health certificate": "fs",
+    "Audit the cold-chain temperature logs (−1 °C to +2 °C)": "retail",
+    "Refresh HACCP training for the cutting room": "fs",
+    "Trace test: one lot from landing to counter": "retail",
+    "Seafood platters for a 300-pax corporate event": "fnb",
+    "Supplier proposal — Hokkaido scallops": "fnb",
+    "Next-day delivery zone for the e-shop": "retail",
+    "Sustainability claim for the tuna line": "retail"
+  };
 
   var STATUS = [
     { id: "todo",  label: "Not started", color: "var(--st-todo)" },
@@ -990,7 +1047,7 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {} };
+  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "" };
 
   TASKS.forEach(function (t, i) {
     t.id = "t" + i;
@@ -999,6 +1056,7 @@
     t.comments = t.comments || [];
     t.desc = t.desc || "";
     t.color = t.color || "";
+    t.bu = t.bu || BU_BY_TITLE[t.t] || "";
   });
 
   function normaliseSubs() {
@@ -1072,6 +1130,17 @@
   function person(id) { for (var i = 0; i < PEOPLE.length; i++) if (PEOPLE[i].id === id) return PEOPLE[i]; return PEOPLE[0]; }
   function status(id) { for (var i = 0; i < STATUS.length; i++) if (STATUS[i].id === id) return STATUS[i]; return STATUS[0]; }
   function prio(id) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].id === id) return PRIOS[i]; return PRIOS[1]; }
+  function businessUnit(id) {
+    for (var i = 0; i < BUS.length; i++) if (BUS[i].id === id) return BUS[i];
+    return null;
+  }
+  function buCell(t) {
+    var b = businessUnit(t.bu);
+    return '<button class="buchip' + (b ? "" : " empty") + '" data-bu="' + t.id + '"' +
+      (b ? ' style="--bc:' + b.color + '"' : "") + ' title="Business unit">' +
+      (b ? "<i></i>" + esc(b.name) : "Set BU") + "</button>";
+  }
+
   function group(id) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i]; return GROUPS[0]; }
   function initials(p) {
     var parts = p.full.split(" ");
@@ -1106,6 +1175,7 @@
   }
   function visible(t) {
     if (!state.showDone && t.s === "done") return false;
+    if (state.bu && t.bu !== state.bu) return false;
     var sel = activePeople();
     if (sel.length && sel.indexOf(t.o) === -1) return false;
     if (state.q) {
@@ -1346,6 +1416,7 @@
             '<div class="sbody"><span class="stitle">' + esc(sb.t) + "</span>" +
             fileRow(sb.files, key) + "</div>" +
           "</div>" +
+          "<span></span>" +
           '<button class="owner-cell sm" data-subowner="' + key +
             '" aria-label="Owner: ' + esc(o.full) + '. Reassign">' + avatar(o) +
             '<span class="nm">' + esc(o.name) + "</span></button>" +
@@ -1406,6 +1477,7 @@
           fileRow(t.files, t.id + "|") +
         "</div>" +
       "</div>" +
+      buCell(t) +
       '<button class="owner-cell" data-owner="' + t.id + '" aria-label="Owner: ' + esc(p.full) + '. Reassign">' +
         avatar(p) + '<span class="nm">' + esc(p.name) + "</span></button>" +
       statusCell(t) +
@@ -1445,7 +1517,7 @@
           "</div>" +
         "</header>" +
         '<div class="cols">' +
-          '<span class="label">Task</span><span class="label">Owner</span><span class="label">Status</span>' +
+          '<span class="label">Task</span><span class="label">BU</span><span class="label">Owner</span><span class="label">Status</span>' +
           '<span class="label">Priority</span><span class="label">Due</span><span class="label" style="text-align:right">Est.</span>' +
         "</div>" +
         '<div class="rows">' + rows.map(taskRow).join("") + "</div>" +
@@ -1786,8 +1858,23 @@
         '<i style="height:' + Math.max(4, (h.n / maxN) * 100) + '%"></i><span>' + h.w + "</span></div>";
     }).join("") + "</div>";
 
+    var buRows = BUS.map(function (x) {
+      var rows = open.filter(function (t) { return t.bu === x.id; });
+      return { name: x.name, color: x.color, h: rows.reduce(function (a, t) { return a + t.e; }, 0), n: rows.length };
+    });
+    var noBu = open.filter(function (t) { return !t.bu; });
+    if (noBu.length) buRows.push({ name: "No business unit", color: "var(--ink-muted)",
+      h: noBu.reduce(function (a, t) { return a + t.e; }, 0), n: noBu.length });
+    var maxBu = Math.max.apply(null, buRows.map(function (r) { return r.h; })) || 1;
+    var buBars = buRows.map(function (r) {
+      return '<div class="hbar" style="--sc:' + r.color + '"><span>' + esc(r.name) + "</span>" +
+        '<span class="track"><i style="width:' + ((r.h / maxBu) * 100) + '%"></i></span>' +
+        '<span class="num tnum">' + r.h + " h</span></div>";
+    }).join("");
+
     document.getElementById("view").innerHTML = '<div class="repgrid">' +
       card("Where the work stands", TASKS.length + " tasks", mixBar) +
+      card("Open hours by business unit", null, buBars) +
       card("Open hours by stream", null, streamBars) +
       card("Open hours by person", "capacity " + state.capacity + " h", peopleBars) +
       card("Tasks closed per week", "last five weeks are sample data", bars) +
@@ -1828,8 +1915,17 @@
           return '<option value="' + pp.id + '"' + (pp.id === state.me ? " selected" : "") + ">" + esc(pp.full) + "</option>";
         }).join("") + "</select></div>";
 
+    var units = BUS.map(function (x) {
+      var n = TASKS.filter(function (t) { return t.bu === x.id && t.s !== "done"; }).length;
+      return '<div class="setrow"><span class="swatch-lg" style="background:' + x.color + '"></span>' +
+        '<input class="setinput" data-buname="' + x.id + '" value="' + esc(x.name) + '" aria-label="Rename business unit">' +
+        '<span class="v tnum">' + n + " open</span></div>";
+    }).join("") + '<div class="setrow"><span class="k v">Tasks with no business unit</span><span class="v tnum">' +
+      TASKS.filter(function (t) { return !t.bu && t.s !== "done"; }).length + "</span></div>";
+
     document.getElementById("view").innerHTML = '<div class="setgrid">' +
       card("Streams", GROUPS.length, streams) +
+      card("Business units", BUS.length, units) +
       card("Statuses", STATUS.length, statuses) +
       card("People", PEOPLE.length, people) +
       card("Preferences", null, prefs) +
@@ -1880,6 +1976,15 @@
     if (opener) { openDrawer(opener.dataset.open); return; }
 
     if (closestEl(e.target, "[data-dclose]") || e.target.id === "scrim") { closeDrawer(); return; }
+
+    var bub = closestEl(e.target, "[data-bu]");
+    if (bub) {
+      var bt = findTask(bub.dataset.bu);
+      openMenu(bub, BUS.map(function (x) { return { label: x.name, id: x.id, color: x.color }; })
+        .concat([{ label: "No business unit", id: "" }]),
+        function (it) { if (bt) bt.bu = it.id; refresh(); });
+      return;
+    }
 
     var prb = closestEl(e.target, "[data-prio]");
     if (prb) {
@@ -2046,6 +2151,7 @@
     PAGES[state.page].render();
   });
   document.getElementById("showdone").addEventListener("change", function (e) { state.showDone = e.target.checked; render(); });
+  document.getElementById("bufilter").addEventListener("change", function (e) { state.bu = e.target.value; render(); });
 
   // a settings field lives inside the page it re-renders, so let the change
   // event finish before the node it fired from is replaced
@@ -2065,6 +2171,14 @@
       var t2 = findTask(state.open);
       if (t2) t2.e = Math.max(0, parseFloat(de.value) || 0);
       laterRefresh();
+      return;
+    }
+    var bn = closestEl(e.target, "[data-buname]");
+    if (bn) {
+      var u = businessUnit(bn.dataset.buname);
+      var uv = bn.value.trim();
+      if (u) { if (uv) u.name = uv; else bn.value = u.name; }
+      laterRender();
       return;
     }
     var gn = closestEl(e.target, "[data-gname]");
@@ -2107,6 +2221,8 @@
   }
   function openDialog(groupId) {
     fillSelect(document.getElementById("f-group"), GROUPS.map(function (g) { return { id: g.id, label: g.name }; }), groupId || "ops");
+    fillSelect(document.getElementById("f-bu"), BUS.map(function (x) { return { id: x.id, label: x.name }; })
+      .concat([{ id: "", label: "No business unit" }]), state.bu || "fs");
     fillSelect(document.getElementById("f-owner"), PEOPLE.map(function (p) { return { id: p.id, label: p.full + " — " + p.role }; }), state.me);
     fillSelect(document.getElementById("f-status"), STATUS.map(function (s) { return { id: s.id, label: s.label }; }), "todo");
     fillSelect(document.getElementById("f-prio"), PRIOS.map(function (p) { return { id: p.id, label: p.label }; }), "normal");
@@ -2124,11 +2240,15 @@
       o: document.getElementById("f-owner").value,
       s: document.getElementById("f-status").value,
       p: document.getElementById("f-prio").value,
+      bu: document.getElementById("f-bu").value,
       d: document.getElementById("f-due").value || "2026-09-01",
       e: 2,
       r: document.getElementById("f-repeat").value || undefined,
       sub: [],
-      files: []
+      files: [],
+      comments: [],
+      desc: "",
+      color: ""
     });
     document.getElementById("f-title").value = "";
     state.collapsed = {};
@@ -2319,6 +2439,8 @@
         '<span class="k">Owner</span><span><button class="owner-cell" data-owner="' + t.id + '">' +
           avatar(p) + '<span class="nm">' + esc(p.full) + "</span></button></span>" +
         '<span class="k">Status</span><span>' + statusCell(t) + "</span>" +
+        '<span class="k">Business unit</span><span><button class="btn" data-bu="' + t.id + '">' +
+          (businessUnit(t.bu) ? esc(businessUnit(t.bu).name) : "No business unit") + " ▾</button></span>" +
         '<span class="k">Priority</span><span><button class="btn" data-prio="' + t.id + '">' +
           pr.label + " ▾</button></span>" +
         '<span class="k">Due</span><span><input type="date" data-ddue value="' + t.d + '"> ' +
