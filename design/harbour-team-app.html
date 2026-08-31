@@ -345,7 +345,7 @@
   .check:hover { border-color: var(--st-done); }
   .check.on { background: var(--st-done); border-color: var(--st-done); color: #fff; }
   .task-title { font-size: 13.5px; line-height: 1.35; }
-  .task-meta { margin-top: 3px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-muted); }
+  .task-meta { margin-top: 3px; min-height: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-muted); }
   .chip-repeat { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 99px; padding: 0 7px 0 5px; height: 17px; color: var(--ink-2); }
   .task-note { color: var(--danger); }
 
@@ -386,6 +386,74 @@
   .group.collapsed .addrow { display: none; }
 
   .empty { padding: 40px 16px; text-align: center; color: var(--ink-muted); font-size: 13px; }
+
+  /* ---------- Reorder, subtasks, attachments ---------- */
+  .titem { position: relative; }
+  .titem.dragging { opacity: 0.4; }
+  .titem.filedrop { outline: 2px dashed var(--coral); outline-offset: -2px; background: var(--tide-wash); }
+  .titem.dropbefore::before, .titem.dropafter::after {
+    content: ""; position: absolute; left: 10px; right: 10px; height: 2px;
+    background: var(--coral); border-radius: 2px; z-index: 2;
+  }
+  .titem.dropbefore::before { top: -1px; }
+  .titem.dropafter::after { bottom: -1px; }
+
+  .grip {
+    border: 0; background: none; padding: 0 1px; margin-top: 3px; flex: none; line-height: 0;
+    color: var(--ink-muted); cursor: grab; opacity: 0; transition: opacity 0.12s ease;
+  }
+  .row:hover .grip, .grip:focus-visible { opacity: 1; }
+  .grip:active { cursor: grabbing; }
+
+  .metachip {
+    display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid var(--line); border-radius: 99px; padding: 0 8px 0 6px; height: 18px;
+    background: none; color: var(--ink-2); font-size: 11px; cursor: pointer;
+  }
+  .metachip:hover { background: var(--tide-wash); border-color: var(--tide); color: var(--tide-600); }
+  .metachip.ghost { display: none; }
+  .row:hover .metachip.ghost, .row:focus-within .metachip.ghost { display: inline-flex; }
+  @media (hover: none) { .metachip.ghost { display: inline-flex; } }
+  .metachip .caret2 { transition: transform 0.15s ease; }
+  .metachip[aria-expanded="true"] .caret2 { transform: rotate(90deg); }
+
+  .filerow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .filechip {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 7px;
+    padding: 2px 5px 2px 6px; font-size: 11px; color: var(--ink-2); max-width: 262px;
+  }
+  .filechip .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .filechip .fsize { color: var(--ink-muted); font-size: 10px; }
+  .filechip img { width: 18px; height: 18px; object-fit: cover; border-radius: 3px; flex: none; }
+  .filechip .x { border: 0; background: none; color: var(--ink-muted); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 1px; }
+  .filechip .x:hover { color: var(--danger); }
+
+  .subpanel { border-top: 1px solid var(--line-soft); background: var(--surface-2); padding: 6px 15px 10px; }
+  .subrow { display: grid; grid-template-columns: var(--row-cols); align-items: center; column-gap: 12px; padding: 5px 0; }
+  .subrow:hover { background: var(--surface); }
+  .subrow.filedrop { outline: 2px dashed var(--coral); outline-offset: -2px; background: var(--tide-wash); }
+  .subrow.done .stitle { color: var(--ink-muted); text-decoration: line-through; text-decoration-color: var(--line); }
+  .scell { display: flex; align-items: flex-start; gap: 10px; padding-left: 34px; min-width: 0; }
+  .sbody { min-width: 0; }
+  .stitle { font-size: 13px; line-height: 1.35; }
+  .check.sm { width: 15px; height: 15px; margin-top: 1px; border-radius: 4px; }
+  .owner-cell.sm { padding: 2px 5px 2px 3px; }
+  .subacts { display: flex; gap: 2px; }
+  .iconbtn-sm {
+    border: 0; background: none; color: var(--ink-muted); cursor: pointer; flex: none;
+    width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .iconbtn-sm:hover { background: var(--line-soft); color: var(--ink); }
+  .addsub { display: flex; gap: 8px; padding: 8px 0 0 34px; max-width: 640px; }
+  .addsub input {
+    flex: 1; border: 1px dashed var(--line); background: none; border-radius: 8px;
+    padding: 6px 10px; font: inherit; font-size: 12.5px; color: inherit;
+  }
+  .addsub input::placeholder { color: var(--ink-muted); }
+  .addsub input:focus { outline: none; border-color: var(--tide); border-style: solid; }
+
+  .wmeta { display: flex; gap: 10px; margin-top: 2px; font-size: 11px; color: var(--ink-muted); }
 
   /* ---------- My week ---------- */
   .week { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
@@ -697,9 +765,43 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = { view: "board", q: "", people: {}, showDone: false, collapsed: {}, me: "fab" };
+  var state = { view: "board", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null };
 
-  TASKS.forEach(function (t, i) { t.id = "t" + i; });
+  TASKS.forEach(function (t, i) { t.id = "t" + i; t.sub = t.sub || []; t.files = t.files || []; });
+
+  function seed(title, sub, files) {
+    for (var i = 0; i < TASKS.length; i++) {
+      if (TASKS[i].t === title) { TASKS[i].sub = sub || []; TASKS[i].files = files || []; }
+    }
+  }
+  seed("Quote the hotel banquet order (200 pax)", [
+    { id: "s1", t: "Confirm the final guest count with the banquet manager", o: "ploy", done: true, files: [] },
+    { id: "s2", t: "Price the platter mix on this week's landed cost", o: "krit", done: false, files: [{ name: "Platter costing.xlsx", size: 48120 }] },
+    { id: "s3", t: "Send the quote and follow up on Monday", o: "ploy", done: false, files: [] }
+  ], [{ name: "Banquet brief.pdf", size: 284000 }, { name: "Menu photos.zip", size: 5400000 }]);
+
+  seed("BRC audit prep — gap analysis", [
+    { id: "s1", t: "Walk the cutting room against the checklist", o: "pim", done: true, files: [] },
+    { id: "s2", t: "Collect the last six months of temperature records", o: "ton", done: false, files: [] },
+    { id: "s3", t: "Write the corrective action plan", o: "pim", done: false, files: [{ name: "Gap findings.docx", size: 96500 }] }
+  ], [{ name: "BRC checklist v3.pdf", size: 1240000 }]);
+
+  seed("Relaunch the sashimi set at the Thonglor counter", [
+    { id: "s1", t: "Agree the new set composition with the chef", o: "mint", done: true, files: [] },
+    { id: "s2", t: "Order the trays and sleeves", o: "krit", done: false, files: [] },
+    { id: "s3", t: "Brief the counter staff on the plating", o: "nut", done: false, files: [] }
+  ], [{ name: "Counter layout.png", size: 620000 }]);
+
+  seed("Replace the chiller-room door seal", [
+    { id: "s1", t: "Chase the supplier for a delivery date", o: "ton", done: false, files: [] },
+    { id: "s2", t: "Book the two-hour shutdown window", o: "ton", done: false, files: [] }
+  ], [{ name: "Supplier quote.pdf", size: 132000 }]);
+
+  seed("Confirm the September salmon allocation", [
+    { id: "s1", t: "Check the open orders against the forecast", o: "fah", done: true, files: [] },
+    { id: "s2", t: "Confirm the air-freight slots", o: "ton", done: false, files: [] }
+  ], []);
+
 
   function el(html) {
     var tpl = document.createElement("template");
@@ -800,6 +902,8 @@
       }).join("") + "</div>";
 
     rail.innerHTML = html;
+    if (rail.dataset.wired) return;
+    rail.dataset.wired = "1";
     rail.addEventListener("click", function (e) {
       var a = e.target.closest("a");
       if (a) e.preventDefault();
@@ -870,20 +974,98 @@
       '" aria-label="Status: ' + s.label + '. Change status">' + s.label + "</button>";
   }
 
+  var PIN = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11 12.3 20a5 5 0 0 1-7-7l9.2-9.2a3.3 3.3 0 0 1 4.7 4.7l-9.2 9.2a1.7 1.7 0 0 1-2.4-2.4l8.5-8.5"/></svg>';
+  var CARET = '<svg class="caret2" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var TICK = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg>';
+
+  function fmtSize(b) {
+    if (b == null) return "";
+    if (b < 1024) return b + " B";
+    if (b < 1048576) return Math.round(b / 1024) + " KB";
+    return (b / 1048576).toFixed(1) + " MB";
+  }
+  function fileIcon(name) {
+    var ext = (String(name).split(".").pop() || "").toLowerCase();
+    var color = "var(--ink-muted)";
+    if (ext === "pdf") color = "var(--danger)";
+    else if (ext === "xlsx" || ext === "xls" || ext === "csv") color = "var(--success)";
+    else if (ext === "doc" || ext === "docx") color = "var(--st-doing)";
+    else if (["png", "jpg", "jpeg", "gif", "webp", "heic", "svg"].indexOf(ext) > -1) color = "var(--s-retail)";
+    return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="' + color +
+      '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+  }
+  function fileChip(f, path) {
+    return '<span class="filechip" title="' + esc(f.name) + '">' +
+      (f.url ? '<img src="' + f.url + '" alt="">' : fileIcon(f.name)) +
+      '<span class="fname">' + esc(f.name) + "</span>" +
+      (f.size ? '<span class="fsize tnum">' + fmtSize(f.size) + "</span>" : "") +
+      '<button type="button" class="x" data-filedel="' + path + '" aria-label="Remove ' + esc(f.name) + '">×</button></span>';
+  }
+  function fileRow(files, prefix) {
+    if (!files || !files.length) return "";
+    return '<div class="filerow">' + files.map(function (f, i) {
+      return fileChip(f, prefix + "|" + i);
+    }).join("") + "</div>";
+  }
+
+  function subPanel(t) {
+    var h = '<div class="subpanel">';
+    t.sub.forEach(function (sb) {
+      var o = person(sb.o);
+      h += '<div class="subrow' + (sb.done ? " done" : "") + '" data-sub="' + t.id + "|" + sb.id + '">' +
+        '<div class="scell">' +
+          '<button class="check sm' + (sb.done ? " on" : "") + '" data-subcheck="' + t.id + "|" + sb.id +
+            '" aria-label="Mark subtask done" aria-pressed="' + !!sb.done + '">' + (sb.done ? TICK : "") + "</button>" +
+          '<div class="sbody"><span class="stitle">' + esc(sb.t) + "</span>" +
+          fileRow(sb.files, t.id + "|" + sb.id) + "</div>" +
+        "</div>" +
+        '<button class="owner-cell sm" data-subowner="' + t.id + "|" + sb.id +
+          '" aria-label="Owner: ' + esc(o.full) + '. Reassign">' + avatar(o) +
+          '<span class="nm">' + esc(o.name) + "</span></button>" +
+        '<div class="subacts">' +
+          '<button class="iconbtn-sm" data-subattach="' + t.id + "|" + sb.id +
+            '" aria-label="Attach a document to this subtask" title="Attach a document">' + PIN + "</button>" +
+          '<button class="iconbtn-sm" data-subdel="' + t.id + "|" + sb.id +
+            '" aria-label="Delete subtask" title="Delete subtask">×</button>' +
+        "</div>" +
+      "</div>";
+    });
+    h += '<form class="addsub" data-addsub="' + t.id + '">' +
+      '<input type="text" placeholder="Add a subtask, then press Enter" aria-label="New subtask">' +
+      '<button class="btn" type="submit">Add</button></form>';
+    return h + "</div>";
+  }
+
   function taskRow(t) {
     var p = person(t.o), pr = prio(t.p), dm = dueMeta(t);
-    return '<div class="row' + (t.s === "done" ? " is-done" : "") + '" data-row="' + t.id + '">' +
+    var open = !!state.expanded[t.id];
+    var doneN = t.sub.filter(function (sb) { return sb.done; }).length;
+
+    var html = '<div class="titem" data-item="' + t.id + '">' +
+      '<div class="row' + (t.s === "done" ? " is-done" : "") + '">' +
       '<div class="task">' +
-        '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id +
-          '" aria-label="Mark done" aria-pressed="' + (t.s === "done") + '">' +
-          (t.s === "done" ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg>' : "") +
+        '<button class="grip" data-grip="' + t.id + '" aria-label="Reorder ' + esc(t.t) +
+          '. Drag, or use the arrow keys" title="Drag to reorder">' +
+          '<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">' +
+          '<circle cx="4" cy="4" r="1.3"/><circle cx="8" cy="4" r="1.3"/><circle cx="4" cy="8" r="1.3"/>' +
+          '<circle cx="8" cy="8" r="1.3"/><circle cx="4" cy="12" r="1.3"/><circle cx="8" cy="12" r="1.3"/></svg>' +
         "</button>" +
+        '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id +
+          '" aria-label="Mark done" aria-pressed="' + (t.s === "done") + '">' + (t.s === "done" ? TICK : "") + "</button>" +
         "<div>" +
           '<div class="task-title">' + esc(t.t) + "</div>" +
           '<div class="task-meta">' +
             (t.r ? '<span class="chip-repeat"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>' + (t.r === "daily" ? "Daily" : "Weekly") + "</span>" : "") +
+            '<button class="metachip' + (t.sub.length ? "" : " ghost") + '" data-toggle="' + t.id +
+              '" aria-expanded="' + open + '">' + CARET +
+              (t.sub.length ? doneN + " / " + t.sub.length + " subtasks" : "Add subtasks") + "</button>" +
+            '<button class="metachip' + (t.files.length ? "" : " ghost") + '" data-attach="' + t.id +
+              '" title="Attach a document">' + PIN +
+              (t.files.length ? t.files.length + " file" + (t.files.length === 1 ? "" : "s") : "Attach") + "</button>" +
             (t.n ? '<span class="task-note">' + esc(t.n) + "</span>" : "") +
           "</div>" +
+          fileRow(t.files, t.id + "|") +
         "</div>" +
       "</div>" +
       '<button class="owner-cell" data-owner="' + t.id + '" aria-label="Owner: ' + esc(p.full) + '. Reassign">' +
@@ -892,7 +1074,10 @@
       '<span class="prio p-' + t.p + '" style="--pc:' + pr.color + '"><i></i>' + pr.label + "</span>" +
       '<span class="due tnum ' + dm.cls + '">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
       '<span class="est tnum">' + t.e + " h</span>" +
-    "</div>";
+      "</div>";
+
+    if (open) html += subPanel(t);
+    return html + "</div>";
   }
 
   function renderBoard() {
@@ -933,6 +1118,29 @@
     html += "</div></div>";
     if (!any) html = '<div class="empty">No task matches this filter. Clear the search or the people filter.</div>';
     document.getElementById("view").innerHTML = html;
+    restoreFocus();
+  }
+
+  function restoreFocus() {
+    if (!state.focus) return;
+    var f = state.focus, node = null;
+    if (f.kind === "grip") node = document.querySelector('[data-grip="' + f.id + '"]');
+    if (f.kind === "addsub") {
+      var form = document.querySelector('[data-addsub="' + f.id + '"]');
+      node = form ? form.querySelector("input") : null;
+    }
+    state.focus = null;
+    if (node) node.focus();
+  }
+
+  function weekMeta(t) {
+    var bits = [];
+    if (t.sub && t.sub.length) {
+      var d = t.sub.filter(function (sb) { return sb.done; }).length;
+      bits.push(d + " / " + t.sub.length + " subtasks");
+    }
+    if (t.files && t.files.length) bits.push(t.files.length + " file" + (t.files.length === 1 ? "" : "s"));
+    return bits.length ? '<div class="wmeta">' + bits.join(" · ") + "</div>" : "";
   }
 
   function renderWeek() {
@@ -965,7 +1173,7 @@
           var g = group(t.g), dm = dueMeta(t), o = person(t.o);
           html += '<div class="wrow">' + avatar(o) +
             '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(g.name) + "</div>" +
-            '<div class="t">' + esc(t.t) + "</div>" +
+            '<div class="t">' + esc(t.t) + "</div>" + weekMeta(t) +
             (t.n ? '<div class="task-meta"><span class="task-note">' + esc(t.n) + "</span></div>" : "") +
             "</div>" +
             '<span class="due tnum ' + dm.cls + '" style="width:110px;flex:none">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
@@ -988,7 +1196,7 @@
         html += '<div class="wrow">' +
           '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id + '" aria-label="Mark done"></button>' +
           '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(g.name) + "</div>" +
-          '<div class="t">' + esc(t.t) + "</div></div>" +
+          '<div class="t">' + esc(t.t) + "</div>" + weekMeta(t) + "</div>" +
           '<span class="due tnum ' + dm.cls + '" style="width:110px;flex:none">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
           statusCell(t) + "</div>";
       });
@@ -1086,7 +1294,7 @@
     else renderLoad();
     document.querySelector(".search").style.display = (state.view === "projects" || state.view === "load") ? "none" : "";
     document.getElementById("foot").textContent =
-      "Prototype — sample content. People, streams, tasks and estimates are placeholders to be replaced with the real team. Status, owner, tick-boxes, filters and “New task” are live in this mock-up; changes are not saved.";
+      "Prototype — sample content. On the board you can drag a task by its grip to reorder it or move it to another stream (arrow keys work too), open a task to add subtasks, and drop documents straight onto a task or a subtask. People, streams, tasks and estimates are placeholders. Nothing is saved and no file is uploaded — dropped documents live in this browser tab only.";
   }
 
   document.addEventListener("click", function (e) {
@@ -1120,6 +1328,48 @@
       var tk = TASKS.filter(function (x) { return x.id === ownBtn.dataset.owner; })[0];
       openMenu(ownBtn, PEOPLE.map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }),
         function (it) { tk.o = it.id; render(); });
+      return;
+    }
+
+    var tog = closestEl(e.target, "[data-toggle]");
+    if (tog) { var tid = tog.dataset.toggle; state.expanded[tid] = !state.expanded[tid]; renderBoard(); return; }
+
+    var att = closestEl(e.target, "[data-attach]");
+    if (att) { pickFilesFor(att.dataset.attach, null); return; }
+
+    var satt = closestEl(e.target, "[data-subattach]");
+    if (satt) { var q1 = satt.dataset.subattach.split("|"); pickFilesFor(q1[0], q1[1]); return; }
+
+    var sck = closestEl(e.target, "[data-subcheck]");
+    if (sck) {
+      var q2 = sck.dataset.subcheck.split("|"), sb = findSub(q2[0], q2[1]);
+      if (sb) sb.done = !sb.done;
+      renderBoard();
+      return;
+    }
+
+    var sow = closestEl(e.target, "[data-subowner]");
+    if (sow) {
+      var q3 = sow.dataset.subowner.split("|"), sb2 = findSub(q3[0], q3[1]);
+      openMenu(sow, PEOPLE.map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
+        function (it) { if (sb2) sb2.o = it.id; renderBoard(); });
+      return;
+    }
+
+    var sdl = closestEl(e.target, "[data-subdel]");
+    if (sdl) {
+      var q4 = sdl.dataset.subdel.split("|"), tk2 = findTask(q4[0]);
+      if (tk2) tk2.sub = tk2.sub.filter(function (x) { return x.id !== q4[1]; });
+      renderBoard();
+      return;
+    }
+
+    var fdl = closestEl(e.target, "[data-filedel]");
+    if (fdl) {
+      var q5 = fdl.dataset.filedel.split("|");
+      var host = q5[1] ? findSub(q5[0], q5[1]) : findTask(q5[0]);
+      if (host && host.files) host.files.splice(parseInt(q5[2], 10), 1);
+      renderBoard();
       return;
     }
 
@@ -1174,12 +1424,213 @@
       p: document.getElementById("f-prio").value,
       d: document.getElementById("f-due").value || "2026-09-01",
       e: 2,
-      r: document.getElementById("f-repeat").value || undefined
+      r: document.getElementById("f-repeat").value || undefined,
+      sub: [],
+      files: []
     });
     document.getElementById("f-title").value = "";
     state.view = "board";
     state.collapsed = {};
     render();
+  });
+
+  // ---------- lookups, files, drag and drop ----------
+  function closestEl(node, sel) {
+    var n = node && node.nodeType === 3 ? node.parentNode : node;
+    return n && n.closest ? n.closest(sel) : null;
+  }
+  function findTask(id) {
+    for (var i = 0; i < TASKS.length; i++) if (TASKS[i].id === id) return TASKS[i];
+    return null;
+  }
+  function findSub(taskId, subId) {
+    var t = findTask(taskId);
+    if (!t) return null;
+    for (var i = 0; i < t.sub.length; i++) if (t.sub[i].id === subId) return t.sub[i];
+    return null;
+  }
+  function addFiles(host, list) {
+    if (!host || !list || !list.length) return;
+    if (!host.files) host.files = [];
+    for (var i = 0; i < list.length; i++) {
+      var f = list[i], rec = { name: f.name, size: f.size };
+      if (f.type && f.type.indexOf("image/") === 0 && window.URL && URL.createObjectURL) {
+        try { rec.url = URL.createObjectURL(f); } catch (err) { /* preview is optional */ }
+      }
+      host.files.push(rec);
+    }
+  }
+
+  var picker = document.createElement("input");
+  picker.type = "file";
+  picker.multiple = true;
+  picker.style.display = "none";
+  document.body.appendChild(picker);
+  var pickTarget = null;
+  function pickFilesFor(taskId, subId) {
+    pickTarget = { task: taskId, sub: subId };
+    picker.click();
+  }
+  picker.addEventListener("change", function () {
+    if (pickTarget && picker.files && picker.files.length) {
+      addFiles(pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : findTask(pickTarget.task), picker.files);
+      state.expanded[pickTarget.task] = state.expanded[pickTarget.task] || !!pickTarget.sub;
+      renderBoard();
+    }
+    picker.value = "";
+    pickTarget = null;
+  });
+
+  // new subtask
+  document.addEventListener("submit", function (e) {
+    var form = closestEl(e.target, "[data-addsub]");
+    if (!form) return;
+    e.preventDefault();
+    var t = findTask(form.dataset.addsub);
+    var input = form.querySelector("input");
+    var title = input.value.trim();
+    if (!t || !title) return;
+    t.sub.push({ id: "s" + Date.now(), t: title, o: t.o, done: false, files: [] });
+    state.focus = { kind: "addsub", id: t.id };
+    renderBoard();
+  });
+
+  // reorder: drag from the grip, or move with the arrow keys while it has focus
+  var dragId = null;
+  function clearMarks() {
+    var marked = document.querySelectorAll(".dropbefore, .dropafter, .filedrop");
+    for (var i = 0; i < marked.length; i++) marked[i].classList.remove("dropbefore", "dropafter", "filedrop");
+  }
+  function clearDraggable() {
+    var d = document.querySelectorAll('.titem[draggable="true"]');
+    for (var i = 0; i < d.length; i++) d[i].draggable = false;
+  }
+  function moveTask(id, targetId, after, groupId) {
+    var from = -1, i;
+    for (i = 0; i < TASKS.length; i++) if (TASKS[i].id === id) from = i;
+    if (from < 0) return;
+    var t = TASKS.splice(from, 1)[0];
+    if (groupId) t.g = groupId;
+    var to = -1;
+    for (i = 0; i < TASKS.length; i++) if (TASKS[i].id === targetId) to = i;
+    if (to < 0) TASKS.push(t);
+    else TASKS.splice(after ? to + 1 : to, 0, t);
+  }
+  function moveToGroupEnd(id, groupId) {
+    var from = -1, i, last = -1;
+    for (i = 0; i < TASKS.length; i++) if (TASKS[i].id === id) from = i;
+    if (from < 0) return;
+    var t = TASKS.splice(from, 1)[0];
+    t.g = groupId;
+    for (i = 0; i < TASKS.length; i++) if (TASKS[i].g === groupId) last = i;
+    TASKS.splice(last + 1, 0, t);
+  }
+  function nudge(id, dir) {
+    var t = findTask(id);
+    if (!t) return;
+    var idx = [], i;
+    for (i = 0; i < TASKS.length; i++) if (TASKS[i].g === t.g && visible(TASKS[i])) idx.push(i);
+    var pos = idx.indexOf(TASKS.indexOf(t));
+    var swap = idx[pos + dir];
+    if (swap === undefined) return;
+    var a = TASKS.indexOf(t);
+    TASKS[a] = TASKS[swap];
+    TASKS[swap] = t;
+  }
+
+  document.addEventListener("mousedown", function (e) {
+    var g = closestEl(e.target, "[data-grip]");
+    if (g) { var it = closestEl(g, ".titem"); if (it) it.draggable = true; }
+  });
+  document.addEventListener("mouseup", clearDraggable);
+
+  document.addEventListener("dragstart", function (e) {
+    var it = closestEl(e.target, ".titem");
+    if (!it || !it.draggable) return;
+    dragId = it.dataset.item;
+    it.classList.add("dragging");
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", dragId); } catch (err) { /* Safari */ }
+    }
+  });
+  document.addEventListener("dragend", function () {
+    dragId = null;
+    clearMarks();
+    clearDraggable();
+    var d = document.querySelectorAll(".dragging");
+    for (var i = 0; i < d.length; i++) d[i].classList.remove("dragging");
+  });
+
+  function hasFiles(dt) {
+    if (!dt || !dt.types) return false;
+    for (var i = 0; i < dt.types.length; i++) if (dt.types[i] === "Files") return true;
+    return false;
+  }
+
+  document.addEventListener("dragover", function (e) {
+    var item = closestEl(e.target, ".titem");
+    var sub = closestEl(e.target, ".subrow");
+    if (hasFiles(e.dataTransfer)) {
+      e.preventDefault();
+      clearMarks();
+      var zone = sub || item;
+      if (zone) { e.dataTransfer.dropEffect = "copy"; zone.classList.add("filedrop"); }
+      return;
+    }
+    if (!dragId) return;
+    clearMarks();
+    if (item && item.dataset.item !== dragId) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      var r = item.getBoundingClientRect();
+      item.classList.add(e.clientY > r.top + r.height / 2 ? "dropafter" : "dropbefore");
+    } else if (closestEl(e.target, ".group")) {
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener("drop", function (e) {
+    var item = closestEl(e.target, ".titem");
+    var sub = closestEl(e.target, ".subrow");
+    var grp = closestEl(e.target, ".group");
+
+    if (hasFiles(e.dataTransfer)) {
+      e.preventDefault();
+      clearMarks();
+      if (sub) {
+        var q = sub.dataset.sub.split("|");
+        addFiles(findSub(q[0], q[1]), e.dataTransfer.files);
+        renderBoard();
+      } else if (item) {
+        addFiles(findTask(item.dataset.item), e.dataTransfer.files);
+        renderBoard();
+      }
+      return;
+    }
+
+    if (!dragId) return;
+    e.preventDefault();
+    if (item && item.dataset.item !== dragId) {
+      var r = item.getBoundingClientRect();
+      moveTask(dragId, item.dataset.item, e.clientY > r.top + r.height / 2, grp ? grp.dataset.group : null);
+    } else if (grp) {
+      moveToGroupEnd(dragId, grp.dataset.group);
+    }
+    dragId = null;
+    clearMarks();
+    clearDraggable();
+    renderRail();
+    render();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var g = closestEl(e.target, "[data-grip]");
+    if (!g || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    e.preventDefault();
+    nudge(g.dataset.grip, e.key === "ArrowUp" ? -1 : 1);
+    state.focus = { kind: "grip", id: g.dataset.grip };
+    renderBoard();
   });
 
   renderRail();
