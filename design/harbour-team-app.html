@@ -419,7 +419,7 @@
   .dhead { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-bottom: 1px solid var(--line-soft); }
   .streamtag { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--sc); }
   .streamtag i { width: 9px; height: 9px; border-radius: 3px; background: var(--sc); }
-  .dhead .iconbtn-sm { margin-left: auto; font-size: 17px; }
+  .dhead .iconbtn-sm { font-size: 17px; }
   .dbody { overflow-y: auto; padding: 16px 18px 44px; display: flex; flex-direction: column; gap: 18px; }
   .dtitle {
     font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
@@ -661,6 +661,12 @@
   .wrow .stream { font-size: 10.5px; color: var(--sc2); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
   .wrow .t { font-size: 13.5px; }
   .wrow .status { width: 132px; flex: none; }
+  .wtitle {
+    display: block; text-align: left; border: 0; background: none; padding: 0;
+    font: inherit; font-size: 13.5px; color: inherit; cursor: pointer;
+  }
+  .wtitle:hover { text-decoration: underline; text-underline-offset: 2px; }
+
 
   /* ---------- Projects ---------- */
   .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(208px, 1fr); gap: 14px; min-width: 900px; }
@@ -1568,6 +1574,10 @@
       bits.push(d + " / " + t.sub.length + " subtasks");
     }
     if (t.files && t.files.length) bits.push(t.files.length + " file" + (t.files.length === 1 ? "" : "s"));
+    var talk = talkCount(t);
+    if (talk) bits.push(talk + " comment" + (talk === 1 ? "" : "s"));
+    var b = businessUnit(t.bu);
+    if (b) bits.push(b.name);
     return bits.length ? '<div class="wmeta">' + bits.join(" · ") + "</div>" : "";
   }
 
@@ -1595,7 +1605,8 @@
           var g = group(t.g), dm = dueMeta(t), o = person(t.o);
           html += '<div class="wrow">' + avatar(o) +
             '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(g.name) + "</div>" +
-            '<div class="t">' + esc(t.t) + "</div>" + weekMeta(t) +
+            '<button class="t wtitle" data-open="' + t.id + '" title="Open details"' +
+              (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</button>" + weekMeta(t) +
             (t.n ? '<div class="task-meta"><span class="task-note">' + esc(t.n) + "</span></div>" : "") +
             "</div>" +
             '<span class="due tnum ' + dm.cls + '" style="width:110px;flex:none">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
@@ -1618,7 +1629,9 @@
         html += '<div class="wrow">' +
           '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id + '" aria-label="Mark done"></button>' +
           '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(g.name) + "</div>" +
-          '<div class="t">' + esc(t.t) + "</div>" + weekMeta(t) + "</div>" +
+          '<button class="t wtitle" data-open="' + t.id + '" title="Open details"' +
+            (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</button>" +
+          weekMeta(t) + "</div>" +
           '<span class="due tnum ' + dm.cls + '" style="width:110px;flex:none">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
           statusCell(t) + "</div>";
       });
@@ -1710,7 +1723,7 @@
   function miniRow(t, o) {
     o = o || {};
     var g = group(t.g), dm = dueMeta(t);
-    return '<button class="minirow" data-goto="' + t.id + '" title="' + esc(t.t) + ' — open on the board">' +
+    return '<button class="minirow" data-open="' + t.id + '" title="' + esc(t.t) + ' — open details">' +
       avatar(person(t.o)) +
       '<span class="mt">' + esc(t.t) + "</span>" +
       (t.n && o.stream ? '<span class="note">' + esc(t.n) + "</span>" : "") +
@@ -1793,7 +1806,7 @@
         '<div class="caldate"><b class="tnum">' + dnum + "</b><span>" + tag + "</span></div>" +
         shown.map(function (t) {
           return '<button class="calchip' + (t.s === "done" ? " isdone" : "") + '" style="--sc:' + group(t.g).color +
-            '" data-goto="' + t.id + '" title="' + esc(t.t + " — " + person(t.o).full) + '">' +
+            '" data-open="' + t.id + '" title="' + esc(t.t + " — " + person(t.o).full) + '">' +
             '<span class="ct">' + esc(t.t) + "</span>" + avatar(person(t.o)) + "</button>";
         }).join("") +
         (list.length > shown.length
@@ -1944,7 +1957,7 @@
     renderRail();
     pg.render();
     document.getElementById("foot").textContent =
-      "Prototype — sample content. Every entry in the left rail opens a working page. Click a task title to open it: description and comments take bold, italic, colours, highlight and lists; documents drop onto the task or onto a single subtask. On the board, drag a task by its grip to reorder it or move it to another stream. Nothing is saved and no file is uploaded — changes live in this browser tab only.";
+      "Prototype — sample content. Every entry in the left rail opens a working page. Click a task anywhere — board, Home, My work or the calendar — to open its panel: description, subtasks, documents and comments, all taking bold, colours, highlight and lists. On the board, drag a task by its grip to reorder it or move it to another stream. Nothing is saved and no file is uploaded — changes live in this browser tab only.";
   }
 
   document.addEventListener("click", function (e) {
@@ -2053,12 +2066,13 @@
     var nav = closestEl(e.target, "[data-page]");
     if (nav) { e.preventDefault(); go(nav.dataset.page); return; }
 
-    var jump = closestEl(e.target, "[data-goto]");
-    if (jump) {
-      var jt = findTask(jump.dataset.goto);
-      if (jt) {
+    var show = closestEl(e.target, "[data-showboard]");
+    if (show) {
+      var st2 = findTask(show.dataset.showboard);
+      closeDrawer();
+      if (st2) {
         GROUPS.forEach(function (g) { state.collapsed[g.id] = false; });
-        state.flash = jt.id;
+        state.flash = st2.id;
         go("board");
       }
       return;
@@ -2461,6 +2475,7 @@
 
     dr.innerHTML =
       '<header class="dhead"><span class="streamtag" style="--sc:' + g.color + '"><i></i>' + esc(g.name) + "</span>" +
+        '<button class="btn" data-showboard="' + t.id + '" style="margin-left:auto;padding:4px 10px;font-size:12px">Show on board</button>' +
         '<button class="iconbtn-sm" data-dclose aria-label="Close">×</button></header>' +
       '<div class="dbody">' +
         "<div>" +
