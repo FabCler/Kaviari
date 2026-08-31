@@ -1099,6 +1099,7 @@
       var b = el('<button type="button" role="menuitem">' +
         (it.color ? '<span class="swatch" style="background:' + it.color + '"></span>' : "") +
         (it.avatar || "") + "<span>" + esc(it.label) + "</span></button>");
+      b.addEventListener("mousedown", function (ev) { ev.preventDefault(); });
       b.addEventListener("click", function () { closeMenu(); pick(it); });
       m.appendChild(b);
     });
@@ -1784,6 +1785,20 @@
   }
 
   document.addEventListener("click", function (e) {
+    var hib = closestEl(e.target, "[data-hilite]");
+    if (hib) {
+      var keep = currentRange();
+      openMenu(hib, HILITES.map(function (h) {
+        return { label: h.label, id: h.id, color: h.id || "var(--surface-2)" };
+      }), function (it) {
+        if (!restoreRange(keep)) return;
+        try { document.execCommand("styleWithCSS", false, true); } catch (err) { /* older engines */ }
+        document.execCommand("hiliteColor", false, it.id || "transparent");
+        saveEditors();
+      });
+      return;
+    }
+
     var cmd = closestEl(e.target, "[data-cmd]");
     if (cmd) {
       var cName = cmd.dataset.cmd, cArg = cmd.dataset.arg || null;
@@ -2076,6 +2091,15 @@
   }
 
   // ---------- rich text ----------
+  var HILITES = [
+    { id: "#ffe08a", label: "Yellow" },
+    { id: "#b8ecd8", label: "Mint" },
+    { id: "#bfe0f7", label: "Sky" },
+    { id: "#f9c9c0", label: "Rose" },
+    { id: "#ddd0f7", label: "Lilac" },
+    { id: "", label: "Remove highlight" }
+  ];
+
   var TEXT_COLORS = [
     { hex: "", label: "Theme default" },
     { hex: "#17909f", label: "Tide" },
@@ -2089,6 +2113,21 @@
 
   function themeInk() { return getComputedStyle(document.body).color; }
 
+  function currentRange() {
+    var sel = window.getSelection();
+    return sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  }
+  function restoreRange(r) {
+    if (!r) return false;
+    var host = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentNode;
+    var ed = host && host.closest ? host.closest("[contenteditable]") : null;
+    if (ed) ed.focus();
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+    return true;
+  }
+
   function clean(html) {
     var d = document.createElement("div");
     d.innerHTML = html;
@@ -2096,6 +2135,14 @@
     for (var i = nodes.length - 1; i >= 0; i--) {
       var n = nodes[i];
       if (/^(script|style|iframe|object|embed|link|meta|form)$/i.test(n.tagName)) { n.parentNode.removeChild(n); continue; }
+      if (n.tagName === "SPAN" && /background-color:\s*(transparent|rgba\(0, 0, 0, 0\))/i.test(n.getAttribute("style") || "")) {
+        n.style.backgroundColor = "";
+        if (!n.getAttribute("style")) {
+          while (n.firstChild) n.parentNode.insertBefore(n.firstChild, n);
+          n.parentNode.removeChild(n);
+          continue;
+        }
+      }
       for (var j = n.attributes.length - 1; j >= 0; j--) {
         var a = n.attributes[j].name;
         if (a.indexOf("on") === 0) n.removeAttribute(a);
@@ -2116,7 +2163,7 @@
         return '<button type="button" class="rtcolor" data-cmd="foreColor" data-arg="' + c.hex +
           '" title="Text colour — ' + c.label + '" style="background:' + (c.hex || "var(--ink)") + '"></button>';
       }).join("") +
-      '<button type="button" class="rtbtn" data-cmd="hiliteColor" data-arg="#ffe08a" title="Highlight" ' +
+      '<button type="button" class="rtbtn" data-hilite title="Highlight — pick a colour or remove it" ' +
         'style="font-weight:700"><span style="background:#ffe08a;color:#10262c;border-radius:3px;padding:0 3px">A</span></button>' +
       '<span class="rtsep"></span>' +
       '<button type="button" class="rtbtn" data-cmd="insertUnorderedList" title="Bulleted list">•</button>' +
