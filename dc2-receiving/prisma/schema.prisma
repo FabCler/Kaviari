@@ -1,0 +1,254 @@
+// DC2 Shipment Receiving Readiness — SAP PO ↔ supplier invoice ↔ customer SO,
+// checked before the goods reach the DC2 warehouse.
+//
+// SQLite, one file on a mounted volume. Status/role/department columns are
+// plain strings validated by the zod schemas in lib/domain.ts, which keeps a
+// later switch to Postgres to a provider change.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- people
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  // owner | admin | member — owner is the account named by OWNER_EMAIL
+  role         String   @default("member")
+  // Purchasing | Customer Service | Sales | Warehouse DC2 | Management
+  department   String   @default("")
+  // pending | approved | blocked — a new account cannot see anything until
+  // an owner or admin approves it and gives it a department
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  batches     ImportBatch[]
+  resolutions Resolution[]
+  events      AuditEvent[]
+}
+
+// ---------------------------------------------------------------- shipment
+
+model Shipment {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  eta          DateTime?
+  // Container | Air | Truck
+  mode         String    @default("Container")
+  // Customer Service may settle a difference within this percentage; beyond
+  // it the line waits for Sales.
+  tolerancePct Float     @default(10)
+  notes        String    @default("")
+  // open | released | closed
+  status       String    @default("open")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  poLines      PoLine[]
+  invoiceLines InvoiceLine[]
+  soLines      SoLine[]
+  batches      ImportBatch[]
+  lineStates   LineState[]
+  resolutions  Resolution[]
+}
+
+// ---------------------------------------------------------------- master data
+
+// CodeBars is the master key: documents that carry only an SAP item code are
+// matched through it, so a PO priced by item code and an invoice scanned by
+// barcode still meet on the same line.
+model Item {
+  id        String   @id @default(cuid())
+  barcode   String   @unique
+  itemCode  String   @default("")
+  nameTh    String   @default("")
+  nameEn    String   @default("")
+  uom       String   @default("KG")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  links SupplierLink[]
+
+  @@index([itemCode])
+}
+
+// A supplier's own code or product name mapped onto a master item.
+model SupplierLink {
+  id               String   @id @default(cuid())
+  supplierCode     String
+  supplierItemCode String   @default("")
+  supplierItemName String   @default("")
+  supplierUom      String   @default("")
+  itemId           String
+  item             Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([supplierCode, supplierItemCode, supplierItemName])
+  @@index([supplierCode])
+  @@index([itemId])
+}
+
+// ---------------------------------------------------------------- documents
+
+model PoLine {
+  id           String   @id @default(cuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  poNo         String   @default("")
+  supplierCode String
+  supplierName String   @default("")
+  // exactly what the document said, kept for the audit trail
+  rawItem      String   @default("")
+  // the master item this line resolved to, empty when it did not resolve
+  itemBarcode  String   @default("")
+  itemDesc     String   @default("")
+  qty          Float    @default(0)
+  uom          String   @default("")
+  price        Float    @default(0)
+  currency     String   @default("")
+  // packing rule and weight type come from the PO document, not the item
+  // master: the same item can be ordered by carton on one PO and by weight on
+  // the next
+  moq          Float    @default(0)
+  variableWeight Boolean @default(false)
+  batchId      String?
+  batch        ImportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([shipmentId, supplierCode, itemBarcode])
+  @@index([batchId])
+}
+
+model InvoiceLine {
+  id           String   @id @default(cuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  invoiceNo    String   @default("")
+  supplierCode String
+  supplierName String   @default("")
+  rawItem      String   @default("")
+  itemBarcode  String   @default("")
+  itemDesc     String   @default("")
+  // the invoiced quantity as the supplier stated it, every decimal kept;
+  // the screens read it to two decimals
+  qty          Float    @default(0)
+  uom          String   @default("")
+  price        Float    @default(0)
+  currency     String   @default("")
+  batchId      String?
+  batch        ImportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([shipmentId, supplierCode, itemBarcode])
+  @@index([batchId])
+}
+
+model SoLine {
+  id           String   @id @default(cuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  soNo         String   @default("")
+  customerCode String   @default("")
+  customerName String   @default("")
+  rawItem      String   @default("")
+  itemBarcode  String   @default("")
+  itemDesc     String   @default("")
+  qty          Float    @default(0)
+  // what Customer Service has allocated to this customer
+  revisedQty   Float    @default(0)
+  // the changed line has been entered in SAP Business One
+  sapUpdated   Boolean  @default(false)
+  uom          String   @default("")
+  // which supplier on the shipment supplies this line; empty when the same
+  // item comes from more than one and nobody has said yet
+  supplierCode String   @default("")
+  batchId      String?
+  batch        ImportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([shipmentId, supplierCode, itemBarcode])
+  @@index([batchId])
+}
+
+// One import, kept whole so a wrong file can be corrected or removed in one
+// step.
+model ImportBatch {
+  id           String   @id @default(cuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  // po | invoice | so
+  kind         String
+  supplierCode String   @default("")
+  // the file it came from, with its extension
+  source       String   @default("")
+  rows         Int      @default(0)
+  importedById String?
+  importedBy   User?    @relation(fields: [importedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  poLines      PoLine[]
+  invoiceLines InvoiceLine[]
+  soLines      SoLine[]
+
+  @@index([shipmentId, createdAt])
+}
+
+// ---------------------------------------------------------------- line state
+
+// Everything a desk decides about one shipment/supplier/item line.
+model LineState {
+  id           String   @id @default(cuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  supplierCode String
+  itemKey      String
+  // quantity Sales approved as free stock, outside the customer orders
+  freeStockQty Float    @default(0)
+  // why the invoice exceeds both the PO and customer demand
+  rootCause    String   @default("")
+  updatedById  String?
+  updatedAt    DateTime @updatedAt
+
+  @@unique([shipmentId, supplierCode, itemKey])
+}
+
+// One desk's confirmation that an exception has been dealt with.
+model Resolution {
+  id           String   @id @default(cuid())
+  shipmentId   String
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  supplierCode String
+  itemKey      String
+  issueType    String
+  resolvedById String?
+  resolvedBy   User?    @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt   DateTime @default(now())
+
+  @@unique([shipmentId, supplierCode, itemKey, issueType])
+  @@index([shipmentId])
+}
+
+// Who did what: releases and confirmations are decisions about goods, so they
+// are recorded.
+model AuditEvent {
+  id     String   @id @default(cuid())
+  at     DateTime @default(now())
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action String
+  target String   @default("")
+  detail String   @default("")
+
+  @@index([at])
+}
