@@ -6,6 +6,7 @@ import {
   deleteBatch,
   importDocument,
   importParsedRows,
+  ocrPdf,
   parsePdf,
   type PdfPreviewRow,
 } from "./actions";
@@ -36,6 +37,7 @@ type Preview = {
   shipmentId: string;
   kind: string;
   supplierCode: string;
+  ocr?: { confidence: "high" | "medium" | "low"; notes: string };
 };
 
 export function ImportPanel({ shipments }: { shipments: Shipment[] }) {
@@ -45,6 +47,7 @@ export function ImportPanel({ shipments }: { shipments: Shipment[] }) {
   const [isPdf, setIsPdf] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [preview, setPreview] = React.useState<Preview | null>(null);
+  const [scan, setScan] = React.useState<FormData | null>(null);
   const [message, setMessage] = React.useState<
     { tone: "good" | "bad" | "warn"; text: string } | null
   >(null);
@@ -62,19 +65,13 @@ export function ImportPanel({ shipments }: { shipments: Shipment[] }) {
       setBusy(false);
       if (!result.ok) {
         setMessage({ tone: "bad", text: result.error });
+        // A scan carries no text at all; reading it is a separate, deliberate
+        // step because the document leaves the server to be read.
+        setScan(result.canOcr ? data : null);
         return;
       }
-      setPreview({
-        source: result.source,
-        docNo: result.docNo,
-        supplierName: result.supplierName,
-        currency: result.currency,
-        lineCount: result.lineCount,
-        rows: result.rows.map((r) => ({ ...r, keep: true })),
-        shipmentId: String(data.get("shipmentId") ?? ""),
-        kind: String(data.get("kind") ?? ""),
-        supplierCode: String(data.get("supplierCode") ?? ""),
-      });
+      setScan(null);
+      show(result, data);
       return;
     }
 
@@ -87,6 +84,38 @@ export function ImportPanel({ shipments }: { shipments: Shipment[] }) {
     finish(result.rows, result.unmatched, result.source);
   }
 
+  function show(
+    result: Extract<Awaited<ReturnType<typeof parsePdf>>, { ok: true }>,
+    data: FormData
+  ) {
+    setPreview({
+      source: result.source,
+      docNo: result.docNo,
+      supplierName: result.supplierName,
+      currency: result.currency,
+      lineCount: result.lineCount,
+      rows: result.rows.map((r) => ({ ...r, keep: true })),
+      shipmentId: String(data.get("shipmentId") ?? ""),
+      kind: String(data.get("kind") ?? ""),
+      supplierCode: String(data.get("supplierCode") ?? ""),
+      ocr: result.ocr,
+    });
+  }
+
+  async function readScan() {
+    if (!scan) return;
+    setBusy(true);
+    setMessage(null);
+    const result = await ocrPdf(scan);
+    setBusy(false);
+    if (!result.ok) {
+      setMessage({ tone: "bad", text: result.error });
+      return;
+    }
+    setScan(null);
+    show(result, scan);
+  }
+
   function finish(rows: number, unmatched: number, source: string) {
     setMessage({
       tone: unmatched ? "warn" : "good",
@@ -95,6 +124,7 @@ export function ImportPanel({ shipments }: { shipments: Shipment[] }) {
         : `${rows} lines imported from ${source}.`,
     });
     setPreview(null);
+    setScan(null);
     formRef.current?.reset();
     setIsPdf(false);
     router.refresh();
@@ -176,6 +206,24 @@ export function ImportPanel({ shipments }: { shipments: Shipment[] }) {
             {message.text}
           </p>
         ) : null}
+        {scan ? (
+          <div className="mt-3 rounded-lg border border-line bg-surface px-3 py-3">
+            <p className="text-xs">
+              <strong>This one is a scan.</strong> It can still be read page by
+              page, but the document is sent to Anthropic&rsquo;s API to do it,
+              and what comes back is a reading of a photograph — every figure
+              has to be checked against the paper before it is imported.
+            </p>
+            <button
+              type="button"
+              className="btn mt-2"
+              disabled={busy}
+              onClick={readScan}
+            >
+              {busy ? "Reading the scan…" : "Read the scan"}
+            </button>
+          </div>
+        ) : null}
       </form>
 
       {preview ? (
@@ -227,11 +275,20 @@ function PdfPreviewTable({
           {preview.lineCount} text lines scanned
         </span>
       </div>
-      <p className="mb-3 text-[11px] text-muted">
-        Check every row before it reaches the shipment — a PDF has no columns,
-        so these were worked out from the page. Correct anything that is wrong,
-        untick what is not a document line, then import.
-      </p>
+      {preview.ocr ? (
+        <p className="mb-3 rounded-lg bg-warn-bg px-3 py-2 text-xs text-warn">
+          <strong>Read from a scan.</strong> Legibility:{" "}
+          {preview.ocr.confidence}. Check every quantity and price against the
+          paper — a misread digit here becomes the quantity DC2 receives.
+          {preview.ocr.notes ? ` ${preview.ocr.notes}` : ""}
+        </p>
+      ) : (
+        <p className="mb-3 text-[11px] text-muted">
+          Check every row before it reaches the shipment — a PDF has no columns,
+          so these were worked out from the page. Correct anything that is
+          wrong, untick what is not a document line, then import.
+        </p>
+      )}
       <table className="data-table">
         <thead>
           <tr>

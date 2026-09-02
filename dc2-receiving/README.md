@@ -47,8 +47,16 @@ a footer out of the result. European and English decimals are detected per
 document.
 
 What comes out is a proposal: the rows open in an editable preview and nothing
-is written until the desk confirms them. A PDF that is a scan or a photo has no
-text layer at all, and the app says so plainly instead of importing nothing.
+is written until the desk confirms them.
+
+A PDF that is a **scan** has no text layer at all. The app says so plainly, and
+- when `ANTHROPIC_API_KEY` is set - offers to read the pages instead: the
+document is sent to Anthropic's API, Claude reads the printed table, and the
+lines come back into the same editable preview marked as read from a scan, with
+its legibility and any note about a figure it could not make out. Two things
+follow from that, and both are on the screen: the document leaves the server to
+be read, and a misread digit becomes the quantity DC2 receives unless somebody
+checks it against the paper. Leave the key unset and the button never appears.
 
 ### Accounts
 

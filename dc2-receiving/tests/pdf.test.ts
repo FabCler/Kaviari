@@ -85,3 +85,54 @@ describe.skipIf(!has(PO))("a real supplier PDF", () => {
     );
   });
 });
+
+describe("reading a scan", () => {
+  it("maps what was read onto the import preview, dropping what is not goods", async () => {
+    const { mapExtraction } = await import("@/lib/import/ocr");
+    const out = mapExtraction(
+      {
+        documentNo: "00733786",
+        supplierName: "CULTIMER FRANCE",
+        currency: "eur",
+        lines: [
+          {
+            itemCode: "8548",
+            description: "MOULE BOUCHOT 1KG",
+            qty: 20,
+            uom: "kg",
+            unitPrice: 4.7,
+            amount: 94,
+          },
+          {
+            itemCode: "",
+            description: "TOTAL",
+            qty: 0,
+            uom: "",
+            unitPrice: 0,
+            amount: 195.25,
+          },
+        ],
+        confidence: "medium",
+        notes: "The second page is faint.",
+      },
+      "invoice"
+    );
+    expect(out.rows).toHaveLength(1);
+    expect(out.rows[0]).toMatchObject({ itemCode: "8548", qty: 20, uom: "KG", price: 4.7 });
+    expect(out.header.invoiceNo).toBe("00733786");
+    expect(out.header.poNo).toBe("");
+    expect(out.header.currency).toBe("EUR");
+    expect(out.confidence).toBe("medium");
+  });
+
+  it("is only offered when the server is configured for it", async () => {
+    const { ocrConfigured } = await import("@/lib/import/ocr");
+    const had = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    expect(ocrConfigured()).toBe(false);
+    process.env.ANTHROPIC_API_KEY = "test-key";
+    expect(ocrConfigured()).toBe(true);
+    if (had === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = had;
+  });
+});

@@ -9,6 +9,7 @@ import { readMatrix } from "@/lib/import/read";
 import { loadItemIndex, resolveItem } from "@/lib/workspace";
 import { norm } from "@/lib/format";
 import { readPdf } from "@/lib/import/pdf";
+import { ocrConfigured, ocrDocument } from "@/lib/import/ocr";
 import { z } from "zod";
 
 export type ImportResult =
@@ -213,8 +214,10 @@ export type PdfPreview =
       currency: string;
       rows: PdfPreviewRow[];
       lineCount: number;
+      /** set when the rows were read off a scan rather than the text layer */
+      ocr?: { confidence: "high" | "medium" | "low"; notes: string };
     }
-  | { ok: false; error: string };
+  | { ok: false; error: string; canOcr?: boolean };
 
 /**
  * A PDF is a drawing, so what comes out of it is a proposal, not data: it is
@@ -236,9 +239,16 @@ export async function parsePdf(formData: FormData): Promise<PdfPreview> {
   try {
     read = await readPdf(new Uint8Array(await file.arrayBuffer()));
   } catch (e) {
+    const raw = e instanceof Error ? e.message : "That PDF could not be read.";
+    // A scan has no text layer at all. Say so, and offer the reading route
+    // when the server is set up for it.
+    const canOcr = /no text in it/i.test(raw) && ocrConfigured();
     return {
       ok: false,
-      error: e instanceof Error ? e.message : "That PDF could not be read.",
+      error: canOcr
+        ? "This PDF is a scan — there is no text in it to pick out. It can be read page by page instead."
+        : raw,
+      canOcr,
     };
   }
   if (!read.rows.length)
@@ -408,4 +418,75 @@ export async function importParsedRows(
   revalidatePath("/validation");
   revalidatePath("/");
   return { ok: true, rows: rows.length, unmatched, source };
+}
+
+/**
+ * Reading a scan. The desk asks for this deliberately: the document leaves the
+ * server to be read, and what comes back is a reading of a photograph, so it
+ * lands in the same preview with its own warning and is checked line by line.
+ */
+export async function ocrPdf(formData: FormData): Promise<PdfPreview> {
+  const user = await requireSection("imports");
+  const kind = String(formData.get("kind") ?? "") as DocKind;
+  const supplierCode = norm(formData.get("supplierCode"));
+  const file = formData.get("file");
+  if (!KINDS.includes(kind)) return { ok: false, error: "Choose what the file holds." };
+  if (!(file instanceof File) || !file.size)
+    return { ok: false, error: "Choose a file to read." };
+  if (file.size > 10 * 1024 * 1024)
+    return {
+      ok: false,
+      error: "A scan larger than 10 MB cannot be read — split it or send fewer pages.",
+    };
+
+  let read;
+  try {
+    read = await ocrDocument(new Uint8Array(await file.arrayBuffer()), kind);
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "That scan could not be read.",
+    };
+  }
+  if (!read.rows.length)
+    return {
+      ok: false,
+      error: `No lines of goods could be read from that scan.${read.notes ? ` ${read.notes}` : ""}`,
+    };
+
+  const index = await loadItemIndex();
+  const rows: PdfPreviewRow[] = read.rows.map((r) => {
+    const { barcode } = resolveItem(
+      index,
+      { barcode: "", itemCode: r.itemCode, itemDesc: r.desc },
+      supplierCode
+    );
+    return {
+      barcode,
+      itemCode: r.itemCode,
+      itemDesc: r.desc,
+      qty: r.qty,
+      uom: r.uom,
+      price: r.price,
+      amount: r.amount,
+    };
+  });
+
+  await record(
+    user.id,
+    "import.ocr",
+    file.name,
+    `${rows.length} lines read, confidence ${read.confidence}`
+  );
+
+  return {
+    ok: true,
+    source: file.name,
+    docNo: kind === "invoice" ? read.header.invoiceNo : read.header.poNo,
+    supplierName: read.header.supplierName,
+    currency: read.header.currency,
+    rows,
+    lineCount: rows.length,
+    ocr: { confidence: read.confidence, notes: read.notes },
+  };
 }
