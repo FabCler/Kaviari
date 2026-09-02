@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The DC2 receiving app is a separate project with its own config.
+    "dc2-receiving/**",
   ]),
 ]);
 
