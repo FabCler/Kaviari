@@ -381,6 +381,11 @@
     border: 1px solid var(--line); background: var(--surface); color: var(--ink);
     border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 13px; cursor: pointer;
   }
+  .status.ro, .buchip.ro, .owner-cell.ro { cursor: default; }
+  .status.ro:hover { filter: none; }
+  .buchip.ro:hover { border-color: var(--line); color: var(--ink-2); background: var(--surface); }
+  .owner-cell.ro:hover { background: none; }
+  .check[disabled] { cursor: default; opacity: 0.6; }
   .prio { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
   .prio i { width: 3px; height: 13px; border-radius: 2px; background: var(--pc); display: inline-block; }
   .prio.p-critical { color: var(--danger); font-weight: 600; }
@@ -502,6 +507,99 @@
   }
   :root[data-theme="dark"] .rtbody [style*="background-color"],
   :root[data-theme="dark"] .rtarea [style*="background-color"] { color: #0d1524; }
+
+  /* ---------- Sign in and access ---------- */
+  .gate { position: fixed; inset: 0; z-index: 80; display: grid; grid-template-columns: minmax(0, 1fr) 480px; background: var(--bg); }
+  .gate[hidden] { display: none !important; }
+  .gatebrand {
+    background: var(--sea-900);
+    background-image: radial-gradient(circle at 18% 22%, rgb(56 166 184 / 0.22), transparent 55%),
+      radial-gradient(circle at 82% 78%, rgb(224 102 74 / 0.18), transparent 52%);
+    color: var(--bar-ink); padding: 54px 56px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto;
+  }
+  .gatebrand .mark { font-family: "Bricolage Grotesque", ui-sans-serif, sans-serif; font-size: 27px; font-weight: 700; color: #fff; }
+  .gatebrand .mark em { color: var(--coral); font-style: normal; }
+  .gatebrand .org { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bar-ink-dim); }
+  .gatebrand h1 {
+    font-family: "Bricolage Grotesque", ui-sans-serif, sans-serif; font-size: 38px; line-height: 1.1;
+    font-weight: 700; color: #fff; margin-top: auto; max-width: 15ch; text-wrap: balance;
+  }
+  .gatebrand ul { display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; max-width: 46ch; }
+  .gatebrand li { display: flex; gap: 10px; align-items: baseline; }
+  .gatebrand li i { width: 6px; height: 6px; border-radius: 99px; background: var(--tide); flex: none; }
+  .gatebrand .fine { margin-top: 18px; font-size: 11.5px; color: var(--bar-ink-dim); max-width: 46ch; }
+
+  .gatepane { display: flex; align-items: center; justify-content: center; padding: 32px; overflow-y: auto; }
+  .gatecard { width: 100%; max-width: 372px; display: flex; flex-direction: column; gap: 16px; }
+  .gatecard h2 { font-family: "Bricolage Grotesque", ui-sans-serif, sans-serif; font-size: 23px; font-weight: 700; }
+  .gatecard .sub { font-size: 13px; color: var(--ink-muted); margin-top: 3px; }
+  .tabs2 { display: flex; gap: 3px; border-bottom: 1px solid var(--line); }
+  .tabs2 button {
+    border: 0; background: none; cursor: pointer; padding: 8px 12px 10px; margin-bottom: -1px;
+    font-size: 13.5px; color: var(--ink-muted); border-bottom: 2px solid transparent;
+  }
+  .tabs2 button[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--coral); }
+  .gatecard label { display: block; }
+  .gatecard label .label { display: block; margin-bottom: 5px; }
+  .gatecard input, .gatecard select, .gatecard textarea {
+    width: 100%; padding: 9px 11px; font: inherit; font-size: 13.5px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  }
+  .gatecard textarea { min-height: 68px; resize: vertical; }
+  .gatecard form { display: flex; flex-direction: column; gap: 12px; }
+  .gateerr { font-size: 12.5px; color: var(--danger); }
+  .gatedemo { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .gatedemo button {
+    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 13px;
+  }
+  .gatedemo button:hover { border-color: var(--tide); background: var(--surface-2); }
+  .gatedemo .r { margin-left: auto; font-size: 11px; color: var(--ink-muted); }
+  .gatenote { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 20px; text-align: center; }
+  .gatenote h2 { margin-bottom: 6px; }
+  .gatenote p { font-size: 13px; color: var(--ink-2); }
+
+  .mebtn {
+    display: flex; align-items: center; gap: 9px; border: 0; background: rgb(255 255 255 / 0.07);
+    border-radius: 99px; padding: 4px 12px 4px 5px; cursor: pointer; color: var(--bar-ink);
+  }
+  .mebtn:hover { background: rgb(255 255 255 / 0.15); }
+  .mebtn .n { font-size: 12.5px; }
+  .rolechip { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bar-ink-dim); }
+
+  .accrow { display: grid; grid-template-columns: 208px minmax(0, 1fr) 152px 108px 92px; gap: 12px; align-items: center; padding: 10px 15px; border-top: 1px solid var(--line-soft); font-size: 13px; }
+  .accrow:first-child { border-top: 0; }
+  .accrow .who3 { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .accrow .who3 b { font-weight: 600; display: block; }
+  .accrow .mail { color: var(--ink-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  .accrow select { border: 1px solid var(--line); background: var(--bg); border-radius: 7px; padding: 5px 7px; font: inherit; font-size: 12.5px; color: inherit; width: 100%; }
+  .statustag { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .statustag.active { color: var(--success); }
+  .statustag.blocked { color: var(--danger); }
+  .assignrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 15px 12px 224px; }
+  .assignchip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 99px; padding: 2px 4px 2px 6px; font-size: 11.5px; background: var(--surface-2); }
+  .assignchip button { border: 0; background: none; cursor: pointer; color: var(--ink-muted); font-size: 13px; line-height: 1; padding: 0 2px; }
+  .reqrow { padding: 12px 15px; border-top: 1px solid var(--line-soft); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .reqrow:first-child { border-top: 0; }
+  .reqrow .g { flex: 1; min-width: 200px; }
+  .reqrow .g b { font-size: 13.5px; }
+  .reqrow .g div { font-size: 12px; color: var(--ink-muted); }
+  .permgrid { padding: 4px 15px 12px; }
+  .permrow { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+  .permrow:first-child { border-top: 0; }
+  .permrow .rn { width: 148px; font-weight: 600; font-size: 13px; flex: none; }
+  .permrow label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+  .permrow input { accent-color: var(--tide); }
+  .ro-note { font-size: 11.5px; color: var(--ink-muted); }
+
+  @media (max-width: 900px) {
+    .gate { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+    .gatebrand { padding: 26px 20px; gap: 12px; }
+    .gatebrand h1 { font-size: 26px; margin-top: 10px; }
+    .gatebrand ul, .gatebrand .fine { display: none; }
+    .accrow { grid-template-columns: minmax(0, 1fr); }
+    .assignrow { padding-left: 15px; }
+  }
 
   /* ---------- Cards and the pages behind the rail ---------- */
   .card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
@@ -758,7 +856,9 @@
   }
 </style>
 
-<header class="topbar">
+<div class="gate" id="gate" hidden></div>
+
+<header class="topbar" id="topbar">
   <div class="brand">
     <span class="mark">Harbour<em>.</em></span>
     <span class="org">Thammachart Seafood</span>
@@ -768,13 +868,10 @@
   <button class="iconbtn" aria-label="Notifications" title="Notifications">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
   </button>
-  <div class="me">
-    <span class="avatar lead" style="background:#0f7383">FC</span>
-    <span class="n">Fabien</span>
-  </div>
+  <div class="me" id="topme"></div>
 </header>
 
-<div class="app">
+<div class="app" id="app">
   <aside class="rail" id="rail"></aside>
 
   <main>
@@ -876,19 +973,21 @@
     cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     team: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 8.2a3 3 0 0 1 0 5.6M18.5 20a5.5 5.5 0 0 0-2.2-4.4"/>',
     reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    shield: '<path d="M12 3 5 6v6c0 4.2 2.9 7.8 7 9 4.1-1.2 7-4.8 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M4.5 8.5 6 9m12 6 1.5.5M8.5 19.5 9 18m6-12 .5-1.5M4.5 15.5 6 15m12-6 1.5-.5M8.5 4.5 9 6m6 12 .5 1.5"/>'
   };
 
   var NAV = [
     { page: "home", label: "Home", icon: "home" },
-    { page: "board", label: "Team board", icon: "board" },
+    { page: "board", label: "Team board", icon: "board", perm: "board" },
     { page: "mywork", label: "My work", icon: "my", badge: function () {
       return TASKS.filter(function (t) { return t.o === state.me && t.s !== "done"; }).length; } },
-    { page: "projects", label: "Projects", icon: "projects" },
+    { page: "projects", label: "Projects", icon: "projects", perm: "projects" },
     { page: "calendar", label: "Calendar", icon: "cal" },
     { page: "people", label: "People", icon: "team" },
-    { page: "reports", label: "Reports", icon: "reports" },
-    { page: "settings", label: "Settings", icon: "gear" }
+    { page: "reports", label: "Reports", icon: "reports", perm: "reports" },
+    { page: "access", label: "Access", icon: "shield", perm: "access", badge: function () { return REQUESTS.length; } },
+    { page: "settings", label: "Settings", icon: "gear", perm: "settings" }
   ];
 
   var PEOPLE = [
@@ -900,7 +999,8 @@
     { id: "ton",  full: "Ton P.",   name: "Ton",  role: "Logistics & cold chain",     color: "#2f7fa8" },
     { id: "mint", full: "Mint L.",  name: "Mint", role: "Chef liaison & training",    color: "#177a5e" },
     { id: "krit", full: "Krit A.",  name: "Krit", role: "Finance & admin",            color: "#6b7b82" },
-    { id: "pim",  full: "Pim R.",   name: "Pim",  role: "QA & food safety",           color: "#2f7d4a" }
+    { id: "pim",  full: "Pim R.",   name: "Pim",  role: "QA & food safety",           color: "#2f7d4a" },
+    { id: "nok",  full: "Nok S.",   name: "Nok",  role: "Executive assistant",        color: "#b04a8a" }
   ];
 
   var GROUPS = [
@@ -910,6 +1010,46 @@
     { id: "source",  name: "Sourcing & cold chain", color: "var(--s-source)" },
     { id: "quality", name: "Quality & food safety", color: "var(--s-quality)" },
     { id: "intake",  name: "New requests",          color: "var(--s-intake)" }
+  ];
+
+  var PERMS = [
+    { id: "board", label: "See the team board" },
+    { id: "all_people", label: "See everyone’s work" },
+    { id: "edit_all", label: "Edit anyone’s tasks" },
+    { id: "projects", label: "Projects" },
+    { id: "reports", label: "Reports" },
+    { id: "settings", label: "Settings — streams, units, capacity" },
+    { id: "access", label: "Accounts and access" }
+  ];
+
+  var ROLES = [
+    { id: "admin", name: "Administrator",
+      perms: { board: true, all_people: true, edit_all: true, projects: true, reports: true, settings: true, access: true } },
+    { id: "assistant", name: "Admin assistant",
+      perms: { board: true, all_people: false, edit_all: false, projects: true, reports: true, settings: false, access: false } },
+    { id: "member", name: "Team member",
+      perms: { board: true, all_people: true, edit_all: false, projects: true, reports: false, settings: false, access: false } }
+  ];
+
+  var ACCOUNTS = [
+    { p: "fab", email: "fabien@thammachartseafood.com", role: "admin", status: "active", assigned: [], since: "12 Jan 2026" },
+    { p: "nok", email: "nok@thammachartseafood.com", role: "assistant", status: "active",
+      assigned: ["ploy", "nut", "beam", "mint"], since: "3 Mar 2026" },
+    { p: "ploy", email: "ploy@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "12 Jan 2026" },
+    { p: "nut", email: "nut@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "12 Jan 2026" },
+    { p: "beam", email: "beam@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "2 Feb 2026" },
+    { p: "fah", email: "fah@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "12 Jan 2026" },
+    { p: "ton", email: "ton@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "12 Jan 2026" },
+    { p: "mint", email: "mint@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "20 Apr 2026" },
+    { p: "krit", email: "krit@thammachartseafood.com", role: "member", status: "active", assigned: [], since: "12 Jan 2026" },
+    { p: "pim", email: "pim@thammachartseafood.com", role: "member", status: "blocked", assigned: [], since: "12 Jan 2026" }
+  ];
+
+  var REQUESTS = [
+    { id: "r1", name: "Som P.", email: "som@thammachartseafood.com", role: "member",
+      note: "Night shift receiving — needs the daily landing checks", at: "Yesterday 18:20" },
+    { id: "r2", name: "Aim C.", email: "aim@thammachartseafood.com", role: "member",
+      note: "New counter staff, Sathorn store", at: "Today 07:40" }
   ];
 
   var BUS = [
@@ -971,6 +1111,8 @@
     { g: "ops", t: "Production plan for next week's cutting room", o: "mint", s: "todo", p: "normal", d: "2026-08-31", e: 3, r: "weekly" },
     { g: "ops", t: "Send the weekly operations report to the team", o: "fab", s: "todo", p: "high", d: "2026-08-28", e: 1, r: "weekly" },
     { g: "ops", t: "One-to-ones with the team (9 slots)", o: "fab", s: "todo", p: "normal", d: "2026-08-31", e: 4, r: "weekly" },
+    { g: "ops", t: "Book the rooms for the September reviews", o: "nok", s: "doing", p: "normal", d: "2026-08-31", e: 1 },
+    { g: "ops", t: "Chase the missing delivery notes from the drivers", o: "nok", s: "todo", p: "high", d: "2026-09-01", e: 2 },
 
     { g: "retail", t: "Relaunch the sashimi set at the Thonglor counter", o: "nut", s: "doing", p: "high", d: "2026-09-03", e: 5 },
     { g: "retail", t: "Update price tags and POS for the new pack sizes", o: "krit", s: "wait", p: "normal", d: "2026-09-02", e: 2, n: "Waiting on the pricing sign-off" },
@@ -1053,7 +1195,7 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "" };
+  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "", session: null, gate: "in", gateMsg: "" };
 
   TASKS.forEach(function (t, i) {
     t.id = "t" + i;
@@ -1136,6 +1278,56 @@
   function person(id) { for (var i = 0; i < PEOPLE.length; i++) if (PEOPLE[i].id === id) return PEOPLE[i]; return PEOPLE[0]; }
   function status(id) { for (var i = 0; i < STATUS.length; i++) if (STATUS[i].id === id) return STATUS[i]; return STATUS[0]; }
   function prio(id) { for (var i = 0; i < PRIOS.length; i++) if (PRIOS[i].id === id) return PRIOS[i]; return PRIOS[1]; }
+  function account(id) {
+    for (var i = 0; i < ACCOUNTS.length; i++) if (ACCOUNTS[i].p === id) return ACCOUNTS[i];
+    return null;
+  }
+  function roleOf(id) {
+    for (var i = 0; i < ROLES.length; i++) if (ROLES[i].id === id) return ROLES[i];
+    return ROLES[ROLES.length - 1];
+  }
+  function session() { return state.session ? account(state.session) : null; }
+  function can(perm) {
+    var a = session();
+    return !!(a && a.status === "active" && roleOf(a.role).perms[perm]);
+  }
+  // ids this account may look at — null means everyone
+  function scope() {
+    var a = session();
+    if (!a) return [];
+    if (can("all_people")) return null;
+    return [a.p].concat(a.assigned || []);
+  }
+  function inScope(t) {
+    var sc = scope();
+    return !sc || sc.indexOf(t.o) > -1;
+  }
+  // seeing everyone's work and being allowed to change it are two different rights
+  function canEdit(t) {
+    var a = session();
+    if (!a || a.status !== "active") return false;
+    if (can("edit_all")) return true;
+    return [a.p].concat(a.assigned || []).indexOf(t.o) > -1;
+  }
+  // who can be handed work
+  function teamRoster() {
+    return PEOPLE.filter(function (pp) {
+      var a = account(pp.id);
+      return a && a.status === "active";
+    });
+  }
+  // who shows up in the workload — a blocked account still owns its tasks
+  function rosterAll() {
+    return PEOPLE.filter(function (pp) { return !!account(pp.id); });
+  }
+  function assignable() {
+    return scope() ? scopedPeople() : teamRoster();
+  }
+  function scopedPeople() {
+    var sc = scope();
+    return rosterAll().filter(function (pp) { return !sc || sc.indexOf(pp.id) > -1; });
+  }
+
   function businessUnit(id) {
     for (var i = 0; i < BUS.length; i++) if (BUS[i].id === id) return BUS[i];
     return null;
@@ -1182,6 +1374,7 @@
   function visible(t) {
     if (!state.showDone && t.s === "done") return false;
     if (state.bu && t.bu !== state.bu) return false;
+    if (!inScope(t)) return false;
     var sel = activePeople();
     if (sel.length && sel.indexOf(t.o) === -1) return false;
     if (state.q) {
@@ -1223,18 +1416,132 @@
   window.addEventListener("resize", closeMenu);
   window.addEventListener("scroll", closeMenu, true);
 
+  // ---------- sign in ----------
+  var AVATAR_POOL = ["#0e7c86", "#7b57c9", "#b04a8a", "#2f6fb5", "#c2681f", "#2f7d4a", "#6b7b82"];
+
+  function gateNote(title, body) {
+    return '<div class="gatenote"><h2>' + title + "</h2><p>" + body + "</p></div>" +
+      '<button class="btn" data-gate="in">Back to sign in</button>';
+  }
+
+  function renderGate() {
+    var gate = document.getElementById("gate"), app = document.getElementById("app"), bar = document.getElementById("topbar");
+    var a = session();
+    if (a && a.status === "active") {
+      gate.hidden = true; app.hidden = false; bar.hidden = false;
+      return true;
+    }
+    app.hidden = true; bar.hidden = true; gate.hidden = false;
+
+    var brand = '<aside class="gatebrand">' +
+      '<div class="mark">Harbour<em>.</em></div><p class="org">Thammachart Seafood</p>' +
+      "<h1>The team’s work, in one place.</h1>" +
+      "<ul>" +
+        '<li><i></i><span>Daily operations, retail counters, food service, sourcing, quality — one board.</span></li>' +
+        '<li><i></i><span>Subtasks, documents and a comment thread on every task.</span></li>' +
+        '<li><i></i><span>An administrator approves every account before it can see anything.</span></li>' +
+      "</ul>" +
+      '<p class="fine">Prototype — no password is checked and nothing is stored. Sign in with one of the demo accounts to see what each type of account can do.</p>' +
+      "</aside>";
+
+    var card;
+    if (state.gate === "sent") {
+      card = gateNote("Request sent", "An administrator reviews every request. You will be able to sign in once your account is approved.");
+    } else if (state.gate === "pending") {
+      card = gateNote("Waiting for approval", "Your request is in the queue. An administrator has to approve it before you can sign in.");
+    } else if (state.gate === "blocked") {
+      card = gateNote("Access suspended", "This account has been blocked by an administrator. Ask them to restore it.");
+    } else if (state.gate === "request") {
+      card = '<div class="tabs2"><button data-gate="in">Sign in</button>' +
+        '<button data-gate="request" aria-selected="true">Request access</button></div>' +
+        '<div><h2>Request access</h2><p class="sub">Tell us who you are. An administrator decides what you can see.</p></div>' +
+        '<form data-request>' +
+          '<label><span class="label">Full name</span><input type="text" id="g-name" required placeholder="Som P."></label>' +
+          '<label><span class="label">Work email</span><input type="email" id="g-mail" required placeholder="you@thammachartseafood.com"></label>' +
+          '<label><span class="label">Account type you need</span><select id="g-role">' +
+            ROLES.filter(function (r) { return r.id !== "admin"; }).map(function (r) {
+              return '<option value="' + r.id + '">' + esc(r.name) + "</option>";
+            }).join("") + "</select></label>" +
+          '<label><span class="label">What you will be doing</span><textarea id="g-note" placeholder="Night shift receiving, daily landing checks…"></textarea></label>' +
+          '<button class="btn btn-primary" type="submit">Send request</button>' +
+        "</form>";
+    } else {
+      card = '<div class="tabs2"><button data-gate="in" aria-selected="true">Sign in</button>' +
+        '<button data-gate="request">Request access</button></div>' +
+        '<div><h2>Sign in</h2><p class="sub">Use your work email.</p></div>' +
+        '<form data-signin>' +
+          '<label><span class="label">Work email</span><input type="email" id="g-email" required placeholder="you@thammachartseafood.com"></label>' +
+          '<label><span class="label">Password</span><input type="password" id="g-pass" placeholder="Anything — this is a prototype"></label>' +
+          (state.gateMsg ? '<p class="gateerr">' + esc(state.gateMsg) + "</p>" : "") +
+          '<button class="btn btn-primary" type="submit">Sign in</button>' +
+        "</form>" +
+        '<div class="gatedemo"><span class="label">Demo accounts</span>' +
+          ACCOUNTS.filter(function (ac) { return ac.status === "active"; }).slice(0, 4).map(function (ac) {
+            var pp = person(ac.p);
+            return '<button type="button" data-demo="' + ac.email + '">' + avatar(pp) +
+              "<span>" + esc(pp.full) + '</span><span class="r">' + esc(roleOf(ac.role).name) + "</span></button>";
+          }).join("") +
+          '<button type="button" data-demo="pim@thammachartseafood.com">' + avatar(person("pim")) +
+            '<span>Pim R.</span><span class="r">Blocked account</span></button>' +
+        "</div>";
+    }
+
+    gate.innerHTML = brand + '<div class="gatepane"><div class="gatecard">' + card + "</div></div>";
+    return false;
+  }
+
+  function signIn(email) {
+    var mail = String(email || "").trim().toLowerCase(), i, ac = null;
+    for (i = 0; i < ACCOUNTS.length; i++) if (ACCOUNTS[i].email.toLowerCase() === mail) ac = ACCOUNTS[i];
+    if (!ac) {
+      for (i = 0; i < REQUESTS.length; i++) {
+        if (REQUESTS[i].email.toLowerCase() === mail) { state.gate = "pending"; renderGate(); return; }
+      }
+      state.gateMsg = "No account for that address. Request access instead.";
+      renderGate();
+      return;
+    }
+    if (ac.status !== "active") { state.gate = "blocked"; renderGate(); return; }
+    state.session = ac.p;
+    state.me = ac.p;
+    state.gate = "in";
+    state.gateMsg = "";
+    state.page = "home";
+    state.open = null;
+    render();
+  }
+
+  function signOut() {
+    state.session = null;
+    state.open = null;
+    state.gate = "in";
+    state.gateMsg = "";
+    document.getElementById("drawer").hidden = true;
+    document.getElementById("scrim").hidden = true;
+    renderGate();
+  }
+
+  function renderTopbar() {
+    var ac = session();
+    if (!ac) return;
+    var pp = person(ac.p);
+    document.getElementById("topme").innerHTML =
+      '<button class="mebtn" data-memenu>' + avatar(pp) + '<span class="n">' + esc(pp.name) + "</span>" +
+      '<span class="rolechip">' + esc(roleOf(ac.role).name) + "</span></button>";
+  }
+
   function renderRail() {
     var rail = document.getElementById("rail");
-    var html = NAV.map(function (n) {
+    var html = NAV.filter(function (n) { return !n.perm || can(n.perm); }).map(function (n) {
       var svg = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n.icon] + "</svg>";
       var badge = n.badge ? n.badge() : 0;
       return '<a href="#" data-page="' + n.page + '"' + (state.page === n.page ? ' aria-current="page"' : "") + ">" +
         svg + n.label + (badge ? '<span class="badge tnum">' + badge + "</span>" : "") + "</a>";
     }).join("");
 
-    html += '<div class="sect label">Streams</div><div class="streams">' +
+    if (can("board")) html += '<div class="sect label">Streams</div><div class="streams">' +
       GROUPS.map(function (g) {
-        var n = TASKS.filter(function (t) { return t.g === g.id && t.s !== "done"; }).length;
+        var n = TASKS.filter(function (t) { return t.g === g.id && t.s !== "done" && inScope(t); }).length;
         return '<button type="button" data-stream="' + g.id + '"><i style="background:' + g.color + '"></i>' +
           esc(g.name) + '<span class="c tnum">' + n + "</span></button>";
       }).join("") + "</div>";
@@ -1256,14 +1563,15 @@
   }
 
   function renderKpis() {
-    var open = TASKS.filter(function (t) { return t.s !== "done"; });
+    var base = TASKS.filter(inScope);
+    var open = base.filter(function (t) { return t.s !== "done"; });
     var dueToday = open.filter(function (t) { return days(TODAY, t.d) === 0; });
     var overdue = open.filter(isOverdue);
-    var stuck = TASKS.filter(function (t) { return t.s === "block" || t.s === "wait"; });
-    var done = TASKS.filter(function (t) { return t.s === "done"; });
+    var stuck = base.filter(function (t) { return t.s === "block" || t.s === "wait"; });
+    var done = base.filter(function (t) { return t.s === "done"; });
 
     var cards = [
-      { v: open.length, k: "Open tasks", hint: "across 6 streams", c: "var(--tide)" },
+      { v: open.length, k: "Open tasks", hint: can("all_people") ? "across the team" : "in your scope", c: "var(--tide)" },
       { v: dueToday.length, k: "Due today", hint: "Friday 28 August", c: "var(--coral)" },
       { v: overdue.length, k: "Overdue", hint: overdue.length ? overdue.map(function (t) { return person(t.o).name; }).join(", ") : "nothing late", c: "var(--danger)" },
       { v: stuck.length, k: "Blocked / waiting", hint: "needs a decision", c: "var(--st-wait)" },
@@ -1288,8 +1596,8 @@
     },
     board: {
       title: function () { return "Team board"; },
-      sub: function () { return "Week of 24 – 28 August 2026 · " + PEOPLE.length + " people · " + GROUPS.length + " streams"; },
-      kpis: true, filters: true, tools: ["week", "task"], render: function () { renderBoard(); }
+      sub: function () { return "Week of 24 – 28 August 2026 · " + scopedPeople().length + " people · " + GROUPS.length + " streams"; },
+      kpis: true, filters: true, tools: ["week", "task"], perm: "board", render: function () { renderBoard(); }
     },
     mywork: {
       title: function () { return "My work"; },
@@ -1299,7 +1607,7 @@
     projects: {
       title: function () { return "Projects"; },
       sub: function () { return PROJECTS.length + " projects across five stages"; },
-      kpis: false, filters: false, tools: ["project"], render: function () { renderProjects(); }
+      kpis: false, filters: false, tools: ["project"], perm: "projects", render: function () { renderProjects(); }
     },
     calendar: {
       title: function () { return "Calendar"; },
@@ -1308,18 +1616,25 @@
     },
     people: {
       title: function () { return "People"; },
-      sub: function () { return PEOPLE.length + " people · capacity " + state.capacity + " h a week"; },
+      sub: function () { return scopedPeople().length + " people · capacity " + state.capacity + " h a week"; },
       kpis: false, filters: false, tools: [], render: function () { renderPeople(); }
     },
     reports: {
       title: function () { return "Reports"; },
       sub: function () { return "Week of 24 – 28 August 2026 · open work and what closed"; },
-      kpis: false, filters: false, tools: [], render: function () { renderReports(); }
+      kpis: false, filters: false, tools: [], perm: "reports", render: function () { renderReports(); }
+    },
+    access: {
+      title: function () { return "Access"; },
+      sub: function () {
+        return ACCOUNTS.length + " accounts · " + REQUESTS.length + " request" + (REQUESTS.length === 1 ? "" : "s") + " waiting";
+      },
+      kpis: false, filters: false, tools: [], perm: "access", render: function () { renderAccess(); }
     },
     settings: {
       title: function () { return "Settings"; },
       sub: function () { return "Streams, statuses, people and the numbers behind the workload view"; },
-      kpis: false, filters: false, tools: [], render: function () { renderSettings(); }
+      kpis: false, filters: false, tools: [], perm: "settings", render: function () { renderSettings(); }
     }
   };
 
@@ -1332,13 +1647,14 @@
 
   function go(page) {
     if (!PAGES[page]) return;
+    if (PAGES[page].perm && !can(PAGES[page].perm)) page = "home";
     state.page = page;
     window.scrollTo(0, 0);
     render();
   }
 
   function renderFacepile() {
-    document.getElementById("facepile").innerHTML = PEOPLE.map(function (p) {
+    document.getElementById("facepile").innerHTML = scopedPeople().map(function (p) {
       return '<button class="avatar-btn' + (state.people[p.id] ? " on" : "") + '" data-person="' + p.id +
         '" aria-pressed="' + !!state.people[p.id] + '" aria-label="Filter by ' + esc(p.full) + '">' + avatar(p) + "</button>";
     }).join("");
@@ -1380,9 +1696,16 @@
   }
   function fileRow(files, prefix) {
     if (!files || !files.length) return "";
+    var rw = canEdit(findTask(prefix.split("|")[0]));
     return '<div class="filerow">' + files.map(function (f, i) {
-      return fileChip(f, prefix + "|" + i);
+      return rw ? fileChip(f, prefix + "|" + i) : fileChipRO(f);
     }).join("") + "</div>";
+  }
+  function fileChipRO(f) {
+    return '<span class="filechip" title="' + esc(f.name) + '">' +
+      (f.url ? '<img src="' + f.url + '" alt="">' : fileIcon(f.name)) +
+      '<span class="fname">' + esc(f.name) + "</span>" +
+      (f.size ? '<span class="fsize tnum">' + fmtSize(f.size) + "</span>" : "") + "</span>";
   }
 
   var BUBBLE = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>';
@@ -1409,6 +1732,7 @@
   }
 
   function subPanel(t, compact) {
+    var rw = canEdit(t);
     var h = '<div class="subpanel' + (compact ? " bare" : "") + '">';
     t.sub.forEach(function (sb) {
       var o = person(sb.o);
@@ -1418,7 +1742,8 @@
         '<div class="subrow' + (compact ? " compact" : "") + (sb.done ? " done" : "") + '" data-sub="' + key + '">' +
           '<div class="scell">' +
             '<button class="check sm' + (sb.done ? " on" : "") + '" data-subcheck="' + key +
-              '" aria-label="Mark subtask done" aria-pressed="' + !!sb.done + '">' + (sb.done ? TICK : "") + "</button>" +
+              '" aria-label="Mark subtask done"' + (rw ? "" : " disabled") + ' aria-pressed="' + !!sb.done + '">' +
+              (sb.done ? TICK : "") + "</button>" +
             '<div class="sbody"><span class="stitle">' + esc(sb.t) + "</span>" +
             fileRow(sb.files, key) + "</div>" +
           "</div>" +
@@ -1430,18 +1755,20 @@
             '<button class="iconbtn-sm' + (talking || sb.comments.length ? " on" : "") + '" data-scom="' + key +
               '" aria-expanded="' + talking + '" aria-label="Comments on this subtask" title="Comments">' +
               BUBBLE + (sb.comments.length ? '<span class="cn tnum">' + sb.comments.length + "</span>" : "") + "</button>" +
-            '<button class="iconbtn-sm" data-subattach="' + key +
+            (rw ? '<button class="iconbtn-sm" data-subattach="' + key +
               '" aria-label="Attach a document to this subtask" title="Attach a document">' + PIN + "</button>" +
             '<button class="iconbtn-sm" data-subdel="' + key +
-              '" aria-label="Delete subtask" title="Delete subtask">×</button>' +
+              '" aria-label="Delete subtask" title="Delete subtask">×</button>' : "") +
           "</div>" +
         "</div>" +
         (talking ? subThread(t, sb) : "") +
       "</div>";
     });
-    h += '<form class="addsub" data-addsub="' + t.id + '">' +
-      '<input type="text" placeholder="Add a subtask, then press Enter" aria-label="New subtask">' +
-      '<button class="btn" type="submit">Add</button></form>';
+    if (rw) {
+      h += '<form class="addsub" data-addsub="' + t.id + '">' +
+        '<input type="text" placeholder="Add a subtask, then press Enter" aria-label="New subtask">' +
+        '<button class="btn" type="submit">Add</button></form>';
+    }
     return h + "</div>";
   }
 
@@ -1451,31 +1778,33 @@
 
   function taskRow(t) {
     var p = person(t.o), pr = prio(t.p), dm = dueMeta(t);
+    var rw = canEdit(t), st = status(t.s), ub = businessUnit(t.bu);
     var open = !!state.expanded[t.id];
     var doneN = t.sub.filter(function (sb) { return sb.done; }).length;
 
     var html = '<div class="titem" data-item="' + t.id + '">' +
       '<div class="row' + (t.s === "done" ? " is-done" : "") + '">' +
       '<div class="task">' +
-        '<button class="grip" data-grip="' + t.id + '" aria-label="Reorder ' + esc(t.t) +
+        (rw ? '<button class="grip" data-grip="' + t.id + '" aria-label="Reorder ' + esc(t.t) +
           '. Drag, or use the arrow keys" title="Drag to reorder">' +
           '<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">' +
           '<circle cx="4" cy="4" r="1.3"/><circle cx="8" cy="4" r="1.3"/><circle cx="4" cy="8" r="1.3"/>' +
           '<circle cx="8" cy="8" r="1.3"/><circle cx="4" cy="12" r="1.3"/><circle cx="8" cy="12" r="1.3"/></svg>' +
-        "</button>" +
+        "</button>" : '<span class="grip"></span>') +
         '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id +
-          '" aria-label="Mark done" aria-pressed="' + (t.s === "done") + '">' + (t.s === "done" ? TICK : "") + "</button>" +
+          '" aria-label="Mark done"' + (rw ? "" : " disabled") + ' aria-pressed="' + (t.s === "done") + '">' +
+          (t.s === "done" ? TICK : "") + "</button>" +
         "<div>" +
           '<button class="task-title" data-open="' + t.id + '"' +
             (t.color ? ' style="color:' + t.color + '"' : "") + ' title="Open details">' + esc(t.t) + "</button>" +
           '<div class="task-meta">' +
             (t.r ? '<span class="chip-repeat"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>' + (t.r === "daily" ? "Daily" : "Weekly") + "</span>" : "") +
-            '<button class="metachip' + (t.sub.length ? "" : " ghost") + '" data-toggle="' + t.id +
+            (t.sub.length || rw ? '<button class="metachip' + (t.sub.length ? "" : " ghost") + '" data-toggle="' + t.id +
               '" aria-expanded="' + open + '">' + CARET +
-              (t.sub.length ? doneN + " / " + t.sub.length + " subtasks" : "Add subtasks") + "</button>" +
-            '<button class="metachip' + (t.files.length ? "" : " ghost") + '" data-attach="' + t.id +
+              (t.sub.length ? doneN + " / " + t.sub.length + " subtasks" : "Add subtasks") + "</button>" : "") +
+            (t.files.length || rw ? '<button class="metachip' + (t.files.length ? "" : " ghost") + '" data-attach="' + t.id +
               '" title="Attach a document">' + PIN +
-              (t.files.length ? t.files.length + " file" + (t.files.length === 1 ? "" : "s") : "Attach") + "</button>" +
+              (t.files.length ? t.files.length + " file" + (t.files.length === 1 ? "" : "s") : "Attach") + "</button>" : "") +
             (talkCount(t) ? '<button class="metachip" data-open="' + t.id + '" title="Open the discussion">' +
               BUBBLE + talkCount(t) + "</button>" : "") +
             (t.n ? '<span class="task-note">' + esc(t.n) + "</span>" : "") +
@@ -1483,10 +1812,13 @@
           fileRow(t.files, t.id + "|") +
         "</div>" +
       "</div>" +
-      buCell(t) +
-      '<button class="owner-cell" data-owner="' + t.id + '" aria-label="Owner: ' + esc(p.full) + '. Reassign">' +
-        avatar(p) + '<span class="nm">' + esc(p.name) + "</span></button>" +
-      statusCell(t) +
+      (rw ? buCell(t)
+        : (ub ? '<span class="buchip ro" style="--bc:' + ub.color + '"><i></i>' + esc(ub.name) + "</span>" : "<span></span>")) +
+      (rw
+        ? '<button class="owner-cell" data-owner="' + t.id + '" aria-label="Owner: ' + esc(p.full) + '. Reassign">' +
+          avatar(p) + '<span class="nm">' + esc(p.name) + "</span></button>"
+        : '<span class="owner-cell ro">' + avatar(p) + '<span class="nm">' + esc(p.name) + "</span></span>") +
+      (rw ? statusCell(t) : '<span class="status ro" style="--sc:' + st.color + '">' + st.label + "</span>") +
       '<span class="prio p-' + t.p + '" style="--pc:' + pr.color + '"><i></i>' + pr.label + "</span>" +
       '<span class="due tnum ' + dm.cls + '">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
       '<span class="est tnum">' + t.e + " h</span>" +
@@ -1502,7 +1834,7 @@
 
     GROUPS.forEach(function (g) {
       var rows = TASKS.filter(function (t) { return t.g === g.id && visible(t); });
-      var all = TASKS.filter(function (t) { return t.g === g.id; });
+      var all = TASKS.filter(function (t) { return t.g === g.id && inScope(t); });
       if (!rows.length && (state.q || activePeople().length)) return;
       any = any || rows.length > 0;
       var doneN = all.filter(function (t) { return t.s === "done"; }).length;
@@ -1668,7 +2000,7 @@
 
   function renderPeople() {
     var CAP = state.capacity;
-    var rows = PEOPLE.map(function (p) {
+    var rows = scopedPeople().map(function (p) {
       var mine = TASKS.filter(function (t) { return t.o === p.id && t.s !== "done"; });
       var byStatus = {};
       STATUS.forEach(function (s) {
@@ -1697,8 +2029,11 @@
         : r.late ? { cls: "over", txt: r.late + " overdue" }
         : r.hours < CAP * 0.5 ? { cls: "light", txt: "Room to take more" }
         : { cls: "ok", txt: "Balanced" };
+      var acc = account(r.p.id);
       html += '<div class="lrow"><div class="who2">' + avatar(r.p, "lg") +
-        "<div><b>" + esc(r.p.full) + "</b><span>" + esc(r.p.role) + "</span></div></div>" +
+        "<div><b>" + esc(r.p.full) +
+        (acc && acc.status !== "active" ? ' <span class="statustag blocked">no access</span>' : "") +
+        "</b><span>" + esc(r.p.role) + "</span></div></div>" +
         '<div class="stack">' +
           STATUS.filter(function (s) { return s.id !== "done"; }).map(function (s) {
             var w = (r.byStatus[s.id] / max) * 100;
@@ -1743,15 +2078,15 @@
 
   // ---------- Home ----------
   function renderHome() {
-    var now = TASKS.filter(function (t) { return t.s !== "done" && days(TODAY, t.d) <= 0; })
+    var now = TASKS.filter(function (t) { return t.s !== "done" && inScope(t) && days(TODAY, t.d) <= 0; })
       .sort(function (a, b) { return Date.parse(a.d) - Date.parse(b.d); });
-    var stuck = TASKS.filter(function (t) { return t.s === "block" || t.s === "wait"; });
+    var stuck = TASKS.filter(function (t) { return (t.s === "block" || t.s === "wait") && inScope(t); });
     var mine = TASKS.filter(function (t) { return t.o === state.me && t.s !== "done"; })
       .sort(function (a, b) { return Date.parse(a.d) - Date.parse(b.d); }).slice(0, 5);
     var risk = PROJECTS.filter(function (pr) { return pr.health !== "on"; });
 
     var streams = GROUPS.map(function (g) {
-      var all = TASKS.filter(function (t) { return t.g === g.id; });
+      var all = TASKS.filter(function (t) { return t.g === g.id && inScope(t); });
       var done = all.filter(function (t) { return t.s === "done"; }).length;
       var pct = all.length ? Math.round((done / all.length) * 100) : 0;
       return '<div class="progline" style="--sc:' + g.color + '">' +
@@ -1824,10 +2159,11 @@
   ];
 
   function renderReports() {
-    var open = TASKS.filter(function (t) { return t.s !== "done"; });
+    var base = TASKS.filter(inScope);
+    var open = base.filter(function (t) { return t.s !== "done"; });
 
     var mix = STATUS.map(function (st) {
-      return { st: st, n: TASKS.filter(function (t) { return t.s === st.id; }).length };
+      return { st: st, n: base.filter(function (t) { return t.s === st.id; }).length };
     }).filter(function (r) { return r.n > 0; });
     var mixTotal = mix.reduce(function (a, r) { return a + r.n; }, 0) || 1;
     var mixBar = '<div style="padding:16px 15px 6px"><div class="stack" style="height:26px">' +
@@ -1852,7 +2188,7 @@
         '<span class="num tnum">' + r.h + " h</span></div>";
     }).join("");
 
-    var peopleRows = PEOPLE.map(function (pp) {
+    var peopleRows = scopedPeople().map(function (pp) {
       var rows = open.filter(function (t) { return t.o === pp.id; });
       return { p: pp, h: rows.reduce(function (a, t) { return a + t.e; }, 0), late: rows.filter(isOverdue).length };
     }).sort(function (a, b) { return b.h - a.h; });
@@ -1864,7 +2200,7 @@
         '<span class="num tnum">' + r.h + " h</span></div>";
     }).join("");
 
-    var hist = CLOSED_HISTORY.concat([{ w: "This week", n: TASKS.filter(function (t) { return t.s === "done"; }).length, now: true }]);
+    var hist = CLOSED_HISTORY.concat([{ w: "This week", n: base.filter(function (t) { return t.s === "done"; }).length, now: true }]);
     var maxN = Math.max.apply(null, hist.map(function (h) { return h.n; })) || 1;
     var bars = '<div class="vbars">' + hist.map(function (h) {
       return '<div class="vbarcol' + (h.now ? " now" : "") + '"><b class="tnum">' + h.n + "</b>" +
@@ -1886,12 +2222,84 @@
     }).join("");
 
     document.getElementById("view").innerHTML = '<div class="repgrid">' +
-      card("Where the work stands", TASKS.length + " tasks", mixBar) +
+      card("Where the work stands", base.length + " tasks", mixBar) +
       card("Open hours by business unit", null, buBars) +
       card("Open hours by stream", null, streamBars) +
       card("Open hours by person", "capacity " + state.capacity + " h", peopleBars) +
       card("Tasks closed per week", "last five weeks are sample data", bars) +
       "</div>";
+  }
+
+  // ---------- Access ----------
+  function assignedChips(ac) {
+    return '<div class="assignrow">' +
+      (ac.assigned.length
+        ? ac.assigned.map(function (pid) {
+            var pp = person(pid);
+            return '<span class="assignchip">' + avatar(pp) + esc(pp.full) +
+              '<button data-unassign="' + ac.p + "|" + pid + '" aria-label="Unassign ' + esc(pp.full) + '">×</button></span>';
+          }).join("")
+        : '<span class="ro-note">Nobody assigned yet — this account sees only its own work.</span>') +
+      '<button class="btn" data-assign="' + ac.p + '" style="padding:3px 10px;font-size:12px">+ Assign someone</button></div>';
+  }
+
+  function renderAccess() {
+    var reqs = REQUESTS.length ? REQUESTS.map(function (r) {
+      return '<div class="reqrow"><div class="g"><b>' + esc(r.name) + "</b>" +
+        "<div>" + esc(r.email) + " · asked for " + esc(roleOf(r.role).name) + " · " + esc(r.at) + "</div>" +
+        (r.note ? '<div style="color:var(--ink-2)">' + esc(r.note) + "</div>" : "") + "</div>" +
+        '<button class="btn btn-primary" data-approve="' + r.id + '">Approve as…</button>' +
+        '<button class="btn" data-decline="' + r.id + '">Decline</button></div>';
+    }).join("") : '<p class="cempty">No requests waiting.</p>';
+
+    var accs = ACCOUNTS.map(function (ac) {
+      var pp = person(ac.p);
+      var mine = TASKS.filter(function (t) { return t.o === ac.p && t.s !== "done"; }).length;
+      return '<div class="accrow">' +
+        '<div class="who3">' + avatar(pp) + "<div><b>" + esc(pp.full) + '</b><span class="mail">' + esc(ac.email) + "</span></div></div>" +
+        '<div class="mail">Member since ' + esc(ac.since) + " · " + mine + " open task" + (mine === 1 ? "" : "s") + "</div>" +
+        '<select data-accrole="' + ac.p + '" aria-label="Account type for ' + esc(pp.full) + '">' +
+          ROLES.map(function (r) {
+            return '<option value="' + r.id + '"' + (r.id === ac.role ? " selected" : "") + ">" + esc(r.name) + "</option>";
+          }).join("") + "</select>" +
+        '<span class="statustag ' + ac.status + '">' + (ac.status === "active" ? "Active" : "Blocked") + "</span>" +
+        '<div style="text-align:right"><button class="btn" data-accstatus="' + ac.p +
+          '" style="padding:4px 10px;font-size:12px">' + (ac.status === "active" ? "Block" : "Restore") + "</button></div>" +
+        "</div>" + (roleOf(ac.role).perms.all_people ? "" : assignedChips(ac));
+    }).join("");
+
+    var roles = '<div class="permgrid">' + ROLES.map(function (r) {
+      var locked = r.id === "admin";
+      return '<div class="permrow">' +
+        '<input class="setinput rn" data-rolename="' + r.id + '" value="' + esc(r.name) + '"' +
+          (locked ? " readonly" : "") + ' aria-label="Account type name">' +
+        PERMS.map(function (pm) {
+          return "<label><input type=\"checkbox\" data-perm=\"" + r.id + "|" + pm.id + "\"" +
+            (r.perms[pm.id] ? " checked" : "") + (locked ? " disabled" : "") + "> " + pm.label + "</label>";
+        }).join("") +
+        (locked ? '<span class="ro-note">Administrators always keep full access.</span>' : "") +
+        "</div>";
+    }).join("") + '<div style="padding-top:12px"><button class="btn" data-addrole>+ Add an account type</button></div></div>';
+
+    document.getElementById("view").innerHTML = '<div class="colstack" style="margin-top:18px">' +
+      card("Requests waiting for approval", REQUESTS.length, reqs) +
+      card("Accounts", ACCOUNTS.length, accs) +
+      card("Account types and permissions", ROLES.length, roles) +
+      "</div>";
+  }
+
+  function approveRequest(id, roleId) {
+    var r = null, i;
+    for (i = 0; i < REQUESTS.length; i++) if (REQUESTS[i].id === id) r = REQUESTS[i];
+    if (!r) return;
+    var pid = "u" + Date.now();
+    PEOPLE.push({
+      id: pid, full: r.name, name: r.name.split(" ")[0], role: "New teammate",
+      color: AVATAR_POOL[PEOPLE.length % AVATAR_POOL.length]
+    });
+    ACCOUNTS.push({ p: pid, email: r.email, role: roleId || r.role, status: "active", assigned: [], since: "Today" });
+    REQUESTS = REQUESTS.filter(function (x) { return x.id !== id; });
+    render();
   }
 
   // ---------- Settings ----------
@@ -1909,7 +2317,7 @@
         '<span class="k">' + st.label + '</span><span class="v tnum">' + n + "</span></div>";
     }).join("");
 
-    var people = PEOPLE.map(function (pp) {
+    var people = rosterAll().map(function (pp) {
       var n = TASKS.filter(function (t) { return t.o === pp.id && t.s !== "done"; }).length;
       return '<div class="setrow">' + avatar(pp) + '<span class="k">' + esc(pp.full) +
         '<br><span class="v">' + esc(pp.role) + "</span></span>" +
@@ -1924,7 +2332,7 @@
         '<label class="toggle"><input type="checkbox" data-setdone ' + (state.showDone ? "checked" : "") + "> Show done</label></div>" +
       '<div class="setrow"><span class="k">Signed in as<br><span class="v">Whose week “My work” opens on</span></span>' +
         '<select class="setnum" style="width:auto" data-me aria-label="Signed in as">' +
-        PEOPLE.map(function (pp) {
+        scopedPeople().map(function (pp) {
           return '<option value="' + pp.id + '"' + (pp.id === state.me ? " selected" : "") + ">" + esc(pp.full) + "</option>";
         }).join("") + "</select></div>";
 
@@ -1946,7 +2354,10 @@
   }
 
   function render() {
-    var pg = PAGES[state.page] || PAGES.board;
+    if (!renderGate()) return;
+    renderTopbar();
+    var pg = PAGES[state.page] || PAGES.home;
+    if (pg.perm && !can(pg.perm)) { state.page = "home"; pg = PAGES.home; }
     document.getElementById("pagetitle").textContent = pg.title();
     document.getElementById("pagesub").textContent = pg.sub();
     document.getElementById("headtools").innerHTML = pg.tools.map(function (t) { return TOOLS[t](); }).join("");
@@ -1961,6 +2372,74 @@
   }
 
   document.addEventListener("click", function (e) {
+    var gtab = closestEl(e.target, "[data-gate]");
+    if (gtab) { state.gate = gtab.dataset.gate; state.gateMsg = ""; renderGate(); return; }
+
+    var demo = closestEl(e.target, "[data-demo]");
+    if (demo) { signIn(demo.dataset.demo); return; }
+
+    var meMenu = closestEl(e.target, "[data-memenu]");
+    if (meMenu) {
+      var items = ACCOUNTS.filter(function (ac) { return ac.status === "active"; }).map(function (ac) {
+        var pp = person(ac.p);
+        return { label: pp.full + " — " + roleOf(ac.role).name, id: ac.email, avatar: avatar(pp) };
+      });
+      items.push({ label: "Sign out", id: "__out" });
+      openMenu(meMenu, items, function (it) {
+        if (it.id === "__out") signOut(); else signIn(it.id);
+      });
+      return;
+    }
+
+    var appr = closestEl(e.target, "[data-approve]");
+    if (appr) {
+      var rid = appr.dataset.approve;
+      openMenu(appr, ROLES.map(function (r) { return { label: "Approve as " + r.name, id: r.id }; }),
+        function (it) { approveRequest(rid, it.id); });
+      return;
+    }
+
+    var decl = closestEl(e.target, "[data-decline]");
+    if (decl) {
+      REQUESTS = REQUESTS.filter(function (x) { return x.id !== decl.dataset.decline; });
+      render();
+      return;
+    }
+
+    var accst = closestEl(e.target, "[data-accstatus]");
+    if (accst) {
+      var ac2 = account(accst.dataset.accstatus);
+      if (ac2 && ac2.p !== state.session) ac2.status = ac2.status === "active" ? "blocked" : "active";
+      render();
+      return;
+    }
+
+    var asg = closestEl(e.target, "[data-assign]");
+    if (asg) {
+      var ac3 = account(asg.dataset.assign);
+      var free = teamRoster().filter(function (pp) {
+        return pp.id !== ac3.p && ac3.assigned.indexOf(pp.id) === -1;
+      });
+      if (!free.length) return;
+      openMenu(asg, free.map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
+        function (it) { ac3.assigned.push(it.id); render(); });
+      return;
+    }
+
+    var unasg = closestEl(e.target, "[data-unassign]");
+    if (unasg) {
+      var uq = unasg.dataset.unassign.split("|"), ac4 = account(uq[0]);
+      if (ac4) ac4.assigned = ac4.assigned.filter(function (x) { return x !== uq[1]; });
+      render();
+      return;
+    }
+
+    if (closestEl(e.target, "[data-addrole]")) {
+      ROLES.push({ id: "role" + Date.now(), name: "New account type", perms: { board: true, projects: true } });
+      render();
+      return;
+    }
+
     var hib = closestEl(e.target, "[data-hilite]");
     if (hib) {
       var keep = currentRange();
@@ -2052,7 +2531,7 @@
       if (kind === "task") openDialog(state.page === "board" ? "ops" : "ops");
       else if (kind === "project") openProjectDialog();
       else if (kind === "person") {
-        openMenu(tool, PEOPLE.map(function (pp) { return { label: pp.full + " — " + pp.role, id: pp.id, avatar: avatar(pp) }; }),
+        openMenu(tool, scopedPeople().map(function (pp) { return { label: pp.full + " — " + pp.role, id: pp.id, avatar: avatar(pp) }; }),
           function (it) { state.me = it.id; render(); });
       } else if (kind === "week") {
         openMenu(tool, [
@@ -2109,7 +2588,7 @@
     var ownBtn = e.target.closest("[data-owner]");
     if (ownBtn) {
       var tk = TASKS.filter(function (x) { return x.id === ownBtn.dataset.owner; })[0];
-      openMenu(ownBtn, PEOPLE.map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }),
+      openMenu(ownBtn, assignable().map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }),
         function (it) { tk.o = it.id; refresh(); });
       return;
     }
@@ -2134,7 +2613,7 @@
     var sow = closestEl(e.target, "[data-subowner]");
     if (sow) {
       var q3 = sow.dataset.subowner.split("|"), sb2 = findSub(q3[0], q3[1]);
-      openMenu(sow, PEOPLE.map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
+      openMenu(sow, assignable().map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
         function (it) { if (sb2) sb2.o = it.id; refresh(); });
       return;
     }
@@ -2187,6 +2666,28 @@
       laterRefresh();
       return;
     }
+    var ar = closestEl(e.target, "[data-accrole]");
+    if (ar) {
+      var aca = account(ar.dataset.accrole);
+      if (aca) aca.role = ar.value;
+      laterRender();
+      return;
+    }
+    var pmb = closestEl(e.target, "[data-perm]");
+    if (pmb) {
+      var pq = pmb.dataset.perm.split("|"), rr = roleOf(pq[0]);
+      rr.perms[pq[1]] = pmb.checked;
+      laterRender();
+      return;
+    }
+    var rn = closestEl(e.target, "[data-rolename]");
+    if (rn) {
+      var rr2 = roleOf(rn.dataset.rolename);
+      var v2 = rn.value.trim();
+      if (v2) rr2.name = v2; else rn.value = rr2.name;
+      laterRender();
+      return;
+    }
     var bn = closestEl(e.target, "[data-buname]");
     if (bn) {
       var u = businessUnit(bn.dataset.buname);
@@ -2237,7 +2738,7 @@
     fillSelect(document.getElementById("f-group"), GROUPS.map(function (g) { return { id: g.id, label: g.name }; }), groupId || "ops");
     fillSelect(document.getElementById("f-bu"), BUS.map(function (x) { return { id: x.id, label: x.name }; })
       .concat([{ id: "", label: "No business unit" }]), state.bu || "fs");
-    fillSelect(document.getElementById("f-owner"), PEOPLE.map(function (p) { return { id: p.id, label: p.full + " — " + p.role }; }), state.me);
+    fillSelect(document.getElementById("f-owner"), assignable().map(function (p) { return { id: p.id, label: p.full + " — " + p.role }; }), state.me);
     fillSelect(document.getElementById("f-status"), STATUS.map(function (s) { return { id: s.id, label: s.label }; }), "todo");
     fillSelect(document.getElementById("f-prio"), PRIOS.map(function (p) { return { id: p.id, label: p.label }; }), "normal");
     dlg.showModal();
@@ -2273,7 +2774,7 @@
   // ---------- new project ----------
   var pdlg = document.getElementById("pdlg");
   function openProjectDialog() {
-    fillSelect(document.getElementById("p-owner"), PEOPLE.map(function (pp) { return { id: pp.id, label: pp.full + " — " + pp.role }; }), state.me);
+    fillSelect(document.getElementById("p-owner"), teamRoster().map(function (pp) { return { id: pp.id, label: pp.full + " — " + pp.role }; }), state.me);
     fillSelect(document.getElementById("p-stage"), STAGES.map(function (st) { return { id: st.id, label: st.id }; }), "Intake");
     fillSelect(document.getElementById("p-health"), [
       { id: "on", label: "On track" }, { id: "risk", label: "At risk" }, { id: "block", label: "Blocked" }
@@ -2447,20 +2948,31 @@
 
     var g = group(t.g), p = person(t.o), pr = prio(t.p), dm = dueMeta(t);
     var doneN = t.sub.filter(function (sb) { return sb.done; }).length;
+    var rw = canEdit(t), dst = status(t.s), dbu = businessUnit(t.bu);
 
     var meta =
       '<div class="dmeta">' +
-        '<span class="k">Owner</span><span><button class="owner-cell" data-owner="' + t.id + '">' +
-          avatar(p) + '<span class="nm">' + esc(p.full) + "</span></button></span>" +
-        '<span class="k">Status</span><span>' + statusCell(t) + "</span>" +
-        '<span class="k">Business unit</span><span><button class="btn" data-bu="' + t.id + '">' +
-          (businessUnit(t.bu) ? esc(businessUnit(t.bu).name) : "No business unit") + " ▾</button></span>" +
-        '<span class="k">Priority</span><span><button class="btn" data-prio="' + t.id + '">' +
-          pr.label + " ▾</button></span>" +
-        '<span class="k">Due</span><span><input type="date" data-ddue value="' + t.d + '"> ' +
+        '<span class="k">Owner</span><span>' +
+          (rw ? '<button class="owner-cell" data-owner="' + t.id + '">' + avatar(p) +
+            '<span class="nm">' + esc(p.full) + "</span></button>"
+              : '<span class="owner-cell ro">' + avatar(p) + '<span class="nm">' + esc(p.full) + "</span></span>") + "</span>" +
+        '<span class="k">Status</span><span>' +
+          (rw ? statusCell(t) : '<span class="status ro" style="--sc:' + dst.color + '">' + dst.label + "</span>") + "</span>" +
+        '<span class="k">Business unit</span><span>' +
+          (rw ? '<button class="btn" data-bu="' + t.id + '">' +
+            (dbu ? esc(dbu.name) : "No business unit") + " ▾</button>"
+              : '<span class="ro-note">' + (dbu ? esc(dbu.name) : "No business unit") + "</span>") + "</span>" +
+        '<span class="k">Priority</span><span>' +
+          (rw ? '<button class="btn" data-prio="' + t.id + '">' + pr.label + " ▾</button>"
+              : '<span class="ro-note">' + pr.label + "</span>") + "</span>" +
+        '<span class="k">Due</span><span>' +
+          (rw ? '<input type="date" data-ddue value="' + t.d + '">' : '<span class="tnum">' + fmtDate(t.d) + "</span>") +
           '<span class="due tnum ' + dm.cls + '" style="margin-left:8px">' + dm.hint + "</span></span>" +
-        '<span class="k">Estimate</span><span><input type="number" step="0.5" min="0" data-dest value="' + t.e + '"> h</span>' +
-      "</div>";
+        '<span class="k">Estimate</span><span>' +
+          (rw ? '<input type="number" step="0.5" min="0" data-dest value="' + t.e + '"> h'
+              : '<span class="tnum">' + t.e + " h</span>") + "</span>" +
+      "</div>" +
+      (rw ? "" : '<p class="ro-note">Read-only — this task belongs to someone outside your scope. You can still comment on it.</p>');
 
     var swatches = '<div class="colorrow"><span class="lbl">Title colour</span>' +
       TEXT_COLORS.map(function (c) {
@@ -2479,19 +2991,20 @@
         '<button class="iconbtn-sm" data-dclose aria-label="Close">×</button></header>' +
       '<div class="dbody">' +
         "<div>" +
-          '<h2 class="dtitle" contenteditable="true" data-dtitle' +
+          '<h2 class="dtitle" contenteditable="' + (rw ? "true" : "false") + '" data-dtitle' +
             (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</h2>" +
-          swatches +
+          (rw ? swatches : "") +
         "</div>" +
         meta +
         '<section class="dsec"><h3>Description</h3>' +
-          '<div class="rt">' + rtToolbar() +
-          '<div class="rtarea" data-desc contenteditable="true" data-ph="What does done look like?">' + t.desc + "</div></div></section>" +
+          '<div class="rt">' + (rw ? rtToolbar() : "") +
+          '<div class="rtarea" data-desc contenteditable="' + (rw ? "true" : "false") +
+            '" data-ph="What does done look like?">' + t.desc + "</div></div></section>" +
         '<section class="dsec"><h3>Subtasks <span class="n tnum">' + doneN + " / " + t.sub.length + "</span></h3>" +
           subPanel(t, true) + "</section>" +
         '<section class="dsec"><h3>Documents <span class="n tnum">' + t.files.length + "</span></h3>" +
-          '<div class="dropbox" data-dropzone="' + t.id + '">Drop documents here' +
-            '<br><button class="btn" data-attach="' + t.id + '">Choose files</button></div>' +
+          (rw ? '<div class="dropbox" data-dropzone="' + t.id + '">Drop documents here' +
+            '<br><button class="btn" data-attach="' + t.id + '">Choose files</button></div>' : "") +
           fileRow(t.files, t.id + "|") + "</section>" +
         '<section class="dsec"><h3>Comments <span class="n tnum">' + t.comments.length + "</span></h3>" +
           comments +
@@ -2556,6 +3069,26 @@
 
   // new subtask
   document.addEventListener("submit", function (e) {
+    if (closestEl(e.target, "[data-signin]")) {
+      e.preventDefault();
+      signIn(document.getElementById("g-email").value);
+      return;
+    }
+    if (closestEl(e.target, "[data-request]")) {
+      e.preventDefault();
+      var nm = document.getElementById("g-name").value.trim();
+      var ml = document.getElementById("g-mail").value.trim();
+      if (!nm || !ml) return;
+      REQUESTS.push({
+        id: "r" + Date.now(), name: nm, email: ml,
+        role: document.getElementById("g-role").value,
+        note: document.getElementById("g-note").value.trim(),
+        at: "Just now"
+      });
+      state.gate = "sent";
+      renderGate();
+      return;
+    }
     var form = closestEl(e.target, "[data-addsub]");
     if (!form) return;
     e.preventDefault();
