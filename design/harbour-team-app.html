@@ -1,7 +1,7 @@
 <title>Thammachart Harbour</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 
 <style>
   :root {
@@ -141,7 +141,7 @@
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    font-family: "IBM Plex Sans", "IBM Plex Sans Thai", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -559,6 +559,23 @@
   .gatenote h2 { margin-bottom: 6px; }
   .gatenote p { font-size: 13px; color: var(--ink-2); }
 
+  .trmark {
+    display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 600;
+    color: var(--tide-600); background: var(--tide-wash); border-radius: 99px; padding: 1px 7px;
+    white-space: nowrap; vertical-align: middle;
+  }
+  .trmark.working { color: var(--ink-muted); background: var(--surface-2); font-weight: 500; }
+  .trline { margin-top: 5px; font-size: 12.5px; color: var(--ink-2); }
+  .langpick { display: inline-flex; gap: 2px; }
+  .langpick button {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+    border-radius: 99px; padding: 3px 11px; font: inherit; font-size: 11.5px; cursor: pointer;
+  }
+  .langpick button.on { background: var(--tide-wash); border-color: var(--tide); color: var(--tide-600); font-weight: 600; }
+  .gatebrand .langpick { margin-top: 14px; }
+  .gatebrand .langpick button { background: rgb(255 255 255 / 0.08); border-color: rgb(255 255 255 / 0.14); color: var(--bar-ink); }
+  .gatebrand .langpick button.on { background: var(--tide); border-color: var(--tide); color: #04222a; font-weight: 600; }
+  .me { display: flex; align-items: center; gap: 10px; }
   .mebtn {
     display: flex; align-items: center; gap: 9px; border: 0; background: rgb(255 255 255 / 0.07);
     border-radius: 99px; padding: 4px 12px 4px 5px; cursor: pointer; color: var(--bar-ink);
@@ -917,16 +934,11 @@
       <div class="spacer"></div>
       <div class="search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
-        <input type="search" id="q" placeholder="Search tasks" aria-label="Search tasks">
+        <input type="search" id="q" data-tph="filter.search" aria-label="Search tasks">
       </div>
-      <select class="selfilter" id="bufilter" aria-label="Filter by business unit">
-        <option value="">All business units</option>
-        <option value="fs">Food Service</option>
-        <option value="retail">Retail</option>
-        <option value="fnb">F&amp;B</option>
-      </select>
+      <select class="selfilter" id="bufilter" aria-label="Filter by business unit"></select>
       <div class="facepile" id="facepile" aria-label="Filter by person"></div>
-      <label class="toggle"><input type="checkbox" id="showdone"> Show done</label>
+      <label class="toggle"><input type="checkbox" id="showdone"> <span data-t="filter.showdone"></span></label>
     </div>
 
     <div id="view"></div>
@@ -942,26 +954,26 @@
 <dialog id="dlg">
   <form method="dialog" id="dlg-form">
     <header>
-      <h2>New task</h2>
-      <p>It lands at the top of the stream you pick, and shows up in that person's week.</p>
+      <h2 data-t="dlg.newtask"></h2>
+      <p data-t="dlg.newtask.sub"></p>
     </header>
     <div class="body">
-      <label class="full"><span class="label">Task</span><input type="text" id="f-title" required placeholder="e.g. Confirm the banquet order for Saturday"></label>
-      <label><span class="label">Stream</span><select id="f-group"></select></label>
-      <label><span class="label">Business unit</span><select id="f-bu"></select></label>
-      <label><span class="label">Owner</span><select id="f-owner"></select></label>
-      <label><span class="label">Status</span><select id="f-status"></select></label>
-      <label><span class="label">Priority</span><select id="f-prio"></select></label>
-      <label><span class="label">Due</span><input type="date" id="f-due" value="2026-09-01"></label>
-      <label><span class="label">Repeats</span><select id="f-repeat">
-        <option value="">One-off</option>
-        <option value="daily">Every day</option>
-        <option value="weekly">Every week</option>
+      <label class="full"><span class="label" data-t="dlg.task"></span><input type="text" id="f-title" required></label>
+      <label><span class="label" data-t="dlg.stream"></span><select id="f-group"></select></label>
+      <label><span class="label" data-t="dlg.bu"></span><select id="f-bu"></select></label>
+      <label><span class="label" data-t="dlg.owner"></span><select id="f-owner"></select></label>
+      <label><span class="label" data-t="dlg.status"></span><select id="f-status"></select></label>
+      <label><span class="label" data-t="dlg.priority"></span><select id="f-prio"></select></label>
+      <label><span class="label" data-t="dlg.due"></span><input type="date" id="f-due" value="2026-09-01"></label>
+      <label><span class="label" data-t="dlg.repeats"></span><select id="f-repeat">
+        <option value="" data-t="dlg.oneoff"></option>
+        <option value="daily" data-t="dlg.daily"></option>
+        <option value="weekly" data-t="dlg.weekly"></option>
       </select></label>
     </div>
     <footer>
-      <button type="button" class="btn" id="dlg-cancel">Cancel</button>
-      <button type="submit" class="btn btn-primary">Add task</button>
+      <button type="button" class="btn" id="dlg-cancel" data-t="dlg.cancel"></button>
+      <button type="submit" class="btn btn-primary" data-t="dlg.add"></button>
     </footer>
   </form>
 </dialog>
@@ -969,21 +981,21 @@
 <dialog id="pdlg">
   <form method="dialog" id="pdlg-form">
     <header>
-      <h2>New project</h2>
-      <p>It lands in the stage you pick and shows up on the Projects board.</p>
+      <h2 data-t="dlg.newproject"></h2>
+      <p data-t="dlg.newproject.sub"></p>
     </header>
     <div class="body">
-      <label class="full"><span class="label">Project</span><input type="text" id="p-name" required placeholder="e.g. Own-brand smoked salmon"></label>
-      <label><span class="label">Owner</span><select id="p-owner"></select></label>
-      <label><span class="label">Stage</span><select id="p-stage"></select></label>
-      <label><span class="label">Health</span><select id="p-health"></select></label>
-      <label><span class="label">Tasks planned</span><input type="text" id="p-total" value="6"></label>
-      <label><span class="label">Next milestone</span><input type="text" id="p-ms" placeholder="e.g. Supplier visit"></label>
-      <label><span class="label">Milestone date</span><input type="date" id="p-msd" value="2026-09-15"></label>
+      <label class="full"><span class="label" data-t="dlg.project"></span><input type="text" id="p-name" required></label>
+      <label><span class="label" data-t="dlg.owner"></span><select id="p-owner"></select></label>
+      <label><span class="label" data-t="dlg.stream"></span><select id="p-stage"></select></label>
+      <label><span class="label" data-t="dlg.health"></span><select id="p-health"></select></label>
+      <label><span class="label" data-t="dlg.total"></span><input type="text" id="p-total" value="6"></label>
+      <label><span class="label" data-t="dlg.milestone"></span><input type="text" id="p-ms"></label>
+      <label><span class="label" data-t="dlg.msdate"></span><input type="date" id="p-msd" value="2026-09-15"></label>
     </div>
     <footer>
-      <button type="button" class="btn" id="pdlg-cancel">Cancel</button>
-      <button type="submit" class="btn btn-primary">Add project</button>
+      <button type="button" class="btn" id="pdlg-cancel" data-t="dlg.cancel"></button>
+      <button type="submit" class="btn btn-primary" data-t="dlg.addproject"></button>
     </footer>
   </form>
 </dialog>
@@ -1008,44 +1020,350 @@
   };
 
   var NAV = [
-    { page: "home", label: "Home", icon: "home" },
-    { page: "board", label: "Team board", icon: "board", perm: "board" },
-    { page: "mywork", label: "My work", icon: "my", badge: function () {
+    { page: "home", label: "nav.home", icon: "home" },
+    { page: "board", label: "nav.board", icon: "board", perm: "board" },
+    { page: "mywork", label: "nav.mywork", icon: "my", badge: function () {
       return TASKS.filter(function (t) { return t.o === state.me && t.s !== "done"; }).length; } },
-    { page: "mail", label: "Notifications", icon: "bell", badge: function () { return unseenMail(); } },
-    { page: "projects", label: "Projects", icon: "projects", perm: "projects" },
-    { page: "calendar", label: "Calendar", icon: "cal" },
-    { page: "people", label: "People", icon: "team", perm: "people" },
-    { page: "reports", label: "Reports", icon: "reports", perm: "reports" },
-    { page: "access", label: "Access", icon: "shield", perm: "access", badge: function () { return REQUESTS.length; } },
-    { page: "settings", label: "Settings", icon: "gear", perm: "settings" }
+    { page: "mail", label: "nav.mail", icon: "bell", badge: function () { return unseenMail(); } },
+    { page: "projects", label: "nav.projects", icon: "projects", perm: "projects" },
+    { page: "calendar", label: "nav.calendar", icon: "cal" },
+    { page: "people", label: "nav.people", icon: "team", perm: "people" },
+    { page: "reports", label: "nav.reports", icon: "reports", perm: "reports" },
+    { page: "access", label: "nav.access", icon: "shield", perm: "access", badge: function () { return REQUESTS.length; } },
+    { page: "settings", label: "nav.settings", icon: "gear", perm: "settings" }
   ];
 
   var PEOPLE = [
-    { id: "fab",  full: "Fabien Clermont", name: "Fabien", role: "Head of business", color: "#0f7383", lead: true },
-    { id: "ploy", full: "Ploy S.",  name: "Ploy", role: "Key accounts · food service", color: "#b04a8a" },
-    { id: "nut",  full: "Nut T.",   name: "Nut",  role: "Retail counters",            color: "#7b57c9" },
-    { id: "beam", full: "Beam K.",  name: "Beam", role: "Marketing & e-commerce",     color: "#2f6fb5" },
-    { id: "fah",  full: "Fah W.",   name: "Fah",  role: "Sourcing & imports",         color: "#c2681f" },
-    { id: "ton",  full: "Ton P.",   name: "Ton",  role: "Logistics & cold chain",     color: "#2f7fa8" },
-    { id: "mint", full: "Mint L.",  name: "Mint", role: "Chef liaison & training",    color: "#177a5e" },
-    { id: "krit", full: "Krit A.",  name: "Krit", role: "Finance & admin",            color: "#6b7b82" },
-    { id: "pim",  full: "Pim R.",   name: "Pim",  role: "QA & food safety",           color: "#2f7d4a" },
-    { id: "nok",  full: "Nok S.",   name: "Nok",  role: "Executive assistant",        color: "#b04a8a" }
+    { id: "fab",  full: "Fabien Clermont", name: "Fabien", role: "Head of business", roleTh: "หัวหน้าธุรกิจ", color: "#0f7383", lead: true },
+    { id: "ploy", full: "Ploy S.",  name: "Ploy", role: "Key accounts · food service", roleTh: "ลูกค้าหลัก · ฟู้ดเซอร์วิส", color: "#b04a8a" },
+    { id: "nut",  full: "Nut T.",   name: "Nut",  role: "Retail counters", roleTh: "เคาน์เตอร์ค้าปลีก",            color: "#7b57c9" },
+    { id: "beam", full: "Beam K.",  name: "Beam", role: "Marketing & e-commerce", roleTh: "การตลาดและอีคอมเมิร์ซ",     color: "#2f6fb5" },
+    { id: "fah",  full: "Fah W.",   name: "Fah",  role: "Sourcing & imports", roleTh: "จัดหาและนำเข้า",         color: "#c2681f" },
+    { id: "ton",  full: "Ton P.",   name: "Ton",  role: "Logistics & cold chain", roleTh: "โลจิสติกส์และห่วงโซ่ความเย็น",     color: "#2f7fa8" },
+    { id: "mint", full: "Mint L.",  name: "Mint", role: "Chef liaison & training", roleTh: "ประสานงานเชฟและฝึกอบรม",    color: "#177a5e" },
+    { id: "krit", full: "Krit A.",  name: "Krit", role: "Finance & admin", roleTh: "การเงินและธุรการ",            color: "#6b7b82" },
+    { id: "pim",  full: "Pim R.",   name: "Pim",  role: "QA & food safety", roleTh: "ประกันคุณภาพและความปลอดภัยอาหาร",           color: "#2f7d4a" },
+    { id: "nok",  full: "Nok S.",   name: "Nok",  role: "Executive assistant", roleTh: "ผู้ช่วยผู้บริหาร",        color: "#b04a8a" }
   ];
 
   var GROUPS = [
-    { id: "ops",     name: "Daily operations",      color: "var(--s-ops)" },
-    { id: "retail",  name: "Retail counters",       color: "var(--s-retail)" },
-    { id: "food",    name: "Food service accounts", color: "var(--s-food)" },
-    { id: "source",  name: "Sourcing & cold chain", color: "var(--s-source)" },
-    { id: "quality", name: "Quality & food safety", color: "var(--s-quality)" },
-    { id: "intake",  name: "New requests",          color: "var(--s-intake)" }
+    { id: "ops",     name: "Daily operations",      th: "งานประจำวัน", color: "var(--s-ops)" },
+    { id: "retail",  name: "Retail counters",       th: "เคาน์เตอร์ค้าปลีก", color: "var(--s-retail)" },
+    { id: "food",    name: "Food service accounts", th: "ลูกค้าฟู้ดเซอร์วิส", color: "var(--s-food)" },
+    { id: "source",  name: "Sourcing & cold chain", th: "จัดหาและห่วงโซ่ความเย็น", color: "var(--s-source)" },
+    { id: "quality", name: "Quality & food safety", th: "คุณภาพและความปลอดภัยอาหาร", color: "var(--s-quality)" },
+    { id: "intake",  name: "New requests",          th: "คำขอใหม่", color: "var(--s-intake)" }
   ];
 
+  // ---------- language ----------
+  var STR = {
+    en: {
+      "nav.home": "Home", "nav.board": "Team board", "nav.mywork": "My work", "nav.mail": "Notifications",
+      "nav.projects": "Projects", "nav.calendar": "Calendar", "nav.people": "People", "nav.reports": "Reports",
+      "nav.access": "Access", "nav.settings": "Settings", "nav.streams": "Streams",
+
+      "page.home": "Today", "page.home.sub": "Friday 28 August 2026 · {late}",
+      "page.home.late": "{n} item(s) already late", "page.home.ok": "nothing late",
+      "page.board": "Team board", "page.board.sub": "Week of 24 – 28 August 2026 · {n} people · {g} streams",
+      "page.mywork": "My work", "page.mail": "Notifications",
+      "page.mail.sub.all": "Every email and LINE message the app sent, newest first",
+      "page.mail.sub.mine": "Email and LINE messages sent to you",
+      "page.projects": "Projects", "page.projects.sub": "{n} projects across five stages",
+      "page.calendar": "Calendar", "page.calendar.sub": "Three weeks from Monday 24 August · tasks sit on their due date",
+      "page.people": "People", "page.people.sub": "{n} people · capacity {h} h a week",
+      "page.reports": "Reports", "page.reports.sub": "Week of 24 – 28 August 2026 · open work and what closed",
+      "page.access": "Access", "page.access.sub": "{a} accounts · {r} request(s) waiting",
+      "page.settings": "Settings", "page.settings.sub": "Streams, units, people and the numbers behind the workload view",
+
+      "kpi.open": "Open tasks", "kpi.open.all": "across the team", "kpi.open.scope": "in your scope",
+      "kpi.today": "Due today", "kpi.today.hint": "Friday 28 August",
+      "kpi.overdue": "Overdue", "kpi.overdue.none": "nothing late",
+      "kpi.stuck": "Blocked / waiting", "kpi.stuck.hint": "needs a decision",
+      "kpi.done": "Done this week", "kpi.done.hint": "since Monday",
+
+      "col.task": "Task", "col.bu": "BU", "col.owner": "Owner", "col.status": "Status",
+      "col.priority": "Priority", "col.due": "Due", "col.est": "Est.",
+      "board.tasks": "{n} tasks", "board.task1": "1 task", "board.late": "{n} late", "board.blocked": "{n} blocked",
+      "board.done": "{d} / {n} done", "board.add": "+ Add a task to {g}",
+      "board.empty": "No task matches this filter. Clear the search or the people filter.",
+      "tool.week": "This week", "tool.newtask": "+ New task", "tool.newproject": "+ New project",
+      "tool.person": "{name}’s work",
+      "filter.search": "Search tasks", "filter.allbu": "All business units", "filter.showdone": "Show done",
+      "chip.daily": "Daily", "chip.weekly": "Weekly", "chip.addsub": "Add subtasks",
+      "chip.subs": "{d} / {n} subtasks", "chip.attach": "Attach", "chip.files": "{n} file(s)",
+      "chip.setbu": "Set BU", "chip.nobu": "No business unit",
+
+      "due.done": "Completed", "due.over": "Overdue by {n} d", "due.today": "Today", "due.tomorrow": "Tomorrow",
+      "due.days": "In {n} days", "due.weeks": "In {n} week(s)",
+
+      "week.overdue": "Overdue", "week.overdue.sub": "needs attention now",
+      "week.today": "Today", "week.today.sub": "Friday 28 August",
+      "week.next": "Next week", "week.next.sub": "31 Aug – 4 Sep",
+      "week.later": "Later", "week.later.sub": "beyond 4 September",
+      "week.closed": "Closed this week",
+      "week.decide": "Needs a decision from you", "week.decide.sub": "blocked or waiting elsewhere on the team",
+      "week.items": "{n} item(s)", "week.tasks": "{n} task(s) · {h} h",
+      "week.empty": "Nothing on {name}’s plate with these filters.",
+      "week.subs": "{d} / {n} subtasks", "week.files": "{n} file(s)", "week.comments": "{n} comment(s)",
+
+      "drawer.desc": "Description", "drawer.subs": "Subtasks", "drawer.docs": "Documents",
+      "drawer.comments": "Comments", "drawer.owner": "Owner", "drawer.status": "Status",
+      "drawer.bu": "Business unit", "drawer.priority": "Priority", "drawer.due": "Due", "drawer.est": "Estimate",
+      "drawer.showboard": "Show on board", "drawer.titlecolour": "Title colour",
+      "drawer.readonly": "Read-only — this task belongs to someone outside your scope. You can still comment on it.",
+      "drawer.descph": "What does done look like?",
+      "sub.add": "Add a subtask, then press Enter", "sub.addbtn": "Add",
+      "sub.nocomments": "No comments on this subtask yet.",
+      "comment.ph": "Write a comment…", "comment.sub.ph": "Comment on this subtask…",
+      "comment.post": "Comment", "comment.hint": "Ctrl or ⌘ + Enter to post",
+      "comment.none": "No comments yet. Start the thread.",
+      "docs.drop": "Drop documents here", "docs.choose": "Choose files",
+
+      "dlg.newtask": "New task", "dlg.newtask.sub": "It lands at the top of the stream you pick, and shows up in that person’s week.",
+      "dlg.task": "Task", "dlg.stream": "Stream", "dlg.bu": "Business unit", "dlg.owner": "Owner",
+      "dlg.status": "Status", "dlg.priority": "Priority", "dlg.due": "Due", "dlg.repeats": "Repeats",
+      "dlg.oneoff": "One-off", "dlg.daily": "Every day", "dlg.weekly": "Every week",
+      "dlg.cancel": "Cancel", "dlg.add": "Add task",
+      "dlg.newproject": "New project", "dlg.newproject.sub": "It lands in the stage you pick and shows up on the Projects board.",
+      "dlg.project": "Project", "dlg.health": "Health", "dlg.total": "Tasks planned",
+      "dlg.milestone": "Next milestone", "dlg.msdate": "Milestone date", "dlg.addproject": "Add project",
+
+      "gate.signin": "Sign in", "gate.request": "Request access", "gate.signin.sub": "Use your work email.",
+      "gate.request.sub": "Tell us who you are. An administrator decides what you can see.",
+      "gate.email": "Work email", "gate.password": "Password", "gate.password.ph": "Anything — this is a prototype",
+      "gate.name": "Full name", "gate.roleneed": "Account type you need", "gate.doing": "What you will be doing",
+      "gate.send": "Send request", "gate.demo": "Demo accounts", "gate.blockedacc": "Blocked account",
+      "gate.back": "Back to sign in",
+      "gate.err.nomatch": "No account for that address. Request access instead.",
+      "gate.sent": "Request sent", "gate.sent.body": "An administrator reviews every request. You will be able to sign in once your account is approved.",
+      "gate.pending": "Waiting for approval", "gate.pending.body": "Your request is in the queue. An administrator has to approve it before you can sign in.",
+      "gate.blocked": "Access suspended", "gate.blocked.body": "This account has been blocked by an administrator. Ask them to restore it.",
+      "gate.tagline": "The team’s work, in one place.",
+      "gate.p1": "Daily operations, retail counters, food service, sourcing, quality — one board.",
+      "gate.p2": "Subtasks, documents and a comment thread on every task.",
+      "gate.p3": "An administrator approves every account before it can see anything.",
+      "gate.fine": "Prototype — no password is checked and nothing is stored. Sign in with one of the demo accounts to see what each type of account can do.",
+      "gate.signout": "Sign out",
+
+      "people.title": "Open workload this week", "people.cap": "Capacity line at {h} h · estimates from the task cards",
+      "people.balanced": "Balanced", "people.over": "Over capacity", "people.room": "Room to take more",
+      "people.lateflag": "{n} overdue", "people.open": "/ {n} open", "people.openweek": "Open week",
+      "people.noaccess": "no access",
+
+      "rep.stands": "Where the work stands", "rep.bu": "Open hours by business unit",
+      "rep.stream": "Open hours by stream", "rep.person": "Open hours by person",
+      "rep.closed": "Tasks closed per week", "rep.sample": "last five weeks are sample data",
+      "rep.capacity": "capacity {h} h", "rep.tasks": "{n} tasks", "rep.thisweek": "This week",
+
+      "set.noti": "Notifications — email and LINE", "set.channels": "Channels", "set.when": "Send a message when…",
+      "set.n.comment": "someone comments", "set.n.status": "the status changes", "set.n.owner": "the task changes hands",
+      "set.n.due": "the due date moves", "set.n.files": "a document is attached",
+      "set.n.subtask": "a subtask is added or ticked", "set.n.update": "priority or business unit changes",
+      "set.n.created": "a task is created",
+      "set.recipients": "Recipients are the task owner, the subtask owner and everyone already in the thread — never the person who made the change. Nothing is actually sent from this prototype.",
+      "set.streams": "Streams", "set.bus": "Business units", "set.statuses": "Statuses", "set.people": "People",
+      "set.prefs": "Preferences", "set.capacity": "Weekly capacity per person",
+      "set.capacity.sub": "Drives the capacity line on People and Reports",
+      "set.showdone": "Show completed tasks", "set.showdone.sub": "Otherwise they drop off the board once ticked",
+      "set.signedin": "Signed in as", "set.signedin.sub": "Whose week “My work” opens on",
+      "set.lang": "Language", "set.lang.sub": "The interface language for this account",
+      "set.autotr": "Translate what people write", "set.autotr.sub": "Comments and task titles in the other language are translated for you",
+      "set.open": "{n} open", "set.nobu": "Tasks with no business unit",
+
+      "acc.requests": "Requests waiting for approval", "acc.norequests": "No requests waiting.",
+      "acc.accounts": "Accounts", "acc.types": "Account types and permissions",
+      "acc.approve": "Approve as…", "acc.decline": "Decline", "acc.block": "Block", "acc.restore": "Restore",
+      "acc.active": "Active", "acc.blocked": "Blocked", "acc.since": "Member since {d} · {n} open task(s)",
+      "acc.asked": "asked for", "acc.assign": "+ Assign someone",
+      "acc.noassign": "Nobody assigned yet — this account sees only its own work.",
+      "acc.addrole": "+ Add an account type", "acc.adminlock": "Administrators always keep full access.",
+      "acc.onlyadmin": "Only an administrator can approve this.",
+      "acc.readonly": "Read-only — only an administrator can approve accounts or change what each type may do.",
+
+      "mail.all": "All", "mail.everything": "Everything the app sent", "mail.toyou": "Sent to you",
+      "mail.empty": "Nothing here yet. Comment on a task or change a status to see what goes out.",
+      "mail.fine": "Prototype — nothing leaves this browser. In the real app these go out over SMTP and the LINE Messaging API, to the task owner, the subtask owner and everyone already in the thread, never to whoever made the change.",
+
+      "n.comment": "{who} commented", "n.comment.sub": "{who} commented on “{what}”",
+      "n.status": "{who} set the status to {what}", "n.ticked": "{who} ticked this off",
+      "n.reopened": "{who} reopened this", "n.owner": "{who} handed this to {what}",
+      "n.owner.sub": "{who} handed “{sub}” to {what}", "n.due": "{who} moved the due date to {what}",
+      "n.bu": "{who} moved this to {what}", "n.prio": "{who} set the priority to {what}",
+      "n.subadd": "{who} added a subtask: {what}", "n.subdone": "{who} completed “{what}”",
+      "n.subopen": "{who} reopened “{what}”", "n.files": "{who} attached {what}",
+      "n.files.sub": "{who} attached {what} to “{sub}”", "n.created": "{who} assigned you a new task",
+      "n.docs": "{n} document(s)", "n.notified": "{head} — notified {who}",
+
+      "tr.from.th": "Translated from Thai", "tr.from.en": "Translated from English",
+      "tr.working": "Translating…", "tr.show": "Show original", "tr.hide": "Show translation",
+      "tr.off": "Translation is not available in this view.",
+
+      "empty.filter": "No task matches this filter.", "cal.more": "+ {n} more",
+      "foot": "Prototype — sample content. Every entry in the left rail opens a working page. Click a task anywhere to open its panel: description, subtasks, documents and comments. Nothing is saved and no file is uploaded — changes live in this browser tab only."
+    },
+    th: {
+      "nav.home": "หน้าแรก", "nav.board": "กระดานงานทีม", "nav.mywork": "งานของฉัน", "nav.mail": "การแจ้งเตือน",
+      "nav.projects": "โปรเจกต์", "nav.calendar": "ปฏิทิน", "nav.people": "บุคลากร", "nav.reports": "รายงาน",
+      "nav.access": "สิทธิ์การเข้าใช้", "nav.settings": "ตั้งค่า", "nav.streams": "สายงาน",
+
+      "page.home": "วันนี้", "page.home.sub": "ศุกร์ที่ 28 สิงหาคม 2026 · {late}",
+      "page.home.late": "เลยกำหนดแล้ว {n} รายการ", "page.home.ok": "ไม่มีงานเลยกำหนด",
+      "page.board": "กระดานงานทีม", "page.board.sub": "สัปดาห์ 24 – 28 สิงหาคม 2026 · {n} คน · {g} สายงาน",
+      "page.mywork": "งานของฉัน", "page.mail": "การแจ้งเตือน",
+      "page.mail.sub.all": "อีเมลและข้อความ LINE ทั้งหมดที่ระบบส่ง เรียงจากล่าสุด",
+      "page.mail.sub.mine": "อีเมลและข้อความ LINE ที่ส่งถึงคุณ",
+      "page.projects": "โปรเจกต์", "page.projects.sub": "{n} โปรเจกต์ ใน 5 ขั้นตอน",
+      "page.calendar": "ปฏิทิน", "page.calendar.sub": "สามสัปดาห์ตั้งแต่จันทร์ที่ 24 สิงหาคม · งานจะอยู่ตามวันครบกำหนด",
+      "page.people": "บุคลากร", "page.people.sub": "{n} คน · กำลังรับงาน {h} ชม./สัปดาห์",
+      "page.reports": "รายงาน", "page.reports.sub": "สัปดาห์ 24 – 28 สิงหาคม 2026 · งานค้างและงานที่ปิดแล้ว",
+      "page.access": "สิทธิ์การเข้าใช้", "page.access.sub": "{a} บัญชี · {r} คำขอรออนุมัติ",
+      "page.settings": "ตั้งค่า", "page.settings.sub": "สายงาน หน่วยธุรกิจ บุคลากร และตัวเลขเบื้องหลังภาระงาน",
+
+      "kpi.open": "งานที่ค้างอยู่", "kpi.open.all": "ทั้งทีม", "kpi.open.scope": "ในขอบเขตของคุณ",
+      "kpi.today": "ครบกำหนดวันนี้", "kpi.today.hint": "ศุกร์ที่ 28 สิงหาคม",
+      "kpi.overdue": "เลยกำหนด", "kpi.overdue.none": "ไม่มีงานเลยกำหนด",
+      "kpi.stuck": "ติดปัญหา / รออยู่", "kpi.stuck.hint": "รอการตัดสินใจ",
+      "kpi.done": "เสร็จสัปดาห์นี้", "kpi.done.hint": "ตั้งแต่วันจันทร์",
+
+      "col.task": "งาน", "col.bu": "หน่วยธุรกิจ", "col.owner": "ผู้รับผิดชอบ", "col.status": "สถานะ",
+      "col.priority": "ความสำคัญ", "col.due": "กำหนดส่ง", "col.est": "ประมาณ",
+      "board.tasks": "{n} งาน", "board.task1": "1 งาน", "board.late": "เลยกำหนด {n}", "board.blocked": "ติดปัญหา {n}",
+      "board.done": "เสร็จ {d} / {n}", "board.add": "+ เพิ่มงานใน{g}",
+      "board.empty": "ไม่มีงานที่ตรงกับตัวกรองนี้ ลองล้างคำค้นหรือตัวกรองบุคคล",
+      "tool.week": "สัปดาห์นี้", "tool.newtask": "+ งานใหม่", "tool.newproject": "+ โปรเจกต์ใหม่",
+      "tool.person": "งานของ {name}",
+      "filter.search": "ค้นหางาน", "filter.allbu": "ทุกหน่วยธุรกิจ", "filter.showdone": "แสดงงานที่เสร็จแล้ว",
+      "chip.daily": "ทุกวัน", "chip.weekly": "ทุกสัปดาห์", "chip.addsub": "เพิ่มงานย่อย",
+      "chip.subs": "งานย่อย {d} / {n}", "chip.attach": "แนบไฟล์", "chip.files": "{n} ไฟล์",
+      "chip.setbu": "เลือกหน่วยธุรกิจ", "chip.nobu": "ไม่ระบุหน่วยธุรกิจ",
+
+      "due.done": "เสร็จแล้ว", "due.over": "เลยกำหนด {n} วัน", "due.today": "วันนี้", "due.tomorrow": "พรุ่งนี้",
+      "due.days": "อีก {n} วัน", "due.weeks": "อีก {n} สัปดาห์",
+
+      "week.overdue": "เลยกำหนด", "week.overdue.sub": "ต้องจัดการทันที",
+      "week.today": "วันนี้", "week.today.sub": "ศุกร์ที่ 28 สิงหาคม",
+      "week.next": "สัปดาห์หน้า", "week.next.sub": "31 ส.ค. – 4 ก.ย.",
+      "week.later": "หลังจากนั้น", "week.later.sub": "หลัง 4 กันยายน",
+      "week.closed": "ปิดงานสัปดาห์นี้",
+      "week.decide": "รอการตัดสินใจจากคุณ", "week.decide.sub": "งานที่ติดปัญหาหรือรออยู่ในทีม",
+      "week.items": "{n} รายการ", "week.tasks": "{n} งาน · {h} ชม.",
+      "week.empty": "ไม่มีงานของ {name} ตามตัวกรองนี้",
+      "week.subs": "งานย่อย {d} / {n}", "week.files": "{n} ไฟล์", "week.comments": "{n} ความคิดเห็น",
+
+      "drawer.desc": "รายละเอียด", "drawer.subs": "งานย่อย", "drawer.docs": "เอกสาร",
+      "drawer.comments": "ความคิดเห็น", "drawer.owner": "ผู้รับผิดชอบ", "drawer.status": "สถานะ",
+      "drawer.bu": "หน่วยธุรกิจ", "drawer.priority": "ความสำคัญ", "drawer.due": "กำหนดส่ง", "drawer.est": "ประมาณการ",
+      "drawer.showboard": "ดูบนกระดาน", "drawer.titlecolour": "สีหัวข้อ",
+      "drawer.readonly": "อ่านอย่างเดียว — งานนี้เป็นของคนนอกขอบเขตของคุณ แต่ยังแสดงความคิดเห็นได้",
+      "drawer.descph": "งานนี้เสร็จเมื่อไหร่ถึงเรียกว่าเสร็จ",
+      "sub.add": "เพิ่มงานย่อย แล้วกด Enter", "sub.addbtn": "เพิ่ม",
+      "sub.nocomments": "ยังไม่มีความคิดเห็นในงานย่อยนี้",
+      "comment.ph": "เขียนความคิดเห็น…", "comment.sub.ph": "แสดงความคิดเห็นในงานย่อยนี้…",
+      "comment.post": "ส่ง", "comment.hint": "Ctrl หรือ ⌘ + Enter เพื่อส่ง",
+      "comment.none": "ยังไม่มีความคิดเห็น เริ่มการสนทนาได้เลย",
+      "docs.drop": "ลากเอกสารมาวางที่นี่", "docs.choose": "เลือกไฟล์",
+
+      "dlg.newtask": "งานใหม่", "dlg.newtask.sub": "งานจะไปอยู่บนสุดของสายงานที่เลือก และเข้าไปอยู่ในสัปดาห์ของผู้รับผิดชอบ",
+      "dlg.task": "งาน", "dlg.stream": "สายงาน", "dlg.bu": "หน่วยธุรกิจ", "dlg.owner": "ผู้รับผิดชอบ",
+      "dlg.status": "สถานะ", "dlg.priority": "ความสำคัญ", "dlg.due": "กำหนดส่ง", "dlg.repeats": "ทำซ้ำ",
+      "dlg.oneoff": "ครั้งเดียว", "dlg.daily": "ทุกวัน", "dlg.weekly": "ทุกสัปดาห์",
+      "dlg.cancel": "ยกเลิก", "dlg.add": "เพิ่มงาน",
+      "dlg.newproject": "โปรเจกต์ใหม่", "dlg.newproject.sub": "โปรเจกต์จะไปอยู่ในขั้นตอนที่เลือก และแสดงบนกระดานโปรเจกต์",
+      "dlg.project": "โปรเจกต์", "dlg.health": "สถานะสุขภาพ", "dlg.total": "จำนวนงานที่วางแผนไว้",
+      "dlg.milestone": "หมุดหมายถัดไป", "dlg.msdate": "วันที่หมุดหมาย", "dlg.addproject": "เพิ่มโปรเจกต์",
+
+      "gate.signin": "เข้าสู่ระบบ", "gate.request": "ขอสิทธิ์เข้าใช้งาน", "gate.signin.sub": "ใช้อีเมลที่ทำงานของคุณ",
+      "gate.request.sub": "บอกเราว่าคุณเป็นใคร ผู้ดูแลระบบจะเป็นผู้กำหนดสิทธิ์ให้",
+      "gate.email": "อีเมลที่ทำงาน", "gate.password": "รหัสผ่าน", "gate.password.ph": "ใส่อะไรก็ได้ — นี่คือต้นแบบ",
+      "gate.name": "ชื่อ-นามสกุล", "gate.roleneed": "ประเภทบัญชีที่ต้องการ", "gate.doing": "คุณจะทำอะไรบ้าง",
+      "gate.send": "ส่งคำขอ", "gate.demo": "บัญชีตัวอย่าง", "gate.blockedacc": "บัญชีถูกระงับ",
+      "gate.back": "กลับไปหน้าเข้าสู่ระบบ",
+      "gate.err.nomatch": "ไม่พบบัญชีสำหรับอีเมลนี้ กรุณาขอสิทธิ์เข้าใช้งานแทน",
+      "gate.sent": "ส่งคำขอแล้ว", "gate.sent.body": "ผู้ดูแลระบบจะตรวจสอบทุกคำขอ คุณจะเข้าสู่ระบบได้เมื่อบัญชีได้รับการอนุมัติ",
+      "gate.pending": "รอการอนุมัติ", "gate.pending.body": "คำขอของคุณอยู่ในคิว ผู้ดูแลระบบต้องอนุมัติก่อนคุณจึงจะเข้าใช้ได้",
+      "gate.blocked": "บัญชีถูกระงับ", "gate.blocked.body": "บัญชีนี้ถูกผู้ดูแลระบบระงับไว้ กรุณาติดต่อให้เปิดใช้งานอีกครั้ง",
+      "gate.tagline": "งานของทั้งทีม รวมไว้ที่เดียว",
+      "gate.p1": "งานประจำวัน เคาน์เตอร์ค้าปลีก ฟู้ดเซอร์วิส การจัดหา คุณภาพ — บนกระดานเดียว",
+      "gate.p2": "งานย่อย เอกสาร และการสนทนาในทุกงาน",
+      "gate.p3": "ผู้ดูแลระบบอนุมัติทุกบัญชีก่อนจึงจะเห็นข้อมูลได้",
+      "gate.fine": "ต้นแบบ — ไม่มีการตรวจรหัสผ่านและไม่มีการบันทึกข้อมูล ลองเข้าด้วยบัญชีตัวอย่างเพื่อดูสิทธิ์ของแต่ละประเภท",
+      "gate.signout": "ออกจากระบบ",
+
+      "people.title": "ภาระงานที่ค้างในสัปดาห์นี้", "people.cap": "เส้นกำลังรับงานที่ {h} ชม. · จากค่าประมาณในการ์ดงาน",
+      "people.balanced": "สมดุล", "people.over": "เกินกำลัง", "people.room": "ยังรับงานได้อีก",
+      "people.lateflag": "เลยกำหนด {n}", "people.open": "/ ค้าง {n}", "people.openweek": "ดูสัปดาห์",
+      "people.noaccess": "ไม่มีสิทธิ์เข้าใช้",
+
+      "rep.stands": "ภาพรวมสถานะงาน", "rep.bu": "ชั่วโมงงานค้างตามหน่วยธุรกิจ",
+      "rep.stream": "ชั่วโมงงานค้างตามสายงาน", "rep.person": "ชั่วโมงงานค้างตามบุคคล",
+      "rep.closed": "งานที่ปิดได้ต่อสัปดาห์", "rep.sample": "ห้าสัปดาห์ก่อนเป็นข้อมูลตัวอย่าง",
+      "rep.capacity": "กำลังรับงาน {h} ชม.", "rep.tasks": "{n} งาน", "rep.thisweek": "สัปดาห์นี้",
+
+      "set.noti": "การแจ้งเตือน — อีเมลและ LINE", "set.channels": "ช่องทาง", "set.when": "ส่งข้อความเมื่อ…",
+      "set.n.comment": "มีคนแสดงความคิดเห็น", "set.n.status": "สถานะเปลี่ยน", "set.n.owner": "เปลี่ยนผู้รับผิดชอบ",
+      "set.n.due": "เลื่อนกำหนดส่ง", "set.n.files": "มีการแนบเอกสาร",
+      "set.n.subtask": "เพิ่มหรือติ๊กงานย่อย", "set.n.update": "เปลี่ยนความสำคัญหรือหน่วยธุรกิจ",
+      "set.n.created": "มีการสร้างงานใหม่",
+      "set.recipients": "ผู้รับคือผู้รับผิดชอบงาน ผู้รับผิดชอบงานย่อย และทุกคนที่อยู่ในการสนทนา — ยกเว้นคนที่ทำการเปลี่ยนแปลงเอง ต้นแบบนี้ยังไม่ได้ส่งจริง",
+      "set.streams": "สายงาน", "set.bus": "หน่วยธุรกิจ", "set.statuses": "สถานะ", "set.people": "บุคลากร",
+      "set.prefs": "การตั้งค่าทั่วไป", "set.capacity": "กำลังรับงานต่อคนต่อสัปดาห์",
+      "set.capacity.sub": "ใช้กำหนดเส้นกำลังรับงานในหน้าบุคลากรและรายงาน",
+      "set.showdone": "แสดงงานที่เสร็จแล้ว", "set.showdone.sub": "ถ้าปิดไว้ งานที่ติ๊กแล้วจะหายจากกระดาน",
+      "set.signedin": "เข้าใช้ในนาม", "set.signedin.sub": "หน้า “งานของฉัน” จะเปิดสัปดาห์ของคนนี้",
+      "set.lang": "ภาษา", "set.lang.sub": "ภาษาของหน้าจอสำหรับบัญชีนี้",
+      "set.autotr": "แปลข้อความที่คนอื่นเขียน", "set.autotr.sub": "ความคิดเห็นและชื่องานในอีกภาษาจะถูกแปลให้คุณ",
+      "set.open": "ค้าง {n}", "set.nobu": "งานที่ไม่ระบุหน่วยธุรกิจ",
+
+      "acc.requests": "คำขอที่รออนุมัติ", "acc.norequests": "ไม่มีคำขอรออยู่",
+      "acc.accounts": "บัญชีผู้ใช้", "acc.types": "ประเภทบัญชีและสิทธิ์",
+      "acc.approve": "อนุมัติเป็น…", "acc.decline": "ปฏิเสธ", "acc.block": "ระงับ", "acc.restore": "เปิดใช้อีกครั้ง",
+      "acc.active": "ใช้งานอยู่", "acc.blocked": "ถูกระงับ", "acc.since": "เป็นสมาชิกตั้งแต่ {d} · ค้าง {n} งาน",
+      "acc.asked": "ขอเป็น", "acc.assign": "+ มอบหมายบุคคล",
+      "acc.noassign": "ยังไม่ได้มอบหมายใคร บัญชีนี้จะเห็นเฉพาะงานของตัวเอง",
+      "acc.addrole": "+ เพิ่มประเภทบัญชี", "acc.adminlock": "ผู้ดูแลระบบมีสิทธิ์เต็มเสมอ",
+      "acc.onlyadmin": "เฉพาะผู้ดูแลระบบเท่านั้นที่อนุมัติได้",
+      "acc.readonly": "อ่านอย่างเดียว — เฉพาะผู้ดูแลระบบเท่านั้นที่อนุมัติบัญชีหรือแก้สิทธิ์ได้",
+
+      "mail.all": "ทั้งหมด", "mail.everything": "ทุกข้อความที่ระบบส่ง", "mail.toyou": "ส่งถึงคุณ",
+      "mail.empty": "ยังไม่มีข้อความ ลองแสดงความคิดเห็นหรือเปลี่ยนสถานะงานดู",
+      "mail.fine": "ต้นแบบ — ไม่มีอะไรออกจากเบราว์เซอร์นี้ ในระบบจริงจะส่งผ่าน SMTP และ LINE Messaging API ถึงผู้รับผิดชอบงาน ผู้รับผิดชอบงานย่อย และทุกคนในการสนทนา ยกเว้นคนที่ทำการเปลี่ยนแปลง",
+
+      "n.comment": "{who} แสดงความคิดเห็น", "n.comment.sub": "{who} แสดงความคิดเห็นใน “{what}”",
+      "n.status": "{who} เปลี่ยนสถานะเป็น {what}", "n.ticked": "{who} ติ๊กว่าเสร็จแล้ว",
+      "n.reopened": "{who} เปิดงานนี้อีกครั้ง", "n.owner": "{who} มอบงานนี้ให้ {what}",
+      "n.owner.sub": "{who} มอบ “{sub}” ให้ {what}", "n.due": "{who} เลื่อนกำหนดส่งเป็น {what}",
+      "n.bu": "{who} ย้ายงานนี้ไป {what}", "n.prio": "{who} ตั้งความสำคัญเป็น {what}",
+      "n.subadd": "{who} เพิ่มงานย่อย: {what}", "n.subdone": "{who} ทำ “{what}” เสร็จแล้ว",
+      "n.subopen": "{who} เปิด “{what}” อีกครั้ง", "n.files": "{who} แนบ {what}",
+      "n.files.sub": "{who} แนบ {what} ใน “{sub}”", "n.created": "{who} มอบหมายงานใหม่ให้คุณ",
+      "n.docs": "{n} เอกสาร", "n.notified": "{head} — แจ้งเตือน {who} แล้ว",
+
+      "tr.from.th": "แปลจากภาษาไทย", "tr.from.en": "แปลจากภาษาอังกฤษ",
+      "tr.working": "กำลังแปล…", "tr.show": "ดูต้นฉบับ", "tr.hide": "ดูคำแปล",
+      "tr.off": "การแปลใช้ไม่ได้ในหน้านี้",
+
+      "empty.filter": "ไม่มีงานที่ตรงกับตัวกรองนี้", "cal.more": "+ อีก {n}",
+      "foot": "ต้นแบบ — เนื้อหาตัวอย่าง ทุกเมนูทางซ้ายเปิดหน้าที่ใช้งานได้จริง คลิกที่งานเพื่อเปิดแผงรายละเอียด งานย่อย เอกสาร และความคิดเห็น ไม่มีการบันทึกและไม่มีการอัปโหลดไฟล์ ทุกอย่างอยู่ในแท็บนี้เท่านั้น"
+    }
+  };
+
+  function T(k, a) {
+    var d = STR[state.lang] || STR.en;
+    var v = d[k];
+    if (v === undefined) v = STR.en[k];
+    if (v === undefined) return k;
+    if (a) for (var key in a) v = v.split("{" + key + "}").join(a[key]);
+    return v;
+  }
+  // a label on a data object, in the reader's language
+  function L(o) {
+    if (!o) return "";
+    return (state.lang === "th" && o.th) ? o.th : (o.name || o.label || "");
+  }
+
   var CHANNELS = [
-    { id: "email", label: "Email" },
-    { id: "line", label: "LINE" }
+    { id: "email", label: "Email", th: "อีเมล" },
+    { id: "line", label: "LINE", th: "LINE" }
   ];
 
   // which events raise a notification, and on which channels
@@ -1053,39 +1371,39 @@
   var NOTIFY_CH = { email: true, line: true };
 
   var OUTBOX = [
-    { id: "m3", ch: "line", to: "krit", at: "Today 08:07", kind: "comment", task: null,
-      subject: "[Food service accounts] Quote the hotel banquet order (200 pax)",
-      head: "Fabien Clermont commented", body: "<p>Right. Add <b>4%</b> for the ice and the transport.</p>" },
-    { id: "m2", ch: "email", to: "krit", at: "Today 08:07", kind: "comment", task: null,
-      subject: "[Food service accounts] Quote the hotel banquet order (200 pax)",
-      head: "Fabien Clermont commented", body: "<p>Right. Add <b>4%</b> for the ice and the transport.</p>" },
-    { id: "m1", ch: "email", to: "ton", at: "Wednesday 08:45", kind: "comment", task: null,
-      subject: "[Sourcing & cold chain] Replace the chiller-room door seal",
-      head: "Pim R. commented", body: "<p>QA note: if it drifts again we log a deviation. Can we get a temporary gasket?</p>" }
+    { id: "m3", ch: "line", to: "krit", at: "Today 08:07", kind: "comment", stream: "food",
+      title: "Quote the hotel banquet order (200 pax)", k: "n.comment", args: { who: "Fabien Clermont" },
+      body: "<p>Right. Add <b>4%</b> for the ice and the transport.</p>" },
+    { id: "m2", ch: "email", to: "krit", at: "Today 08:07", kind: "comment", stream: "food",
+      title: "Quote the hotel banquet order (200 pax)", k: "n.comment", args: { who: "Fabien Clermont" },
+      body: "<p>Right. Add <b>4%</b> for the ice and the transport.</p>" },
+    { id: "m1", ch: "email", to: "ton", at: "Wednesday 08:45", kind: "comment", stream: "source",
+      title: "Replace the chiller-room door seal", k: "n.comment", args: { who: "Pim R." },
+      body: "<p>QA note: if it drifts again we log a deviation. Can we get a temporary gasket?</p>" }
   ];
 
   var msgSeq = 100;
 
   var PERMS = [
-    { id: "board", label: "See the team board" },
-    { id: "all_people", label: "See everyone’s work" },
-    { id: "edit_all", label: "Edit anyone’s tasks" },
-    { id: "projects", label: "Projects" },
-    { id: "people", label: "People" },
-    { id: "reports", label: "Reports" },
-    { id: "access", label: "See accounts and access" },
-    { id: "settings", label: "See settings" },
-    { id: "manage", label: "Approve accounts and change settings" }
+    { id: "board", label: "See the team board", th: "เห็นกระดานงานทีม" },
+    { id: "all_people", label: "See everyone’s work", th: "เห็นงานของทุกคน" },
+    { id: "edit_all", label: "Edit anyone’s tasks", th: "แก้ไขงานของทุกคน" },
+    { id: "projects", label: "Projects", th: "โปรเจกต์" },
+    { id: "people", label: "People", th: "บุคลากร" },
+    { id: "reports", label: "Reports", th: "รายงาน" },
+    { id: "access", label: "See accounts and access", th: "ดูบัญชีและสิทธิ์" },
+    { id: "settings", label: "See settings", th: "ดูการตั้งค่า" },
+    { id: "manage", label: "Approve accounts and change settings", th: "อนุมัติบัญชีและแก้การตั้งค่า" }
   ];
 
   var ROLES = [
-    { id: "admin", name: "Administrator",
+    { id: "admin", name: "Administrator", th: "ผู้ดูแลระบบ",
       perms: { board: true, all_people: true, edit_all: true, projects: true, people: true, reports: true,
         access: true, settings: true, manage: true } },
-    { id: "assistant", name: "Admin assistant",
+    { id: "assistant", name: "Admin assistant", th: "ผู้ช่วยผู้บริหาร",
       perms: { board: true, all_people: false, edit_all: false, projects: true, people: true, reports: true,
         access: true, settings: true, manage: false } },
-    { id: "member", name: "Team member",
+    { id: "member", name: "Team member", th: "สมาชิกทีม",
       perms: { board: true, all_people: true, edit_all: false, projects: true, people: false, reports: false,
         access: false, settings: false, manage: false } }
   ];
@@ -1112,9 +1430,9 @@
   ];
 
   var BUS = [
-    { id: "fs", name: "Food Service", color: "#0e7c86" },
-    { id: "retail", name: "Retail", color: "#8a5cc4" },
-    { id: "fnb", name: "F&B", color: "#b06a2c" }
+    { id: "fs", name: "Food Service", th: "ฟู้ดเซอร์วิส", color: "#0e7c86" },
+    { id: "retail", name: "Retail", th: "ค้าปลีก", color: "#8a5cc4" },
+    { id: "fnb", name: "F&B", th: "อาหารและเครื่องดื่ม", color: "#b06a2c" }
   ];
 
   var BU_BY_TITLE = {
@@ -1147,18 +1465,18 @@
   };
 
   var STATUS = [
-    { id: "todo",  label: "Not started", color: "var(--st-todo)" },
-    { id: "doing", label: "In progress", color: "var(--st-doing)" },
-    { id: "wait",  label: "Waiting",     color: "var(--st-wait)" },
-    { id: "block", label: "Blocked",     color: "var(--st-block)" },
-    { id: "done",  label: "Done",        color: "var(--st-done)" }
+    { id: "todo",  label: "Not started", th: "ยังไม่เริ่ม", color: "var(--st-todo)" },
+    { id: "doing", label: "In progress", th: "กำลังทำ", color: "var(--st-doing)" },
+    { id: "wait",  label: "Waiting",     th: "รออยู่", color: "var(--st-wait)" },
+    { id: "block", label: "Blocked",     th: "ติดปัญหา", color: "var(--st-block)" },
+    { id: "done",  label: "Done",        th: "เสร็จแล้ว", color: "var(--st-done)" }
   ];
 
   var PRIOS = [
-    { id: "low",      label: "Low",      color: "var(--line)" },
-    { id: "normal",   label: "Normal",   color: "var(--st-todo)" },
-    { id: "high",     label: "High",     color: "var(--warning)" },
-    { id: "critical", label: "Critical", color: "var(--danger)" }
+    { id: "low",      label: "Low",      th: "ต่ำ", color: "var(--line)" },
+    { id: "normal",   label: "Normal",   th: "ปกติ", color: "var(--st-todo)" },
+    { id: "high",     label: "High",     th: "สูง", color: "var(--warning)" },
+    { id: "critical", label: "Critical", th: "เร่งด่วน", color: "var(--danger)" }
   ];
 
   var TASKS = [
@@ -1177,6 +1495,7 @@
     { g: "retail", t: "Update price tags and POS for the new pack sizes", o: "krit", s: "wait", p: "normal", d: "2026-09-02", e: 2, n: "Waiting on the pricing sign-off" },
     { g: "retail", t: "Train the two new counter staff on filleting", o: "mint", s: "todo", p: "high", d: "2026-09-07", e: 6 },
     { g: "retail", t: "Weekend tasting — grilled river prawn", o: "beam", s: "todo", p: "normal", d: "2026-09-05", e: 4 },
+    { g: "retail", t: "ตรวจอุณหภูมิตู้แช่ก่อนเปิดร้าน", o: "nut", s: "doing", p: "high", d: "2026-08-28", e: 0.5, r: "daily" },
 
     { g: "food", t: "Quote the hotel banquet order (200 pax)", o: "ploy", s: "doing", p: "critical", d: "2026-08-31", e: 3 },
     { g: "food", t: "October menu tasting with Chef Anan", o: "mint", s: "doing", p: "normal", d: "2026-09-07", e: 4 },
@@ -1218,8 +1537,9 @@
     '<p><span style="background-color:#ffe08a">Two-hour shutdown needed</span> — plan it before the 05:00 landing.</p>',
     "",
     [
-      { id: "c1", o: "ton", at: "Tuesday 11:20", html: '<p>Supplier says the part ships from Rayong, <span style="color:#d1503c">two weeks out</span>.</p>' },
-      { id: "c2", o: "pim", at: "Wednesday 08:45", html: '<p>QA note: if it drifts again we log a deviation. Can we get a temporary gasket?</p>' }
+      { id: "c1", o: "ton", at: "Tuesday 11:20", html: '<p>ช่างบอกว่าอะไหล่มาจากระยอง <b>ประมาณสองสัปดาห์</b> ขอยางชั่วคราวมาใช้ก่อนได้ไหมครับ</p>' },
+      { id: "c2", o: "pim", at: "Wednesday 08:45", html: '<p>QA note: if it drifts again we log a deviation.</p>' },
+      { id: "c3", o: "ton", at: "Today 07:30", html: '<p>ปิดห้องเย็นได้ตอนตี 4 ก่อนของเข้า จะได้ไม่กระทบไลน์ผลิต</p>' }
     ]);
 
   talk("BRC audit prep — gap analysis",
@@ -1241,21 +1561,21 @@
   ];
 
   var STAGES = [
-    { id: "Intake", color: "var(--s-intake)" },
-    { id: "Scoping", color: "var(--s-retail)" },
-    { id: "In progress", color: "var(--s-source)" },
-    { id: "Review", color: "var(--s-food)" },
-    { id: "Live", color: "var(--s-ops)" }
+    { id: "Intake", name: "Intake", th: "รับเรื่อง", color: "var(--s-intake)" },
+    { id: "Scoping", name: "Scoping", th: "กำหนดขอบเขต", color: "var(--s-retail)" },
+    { id: "In progress", name: "In progress", th: "กำลังดำเนินการ", color: "var(--s-source)" },
+    { id: "Review", name: "Review", th: "ตรวจทาน", color: "var(--s-food)" },
+    { id: "Live", name: "Live", th: "ใช้งานจริง", color: "var(--s-ops)" }
   ];
 
   var HEALTH = {
-    on: { label: "On track", color: "var(--success)" },
-    risk: { label: "At risk", color: "var(--warning)" },
-    block: { label: "Blocked", color: "var(--danger)" }
+    on: { label: "On track", th: "ตามแผน", color: "var(--success)" },
+    risk: { label: "At risk", th: "เสี่ยง", color: "var(--warning)" },
+    block: { label: "Blocked", th: "ติดปัญหา", color: "var(--danger)" }
   };
 
   var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "", session: null, gate: "in", gateMsg: "",
-    seen: {}, mailCh: "all" };
+    seen: {}, mailCh: "all", lang: "en", autotr: true };
 
   TASKS.forEach(function (t, i) {
     t.id = "t" + i;
@@ -1287,8 +1607,8 @@
   function talk(title, desc, color, comments) {
     for (var i = 0; i < TASKS.length; i++) {
       if (TASKS[i].t === title) {
-        TASKS[i].desc = desc || "";
-        TASKS[i].color = color || "";
+        if (desc) TASKS[i].desc = desc;
+        if (color) TASKS[i].color = color;
         TASKS[i].comments = comments || [];
       }
     }
@@ -1316,6 +1636,11 @@
     { id: "s3", t: "Write the corrective action plan", o: "pim", done: false, files: [{ name: "Gap findings.docx", size: 96500 }] }
   ], [{ name: "BRC checklist v3.pdf", size: 1240000 }]);
 
+  talk("Relaunch the sashimi set at the Thonglor counter", "", "", [
+    { id: "c1", o: "nut", at: "Yesterday 15:10",
+      html: '<p>เคาน์เตอร์ทองหล่อขายชุดซาชิมิหมดตั้งแต่บ่ายสองครับ <span style="background-color:#ffe08a">สั่งเพิ่มพรุ่งนี้</span></p>' }
+  ]);
+
   seed("Relaunch the sashimi set at the Thonglor counter", [
     { id: "s1", t: "Agree the new set composition with the chef", o: "mint", done: true, files: [] },
     { id: "s2", t: "Order the trays and sleeves", o: "krit", done: false, files: [] },
@@ -1342,6 +1667,9 @@
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
+  }
+  function personRole(pp) {
+    return (state.lang === "th" && pp.roleTh) ? pp.roleTh : pp.role;
   }
   function person(id) { for (var i = 0; i < PEOPLE.length; i++) if (PEOPLE[i].id === id) return PEOPLE[i]; return PEOPLE[0]; }
   function status(id) { for (var i = 0; i < STATUS.length; i++) if (STATUS[i].id === id) return STATUS[i]; return STATUS[0]; }
@@ -1404,7 +1732,7 @@
     var b = businessUnit(t.bu);
     return '<button class="buchip' + (b ? "" : " empty") + '" data-bu="' + t.id + '"' +
       (b ? ' style="--bc:' + b.color + '"' : "") + ' title="Business unit">' +
-      (b ? "<i></i>" + esc(b.name) : "Set BU") + "</button>";
+      (b ? "<i></i>" + esc(L(b)) : T("chip.setbu")) + "</button>";
   }
 
   function group(id) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i]; return GROUPS[0]; }
@@ -1427,13 +1755,12 @@
   }
   function dueMeta(t) {
     var delta = days(TODAY, t.d);
-    if (t.s === "done") return { cls: "", hint: "Completed" };
-    if (delta < 0) return { cls: "overdue", hint: "Overdue by " + Math.abs(delta) + " d" };
-    if (delta === 0) return { cls: "today", hint: "Today" };
-    if (delta === 1) return { cls: "", hint: "Tomorrow" };
-    if (delta <= 7) return { cls: "", hint: "In " + delta + " days" };
-    var w = Math.round(delta / 7);
-    return { cls: "", hint: "In " + w + " week" + (w === 1 ? "" : "s") };
+    if (t.s === "done") return { cls: "", hint: T("due.done") };
+    if (delta < 0) return { cls: "overdue", hint: T("due.over", { n: Math.abs(delta) }) };
+    if (delta === 0) return { cls: "today", hint: T("due.today") };
+    if (delta === 1) return { cls: "", hint: T("due.tomorrow") };
+    if (delta <= 7) return { cls: "", hint: T("due.days", { n: delta }) };
+    return { cls: "", hint: T("due.weeks", { n: Math.round(delta / 7) }) };
   }
   function isOverdue(t) { return t.s !== "done" && days(TODAY, t.d) < 0; }
   function activePeople() {
@@ -1489,7 +1816,7 @@
 
   function gateNote(title, body) {
     return '<div class="gatenote"><h2>' + title + "</h2><p>" + body + "</p></div>" +
-      '<button class="btn" data-gate="in">Back to sign in</button>';
+      '<button class="btn" data-gate="in">' + T("gate.back") + "</button>";
   }
 
   function renderGate() {
@@ -1503,54 +1830,55 @@
 
     var brand = '<aside class="gatebrand">' +
       '<div class="mark">Harbour<em>.</em></div><p class="org">Thammachart Seafood</p>' +
-      "<h1>The team’s work, in one place.</h1>" +
+      "<h1>" + T("gate.tagline") + "</h1>" +
       "<ul>" +
-        '<li><i></i><span>Daily operations, retail counters, food service, sourcing, quality — one board.</span></li>' +
-        '<li><i></i><span>Subtasks, documents and a comment thread on every task.</span></li>' +
-        '<li><i></i><span>An administrator approves every account before it can see anything.</span></li>' +
+        '<li><i></i><span>' + T("gate.p1") + "</span></li>" +
+        '<li><i></i><span>' + T("gate.p2") + "</span></li>" +
+        '<li><i></i><span>' + T("gate.p3") + "</span></li>" +
       "</ul>" +
-      '<p class="fine">Prototype — no password is checked and nothing is stored. Sign in with one of the demo accounts to see what each type of account can do.</p>' +
+      '<p class="fine">' + T("gate.fine") + "</p>" +
+      '<div class="langpick">' + langButtons() + "</div>" +
       "</aside>";
 
     var card;
     if (state.gate === "sent") {
-      card = gateNote("Request sent", "An administrator reviews every request. You will be able to sign in once your account is approved.");
+      card = gateNote(T("gate.sent"), T("gate.sent.body"));
     } else if (state.gate === "pending") {
-      card = gateNote("Waiting for approval", "Your request is in the queue. An administrator has to approve it before you can sign in.");
+      card = gateNote(T("gate.pending"), T("gate.pending.body"));
     } else if (state.gate === "blocked") {
-      card = gateNote("Access suspended", "This account has been blocked by an administrator. Ask them to restore it.");
+      card = gateNote(T("gate.blocked"), T("gate.blocked.body"));
     } else if (state.gate === "request") {
-      card = '<div class="tabs2"><button data-gate="in">Sign in</button>' +
-        '<button data-gate="request" aria-selected="true">Request access</button></div>' +
-        '<div><h2>Request access</h2><p class="sub">Tell us who you are. An administrator decides what you can see.</p></div>' +
+      card = '<div class="tabs2"><button data-gate="in">' + T("gate.signin") + "</button>" +
+        '<button data-gate="request" aria-selected="true">' + T("gate.request") + "</button></div>" +
+        "<div><h2>" + T("gate.request") + '</h2><p class="sub">' + T("gate.request.sub") + "</p></div>" +
         '<form data-request>' +
-          '<label><span class="label">Full name</span><input type="text" id="g-name" required placeholder="Som P."></label>' +
-          '<label><span class="label">Work email</span><input type="email" id="g-mail" required placeholder="you@thammachartseafood.com"></label>' +
-          '<label><span class="label">Account type you need</span><select id="g-role">' +
+          '<label><span class="label">' + T("gate.name") + '</span><input type="text" id="g-name" required placeholder="Som P."></label>' +
+          '<label><span class="label">' + T("gate.email") + '</span><input type="email" id="g-mail" required placeholder="you@thammachartseafood.com"></label>' +
+          '<label><span class="label">' + T("gate.roleneed") + '</span><select id="g-role">' +
             ROLES.filter(function (r) { return r.id !== "admin"; }).map(function (r) {
-              return '<option value="' + r.id + '">' + esc(r.name) + "</option>";
+              return '<option value="' + r.id + '">' + esc(L(r)) + "</option>";
             }).join("") + "</select></label>" +
-          '<label><span class="label">What you will be doing</span><textarea id="g-note" placeholder="Night shift receiving, daily landing checks…"></textarea></label>' +
-          '<button class="btn btn-primary" type="submit">Send request</button>' +
+          '<label><span class="label">' + T("gate.doing") + '</span><textarea id="g-note"></textarea></label>' +
+          '<button class="btn btn-primary" type="submit">' + T("gate.send") + "</button>" +
         "</form>";
     } else {
-      card = '<div class="tabs2"><button data-gate="in" aria-selected="true">Sign in</button>' +
-        '<button data-gate="request">Request access</button></div>' +
-        '<div><h2>Sign in</h2><p class="sub">Use your work email.</p></div>' +
+      card = '<div class="tabs2"><button data-gate="in" aria-selected="true">' + T("gate.signin") + "</button>" +
+        '<button data-gate="request">' + T("gate.request") + "</button></div>" +
+        "<div><h2>" + T("gate.signin") + '</h2><p class="sub">' + T("gate.signin.sub") + "</p></div>" +
         '<form data-signin>' +
-          '<label><span class="label">Work email</span><input type="email" id="g-email" required placeholder="you@thammachartseafood.com"></label>' +
-          '<label><span class="label">Password</span><input type="password" id="g-pass" placeholder="Anything — this is a prototype"></label>' +
+          '<label><span class="label">' + T("gate.email") + '</span><input type="email" id="g-email" required placeholder="you@thammachartseafood.com"></label>' +
+          '<label><span class="label">' + T("gate.password") + '</span><input type="password" id="g-pass" placeholder="' + T("gate.password.ph") + '"></label>' +
           (state.gateMsg ? '<p class="gateerr">' + esc(state.gateMsg) + "</p>" : "") +
-          '<button class="btn btn-primary" type="submit">Sign in</button>' +
+          '<button class="btn btn-primary" type="submit">' + T("gate.signin") + "</button>" +
         "</form>" +
-        '<div class="gatedemo"><span class="label">Demo accounts</span>' +
+        '<div class="gatedemo"><span class="label">' + T("gate.demo") + "</span>" +
           ACCOUNTS.filter(function (ac) { return ac.status === "active"; }).slice(0, 4).map(function (ac) {
             var pp = person(ac.p);
             return '<button type="button" data-demo="' + ac.email + '">' + avatar(pp) +
-              "<span>" + esc(pp.full) + '</span><span class="r">' + esc(roleOf(ac.role).name) + "</span></button>";
+              "<span>" + esc(pp.full) + '</span><span class="r">' + esc(L(roleOf(ac.role))) + "</span></button>";
           }).join("") +
           '<button type="button" data-demo="pim@thammachartseafood.com">' + avatar(person("pim")) +
-            '<span>Pim R.</span><span class="r">Blocked account</span></button>' +
+            '<span>Pim R.</span><span class="r">' + T("gate.blockedacc") + "</span></button>" +
         "</div>";
     }
 
@@ -1565,7 +1893,7 @@
       for (i = 0; i < REQUESTS.length; i++) {
         if (REQUESTS[i].email.toLowerCase() === mail) { state.gate = "pending"; renderGate(); return; }
       }
-      state.gateMsg = "No account for that address. Request access instead.";
+      state.gateMsg = T("gate.err.nomatch");
       renderGate();
       return;
     }
@@ -1589,13 +1917,21 @@
     renderGate();
   }
 
+  function langButtons() {
+    return [["en", "EN"], ["th", "ไทย"]].map(function (l) {
+      return '<button class="langbtn' + (state.lang === l[0] ? " on" : "") + '" data-lang="' + l[0] + '">' + l[1] + "</button>";
+    }).join("");
+  }
+
   function renderTopbar() {
     var ac = session();
     if (!ac) return;
     var pp = person(ac.p);
     document.getElementById("topme").innerHTML =
+      '<button class="chip" data-lang="' + (state.lang === "en" ? "th" : "en") + '" title="Language">' +
+        (state.lang === "en" ? "ไทย" : "English") + "</button>" +
       '<button class="mebtn" data-memenu>' + avatar(pp) + '<span class="n">' + esc(pp.name) + "</span>" +
-      '<span class="rolechip">' + esc(roleOf(ac.role).name) + "</span></button>";
+      '<span class="rolechip">' + esc(L(roleOf(ac.role))) + "</span></button>";
   }
 
   function renderRail() {
@@ -1604,14 +1940,14 @@
       var svg = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n.icon] + "</svg>";
       var badge = n.badge ? n.badge() : 0;
       return '<a href="#" data-page="' + n.page + '"' + (state.page === n.page ? ' aria-current="page"' : "") + ">" +
-        svg + n.label + (badge ? '<span class="badge tnum">' + badge + "</span>" : "") + "</a>";
+        svg + T(n.label) + (badge ? '<span class="badge tnum">' + badge + "</span>" : "") + "</a>";
     }).join("");
 
-    if (can("board")) html += '<div class="sect label">Streams</div><div class="streams">' +
+    if (can("board")) html += '<div class="sect label">' + T("nav.streams") + '</div><div class="streams">' +
       GROUPS.map(function (g) {
         var n = TASKS.filter(function (t) { return t.g === g.id && t.s !== "done" && inScope(t); }).length;
         return '<button type="button" data-stream="' + g.id + '"><i style="background:' + g.color + '"></i>' +
-          esc(g.name) + '<span class="c tnum">' + n + "</span></button>";
+          esc(L(g)) + '<span class="c tnum">' + n + "</span></button>";
       }).join("") + "</div>";
 
     rail.innerHTML = html;
@@ -1639,11 +1975,11 @@
     var done = base.filter(function (t) { return t.s === "done"; });
 
     var cards = [
-      { v: open.length, k: "Open tasks", hint: can("all_people") ? "across the team" : "in your scope", c: "var(--tide)" },
-      { v: dueToday.length, k: "Due today", hint: "Friday 28 August", c: "var(--coral)" },
-      { v: overdue.length, k: "Overdue", hint: overdue.length ? overdue.map(function (t) { return person(t.o).name; }).join(", ") : "nothing late", c: "var(--danger)" },
-      { v: stuck.length, k: "Blocked / waiting", hint: "needs a decision", c: "var(--st-wait)" },
-      { v: done.length, k: "Done this week", hint: "since Monday", c: "var(--success)" }
+      { v: open.length, k: T("kpi.open"), hint: can("all_people") ? T("kpi.open.all") : T("kpi.open.scope"), c: "var(--tide)" },
+      { v: dueToday.length, k: T("kpi.today"), hint: T("kpi.today.hint"), c: "var(--coral)" },
+      { v: overdue.length, k: T("kpi.overdue"), hint: overdue.length ? overdue.map(function (t) { return person(t.o).name; }).join(", ") : T("kpi.overdue.none"), c: "var(--danger)" },
+      { v: stuck.length, k: T("kpi.stuck"), hint: T("kpi.stuck.hint"), c: "var(--st-wait)" },
+      { v: done.length, k: T("kpi.done"), hint: T("kpi.done.hint"), c: "var(--success)" }
     ];
     document.getElementById("kpis").innerHTML = cards.map(function (c) {
       return '<article class="kpi" style="--kpi-color:' + c.c + '">' +
@@ -1655,71 +1991,65 @@
 
   var PAGES = {
     home: {
-      title: function () { return "Today"; },
+      title: function () { return T("page.home"); },
       sub: function () {
-        var late = TASKS.filter(isOverdue).length;
-        return "Friday 28 August 2026 · " + (late ? late + " item" + (late === 1 ? "" : "s") + " already late" : "nothing late");
+        var late = TASKS.filter(function (t) { return isOverdue(t) && inScope(t); }).length;
+        return T("page.home.sub", { late: late ? T("page.home.late", { n: late }) : T("page.home.ok") });
       },
       kpis: true, filters: false, tools: ["week", "task"], render: function () { renderHome(); }
     },
     board: {
-      title: function () { return "Team board"; },
-      sub: function () { return "Week of 24 – 28 August 2026 · " + scopedPeople().length + " people · " + GROUPS.length + " streams"; },
+      title: function () { return T("page.board"); },
+      sub: function () { return T("page.board.sub", { n: scopedPeople().length, g: GROUPS.length }); },
       kpis: true, filters: true, tools: ["week", "task"], perm: "board", render: function () { renderBoard(); }
     },
     mywork: {
-      title: function () { return "My work"; },
-      sub: function () { var m = person(state.me); return m.full + " · " + m.role; },
+      title: function () { return T("page.mywork"); },
+      sub: function () { var m = person(state.me); return m.full + " · " + personRole(m); },
       kpis: false, filters: true, tools: ["person", "task"], render: function () { renderWeek(); }
     },
     mail: {
-      title: function () { return "Notifications"; },
-      sub: function () {
-        return can("manage")
-          ? "Every email and LINE message the app sent, newest first"
-          : "Email and LINE messages sent to you";
-      },
+      title: function () { return T("page.mail"); },
+      sub: function () { return can("manage") ? T("page.mail.sub.all") : T("page.mail.sub.mine"); },
       kpis: false, filters: false, tools: [], render: function () { renderMail(); }
     },
     projects: {
-      title: function () { return "Projects"; },
-      sub: function () { return PROJECTS.length + " projects across five stages"; },
+      title: function () { return T("page.projects"); },
+      sub: function () { return T("page.projects.sub", { n: PROJECTS.length }); },
       kpis: false, filters: false, tools: ["project"], perm: "projects", render: function () { renderProjects(); }
     },
     calendar: {
-      title: function () { return "Calendar"; },
-      sub: function () { return "Three weeks from Monday 24 August · tasks sit on their due date"; },
+      title: function () { return T("page.calendar"); },
+      sub: function () { return T("page.calendar.sub"); },
       kpis: false, filters: true, tools: ["task"], render: function () { renderCalendar(); }
     },
     people: {
-      title: function () { return "People"; },
-      sub: function () { return scopedPeople().length + " people · capacity " + state.capacity + " h a week"; },
+      title: function () { return T("page.people"); },
+      sub: function () { return T("page.people.sub", { n: scopedPeople().length, h: state.capacity }); },
       kpis: false, filters: false, tools: [], perm: "people", render: function () { renderPeople(); }
     },
     reports: {
-      title: function () { return "Reports"; },
-      sub: function () { return "Week of 24 – 28 August 2026 · open work and what closed"; },
+      title: function () { return T("page.reports"); },
+      sub: function () { return T("page.reports.sub"); },
       kpis: false, filters: false, tools: [], perm: "reports", render: function () { renderReports(); }
     },
     access: {
-      title: function () { return "Access"; },
-      sub: function () {
-        return ACCOUNTS.length + " accounts · " + REQUESTS.length + " request" + (REQUESTS.length === 1 ? "" : "s") + " waiting";
-      },
+      title: function () { return T("page.access"); },
+      sub: function () { return T("page.access.sub", { a: ACCOUNTS.length, r: REQUESTS.length }); },
       kpis: false, filters: false, tools: [], perm: "access", render: function () { renderAccess(); }
     },
     settings: {
-      title: function () { return "Settings"; },
-      sub: function () { return "Streams, statuses, people and the numbers behind the workload view"; },
+      title: function () { return T("page.settings"); },
+      sub: function () { return T("page.settings.sub"); },
       kpis: false, filters: false, tools: [], perm: "settings", render: function () { renderSettings(); }
     }
   };
 
   var TOOLS = {
-    week: function () { return '<button class="btn" data-tool="week">This week ▾</button>'; },
-    person: function () { return '<button class="btn" data-tool="person">' + esc(person(state.me).name) + "’s work ▾</button>"; },
-    task: function () { return '<button class="btn btn-primary" data-tool="task">+ New task</button>'; },
-    project: function () { return '<button class="btn btn-primary" data-tool="project">+ New project</button>'; }
+    week: function () { return '<button class="btn" data-tool="week">' + T("tool.week") + " ▾</button>"; },
+    person: function () { return '<button class="btn" data-tool="person">' + esc(T("tool.person", { name: person(state.me).name })) + " ▾</button>"; },
+    task: function () { return '<button class="btn btn-primary" data-tool="task">' + T("tool.newtask") + "</button>"; },
+    project: function () { return '<button class="btn btn-primary" data-tool="project">' + T("tool.newproject") + "</button>"; }
   };
 
   function go(page) {
@@ -1740,7 +2070,7 @@
   function statusCell(t) {
     var s = status(t.s);
     return '<button class="status" style="--sc:' + s.color + '" data-status="' + t.id +
-      '" aria-label="Status: ' + s.label + '. Change status">' + s.label + "</button>";
+      '" aria-label="' + esc(L(s)) + '">' + esc(L(s)) + "</button>";
   }
 
   var PIN = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11 12.3 20a5 5 0 0 1-7-7l9.2-9.2a3.3 3.3 0 0 1 4.7 4.7l-9.2 9.2a1.7 1.7 0 0 1-2.4-2.4l8.5-8.5"/></svg>';
@@ -1791,7 +2121,7 @@
     var o = person(c.o);
     return '<article class="comment"><header>' + avatar(o) + "<b>" + esc(o.full) + '</b><span class="at">' + esc(c.at) + "</span>" +
       '<button class="iconbtn-sm" ' + delAttr + ' aria-label="Delete comment">×</button></header>' +
-      '<div class="rtbody">' + c.html + "</div></article>";
+      '<div class="rtbody">' + contentHtml(c.html) + "</div></article>";
   }
 
   function subThread(t, sb) {
@@ -1799,12 +2129,12 @@
     return '<div class="sthread">' +
       (sb.comments.length
         ? sb.comments.map(function (c) { return commentArticle(c, 'data-scdel="' + key + "|" + c.id + '"'); }).join("")
-        : '<p class="cempty" style="padding:2px 0 6px">No comments on this subtask yet.</p>') +
+        : '<p class="cempty" style="padding:2px 0 6px">' + T("sub.nocomments") + "</p>") +
       '<div class="composer"><div class="rt">' + rtToolbar() +
-        '<div class="rtarea" data-scomment="' + key + '" contenteditable="true" data-ph="Comment on this subtask…">' +
+        '<div class="rtarea" data-scomment="' + key + '" contenteditable="true" data-ph="' + T("comment.sub.ph") + '">' +
         (state.draft[key] || "") + "</div></div>" +
-        '<div class="crow"><span class="hint">Ctrl or ⌘ + Enter to post</span>' +
-        '<button class="btn btn-primary" data-scpost="' + key + '">Comment</button></div></div>' +
+        '<div class="crow"><span class="hint">' + T("comment.hint") + "</span>" +
+        '<button class="btn btn-primary" data-scpost="' + key + '">' + T("comment.post") + "</button></div></div>" +
       "</div>";
   }
 
@@ -1821,7 +2151,7 @@
             '<button class="check sm' + (sb.done ? " on" : "") + '" data-subcheck="' + key +
               '" aria-label="Mark subtask done"' + (rw ? "" : " disabled") + ' aria-pressed="' + !!sb.done + '">' +
               (sb.done ? TICK : "") + "</button>" +
-            '<div class="sbody"><span class="stitle">' + esc(sb.t) + "</span>" +
+            '<div class="sbody"><span class="stitle">' + content(sb.t) + "</span>" +
             fileRow(sb.files, key) + "</div>" +
           "</div>" +
           "<span></span>" +
@@ -1843,8 +2173,8 @@
     });
     if (rw) {
       h += '<form class="addsub" data-addsub="' + t.id + '">' +
-        '<input type="text" placeholder="Add a subtask, then press Enter" aria-label="New subtask">' +
-        '<button class="btn" type="submit">Add</button></form>';
+        '<input type="text" placeholder="' + T("sub.add") + '" aria-label="' + T("sub.add") + '">' +
+        '<button class="btn" type="submit">' + T("sub.addbtn") + "</button></form>";
     }
     return h + "</div>";
   }
@@ -1873,15 +2203,15 @@
           (t.s === "done" ? TICK : "") + "</button>" +
         "<div>" +
           '<button class="task-title" data-open="' + t.id + '"' +
-            (t.color ? ' style="color:' + t.color + '"' : "") + ' title="Open details">' + esc(t.t) + "</button>" +
+            (t.color ? ' style="color:' + t.color + '"' : "") + ' title="Open details">' + content(t.t) + "</button>" +
           '<div class="task-meta">' +
-            (t.r ? '<span class="chip-repeat"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>' + (t.r === "daily" ? "Daily" : "Weekly") + "</span>" : "") +
+            (t.r ? '<span class="chip-repeat"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>' + (t.r === "daily" ? T("chip.daily") : T("chip.weekly")) + "</span>" : "") +
             (t.sub.length || rw ? '<button class="metachip' + (t.sub.length ? "" : " ghost") + '" data-toggle="' + t.id +
               '" aria-expanded="' + open + '">' + CARET +
-              (t.sub.length ? doneN + " / " + t.sub.length + " subtasks" : "Add subtasks") + "</button>" : "") +
+              esc(t.sub.length ? T("chip.subs", { d: doneN, n: t.sub.length }) : T("chip.addsub")) + "</button>" : "") +
             (t.files.length || rw ? '<button class="metachip' + (t.files.length ? "" : " ghost") + '" data-attach="' + t.id +
               '" title="Attach a document">' + PIN +
-              (t.files.length ? t.files.length + " file" + (t.files.length === 1 ? "" : "s") : "Attach") + "</button>" : "") +
+              esc(t.files.length ? T("chip.files", { n: t.files.length }) : T("chip.attach")) + "</button>" : "") +
             (talkCount(t) ? '<button class="metachip" data-open="' + t.id + '" title="Open the discussion">' +
               BUBBLE + talkCount(t) + "</button>" : "") +
             (t.n ? '<span class="task-note">' + esc(t.n) + "</span>" : "") +
@@ -1890,13 +2220,13 @@
         "</div>" +
       "</div>" +
       (rw ? buCell(t)
-        : (ub ? '<span class="buchip ro" style="--bc:' + ub.color + '"><i></i>' + esc(ub.name) + "</span>" : "<span></span>")) +
+        : (ub ? '<span class="buchip ro" style="--bc:' + ub.color + '"><i></i>' + esc(L(ub)) + "</span>" : "<span></span>")) +
       (rw
         ? '<button class="owner-cell" data-owner="' + t.id + '" aria-label="Owner: ' + esc(p.full) + '. Reassign">' +
           avatar(p) + '<span class="nm">' + esc(p.name) + "</span></button>"
         : '<span class="owner-cell ro">' + avatar(p) + '<span class="nm">' + esc(p.name) + "</span></span>") +
-      (rw ? statusCell(t) : '<span class="status ro" style="--sc:' + st.color + '">' + st.label + "</span>") +
-      '<span class="prio p-' + t.p + '" style="--pc:' + pr.color + '"><i></i>' + pr.label + "</span>" +
+      (rw ? statusCell(t) : '<span class="status ro" style="--sc:' + st.color + '">' + esc(L(st)) + "</span>") +
+      '<span class="prio p-' + t.p + '" style="--pc:' + pr.color + '"><i></i>' + esc(L(pr)) + "</span>" +
       '<span class="due tnum ' + dm.cls + '">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
       '<span class="est tnum">' + t.e + " h</span>" +
       "</div>";
@@ -1923,25 +2253,27 @@
           '<button class="caret" data-collapse="' + g.id + '" aria-expanded="' + !state.collapsed[g.id] + '" aria-label="Collapse ' + esc(g.name) + '">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>' +
           "</button>" +
-          '<span class="tag"></span><h3>' + esc(g.name) + "</h3>" +
-          '<span class="count tnum">' + rows.length + " task" + (rows.length === 1 ? "" : "s") + "</span>" +
+          '<span class="tag"></span><h3>' + esc(L(g)) + "</h3>" +
+          '<span class="count tnum">' + esc(T("board.tasks", { n: rows.length })) + "</span>" +
           '<div class="mini">' +
-            (lateN ? '<span class="dotstat"><i style="background:var(--st-block)"></i>' + lateN + " late</span>" : "") +
-            (blockN ? '<span class="dotstat"><i style="background:var(--st-block)"></i>' + blockN + " blocked</span>" : "") +
-            '<span class="dotstat"><i style="background:var(--st-done)"></i>' + doneN + " / " + all.length + " done</span>" +
+            (lateN ? '<span class="dotstat"><i style="background:var(--st-block)"></i>' + esc(T("board.late", { n: lateN })) + "</span>" : "") +
+            (blockN ? '<span class="dotstat"><i style="background:var(--st-block)"></i>' + esc(T("board.blocked", { n: blockN })) + "</span>" : "") +
+            '<span class="dotstat"><i style="background:var(--st-done)"></i>' + esc(T("board.done", { d: doneN, n: all.length })) + "</span>" +
           "</div>" +
         "</header>" +
         '<div class="cols">' +
-          '<span class="label">Task</span><span class="label">BU</span><span class="label">Owner</span><span class="label">Status</span>' +
-          '<span class="label">Priority</span><span class="label">Due</span><span class="label" style="text-align:right">Est.</span>' +
+          '<span class="label">' + T("col.task") + '</span><span class="label">' + T("col.bu") +
+          '</span><span class="label">' + T("col.owner") + '</span><span class="label">' + T("col.status") + "</span>" +
+          '<span class="label">' + T("col.priority") + '</span><span class="label">' + T("col.due") +
+          '</span><span class="label" style="text-align:right">' + T("col.est") + "</span>" +
         "</div>" +
         '<div class="rows">' + rows.map(taskRow).join("") + "</div>" +
-        '<button class="addrow" data-add="' + g.id + '">+ Add a task to ' + esc(g.name.toLowerCase()) + "</button>" +
+        '<button class="addrow" data-add="' + g.id + '">' + esc(T("board.add", { g: L(g) })) + "</button>" +
       "</section>";
     });
 
     html += "</div></div>";
-    if (!any) html = '<div class="empty">No task matches this filter. Clear the search or the people filter.</div>';
+    if (!any) html = '<div class="empty">' + T("board.empty") + "</div>";
     document.getElementById("view").innerHTML = html;
     if (state.flash) {
       var fl = document.querySelector('[data-item="' + state.flash + '"]');
@@ -1980,13 +2312,13 @@
     var bits = [];
     if (t.sub && t.sub.length) {
       var d = t.sub.filter(function (sb) { return sb.done; }).length;
-      bits.push(d + " / " + t.sub.length + " subtasks");
+      bits.push(T("week.subs", { d: d, n: t.sub.length }));
     }
-    if (t.files && t.files.length) bits.push(t.files.length + " file" + (t.files.length === 1 ? "" : "s"));
+    if (t.files && t.files.length) bits.push(T("week.files", { n: t.files.length }));
     var talk = talkCount(t);
-    if (talk) bits.push(talk + " comment" + (talk === 1 ? "" : "s"));
+    if (talk) bits.push(T("week.comments", { n: talk }));
     var b = businessUnit(t.bu);
-    if (b) bits.push(b.name);
+    if (b) bits.push(L(b));
     return bits.length ? '<div class="wmeta">' + bits.join(" · ") + "</div>" : "";
   }
 
@@ -1994,11 +2326,11 @@
     var me = person(state.me);
     var mine = TASKS.filter(function (t) { return t.o === state.me && visible(t); });
     var buckets = [
-      { title: "Overdue", when: "needs attention now", alert: true, f: isOverdue },
-      { title: "Today", when: "Friday 28 August", f: function (t) { return days(TODAY, t.d) === 0 && t.s !== "done"; } },
-      { title: "Next week", when: "31 Aug – 4 Sep", f: function (t) { var d = days(TODAY, t.d); return d > 0 && d <= 7 && t.s !== "done"; } },
-      { title: "Later", when: "beyond 4 September", f: function (t) { return days(TODAY, t.d) > 7 && t.s !== "done"; } },
-      { title: "Closed this week", when: "", f: function (t) { return t.s === "done"; } }
+      { title: T("week.overdue"), when: T("week.overdue.sub"), alert: true, f: isOverdue },
+      { title: T("week.today"), when: T("week.today.sub"), f: function (t) { return days(TODAY, t.d) === 0 && t.s !== "done"; } },
+      { title: T("week.next"), when: T("week.next.sub"), f: function (t) { var d = days(TODAY, t.d); return d > 0 && d <= 7 && t.s !== "done"; } },
+      { title: T("week.later"), when: T("week.later.sub"), f: function (t) { return days(TODAY, t.d) > 7 && t.s !== "done"; } },
+      { title: T("week.closed"), when: "", f: function (t) { return t.s === "done"; } }
     ];
 
     var html = '<div class="week">';
@@ -2007,15 +2339,15 @@
     if (me.lead) {
       var stuck = TASKS.filter(function (t) { return (t.s === "block" || t.s === "wait") && t.o !== state.me; });
       if (stuck.length) {
-        html += '<section class="daycard decide"><header><h3>Needs a decision from you</h3>' +
-          '<span class="when">blocked or waiting elsewhere on the team</span>' +
-          '<span class="tot tnum">' + stuck.length + " item" + (stuck.length === 1 ? "" : "s") + "</span></header>";
+        html += '<section class="daycard decide"><header><h3>' + T("week.decide") + "</h3>" +
+          '<span class="when">' + T("week.decide.sub") + "</span>" +
+          '<span class="tot tnum">' + esc(T("week.items", { n: stuck.length })) + "</span></header>";
         stuck.forEach(function (t) {
           var g = group(t.g), dm = dueMeta(t), o = person(t.o);
           html += '<div class="wrow">' + avatar(o) +
-            '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(g.name) + "</div>" +
+            '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(L(g)) + "</div>" +
             '<button class="t wtitle" data-open="' + t.id + '" title="Open details"' +
-              (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</button>" + weekMeta(t) +
+              (t.color ? ' style="color:' + t.color + '"' : "") + ">" + content(t.t) + "</button>" + weekMeta(t) +
             (t.n ? '<div class="task-meta"><span class="task-note">' + esc(t.n) + "</span></div>" : "") +
             "</div>" +
             '<span class="due tnum ' + dm.cls + '" style="width:110px;flex:none">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
@@ -2032,14 +2364,14 @@
       var hours = rows.reduce(function (a, t) { return a + t.e; }, 0);
       html += '<section class="daycard' + (b.alert ? " alert" : "") + '"><header><h3>' + b.title + "</h3>" +
         (b.when ? '<span class="when">' + b.when + "</span>" : "") +
-        '<span class="tot tnum">' + rows.length + " task" + (rows.length === 1 ? "" : "s") + " · " + hours + " h</span></header>";
+        '<span class="tot tnum">' + esc(T("week.tasks", { n: rows.length, h: hours })) + "</span></header>";
       rows.forEach(function (t) {
         var g = group(t.g), dm = dueMeta(t);
         html += '<div class="wrow">' +
           '<button class="check' + (t.s === "done" ? " on" : "") + '" data-check="' + t.id + '" aria-label="Mark done"></button>' +
-          '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(g.name) + "</div>" +
+          '<div class="grow"><div class="stream" style="--sc2:' + g.color + '">' + esc(L(g)) + "</div>" +
           '<button class="t wtitle" data-open="' + t.id + '" title="Open details"' +
-            (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</button>" +
+            (t.color ? ' style="color:' + t.color + '"' : "") + ">" + content(t.t) + "</button>" +
           weekMeta(t) + "</div>" +
           '<span class="due tnum ' + dm.cls + '" style="width:110px;flex:none">' + fmtDate(t.d) + "<small>" + dm.hint + "</small></span>" +
           statusCell(t) + "</div>";
@@ -2047,7 +2379,7 @@
       html += "</section>";
     });
     html += "</div>";
-    if (!shown) html += '<div class="empty">Nothing on ' + esc(me.name) + "’s plate with these filters.</div>";
+    if (!shown) html += '<div class="empty">' + esc(T("week.empty", { name: me.name })) + "</div>";
     document.getElementById("view").innerHTML = html;
   }
 
@@ -2056,11 +2388,11 @@
     STAGES.forEach(function (st) {
       var cards = PROJECTS.filter(function (p) { return p.stage === st.id; });
       html += '<section class="lane" style="--lc:' + st.color + '"><header><h3 style="color:' + st.color + '">' +
-        st.id + '</h3><span class="n tnum">' + cards.length + "</span></header>";
+        esc(L(st)) + '</h3><span class="n tnum">' + cards.length + "</span></header>";
       cards.forEach(function (p) {
         var h = HEALTH[p.health], o = person(p.o), late = days(TODAY, p.msd) < 0;
         html += '<article class="pcard" style="--hc:' + h.color + '">' +
-          '<span class="health"><i></i>' + h.label + "</span>" +
+          '<span class="health"><i></i>' + esc(L(h)) + "</span>" +
           "<h4>" + esc(p.name) + "</h4>" +
           '<div class="ms">Next: <b>' + esc(p.ms) + '</b><br><span class="tnum" style="color:' +
             (late ? "var(--danger)" : "var(--ink-muted)") + '">' + fmtDate(p.msd) + (late ? " · late" : "") + "</span></div>" +
@@ -2095,22 +2427,22 @@
     var max = Math.max(CAP * 1.35, rows[0].hours * 1.1);
 
     var html = '<div class="loadwrap"><header>' +
-      '<h3 style="font-size:14px;font-weight:600">Open workload this week</h3>' +
-      '<span style="font-size:12px;color:var(--ink-muted)">Capacity line at ' + CAP + ' h · estimates from the task cards</span>' +
+      '<h3 style="font-size:14px;font-weight:600">' + T("people.title") + "</h3>" +
+      '<span style="font-size:12px;color:var(--ink-muted)">' + esc(T("people.cap", { h: CAP })) + "</span>" +
       '<div class="legend">' + STATUS.filter(function (s) { return s.id !== "done"; }).map(function (s) {
-        return '<span><i style="background:' + s.color + '"></i>' + s.label + "</span>";
+        return '<span><i style="background:' + s.color + '"></i>' + esc(L(s)) + "</span>";
       }).join("") + "</div></header>";
 
     rows.forEach(function (r) {
-      var flag = r.hours > CAP ? { cls: "over", txt: "Over capacity" }
-        : r.late ? { cls: "over", txt: r.late + " overdue" }
-        : r.hours < CAP * 0.5 ? { cls: "light", txt: "Room to take more" }
-        : { cls: "ok", txt: "Balanced" };
+      var flag = r.hours > CAP ? { cls: "over", txt: T("people.over") }
+        : r.late ? { cls: "over", txt: T("people.lateflag", { n: r.late }) }
+        : r.hours < CAP * 0.5 ? { cls: "light", txt: T("people.room") }
+        : { cls: "ok", txt: T("people.balanced") };
       var acc = account(r.p.id);
       html += '<div class="lrow"><div class="who2">' + avatar(r.p, "lg") +
         "<div><b>" + esc(r.p.full) +
-        (acc && acc.status !== "active" ? ' <span class="statustag blocked">no access</span>' : "") +
-        "</b><span>" + esc(r.p.role) + "</span></div></div>" +
+        (acc && acc.status !== "active" ? ' <span class="statustag blocked">' + T("people.noaccess") + "</span>" : "") +
+        "</b><span>" + esc(personRole(r.p)) + "</span></div></div>" +
         '<div class="stack">' +
           STATUS.filter(function (s) { return s.id !== "done"; }).map(function (s) {
             var w = (r.byStatus[s.id] / max) * 100;
@@ -2118,10 +2450,10 @@
           }).join("") +
           '<span class="cap" style="left:' + ((CAP / max) * 100) + '%"></span>' +
         "</div>" +
-        '<div class="hours tnum">' + r.hours + " h <small>/ " + r.n + " open</small></div>" +
+        '<div class="hours tnum">' + r.hours + ' h <small>' + esc(T("people.open", { n: r.n })) + "</small></div>" +
         '<div class="flag ' + flag.cls + '">' + flag.txt + "</div>" +
         '<div style="text-align:right"><button class="btn" style="padding:4px 10px;font-size:12px" data-week="' +
-          r.p.id + '">Open week</button></div></div>';
+          r.p.id + '">' + T("people.openweek") + "</button></div></div>";
     });
     html += "</div>";
     document.getElementById("view").innerHTML = html;
@@ -2137,7 +2469,7 @@
     var g = group(t.g), dm = dueMeta(t);
     return '<button class="minirow" data-open="' + t.id + '" title="' + esc(t.t) + ' — open details">' +
       avatar(person(t.o)) +
-      '<span class="mt">' + esc(t.t) + "</span>" +
+      '<span class="mt">' + content(t.t) + "</span>" +
       (t.n && o.stream ? '<span class="note">' + esc(t.n) + "</span>" : "") +
       (o.stream ? '<span class="ms" style="--sc2:' + g.color + '">' + esc(g.name) + "</span>" : "") +
       (o.due ? '<span class="due tnum ' + dm.cls + '" style="width:104px;text-align:right">' +
@@ -2212,17 +2544,17 @@
       var cls = "calcell" + (i % 7 > 4 ? " weekend" : "") + (isToday ? " today" : "") +
         (days(TODAY, iso) < 0 ? " past" : "");
       var shown = state.calMore[iso] ? list : list.slice(0, 3);
-      var tag = isToday ? "Today" : (dnum === 1 || i === 0 ? months[parseInt(iso.slice(5, 7), 10) - 1] : "");
+      var tag = isToday ? T("due.today") : (dnum === 1 || i === 0 ? months[parseInt(iso.slice(5, 7), 10) - 1] : "");
 
       html += '<div class="' + cls + '">' +
         '<div class="caldate"><b class="tnum">' + dnum + "</b><span>" + tag + "</span></div>" +
         shown.map(function (t) {
           return '<button class="calchip' + (t.s === "done" ? " isdone" : "") + '" style="--sc:' + group(t.g).color +
             '" data-open="' + t.id + '" title="' + esc(t.t + " — " + person(t.o).full) + '">' +
-            '<span class="ct">' + esc(t.t) + "</span>" + avatar(person(t.o)) + "</button>";
+            '<span class="ct">' + content(t.t) + "</span>" + avatar(person(t.o)) + "</button>";
         }).join("") +
         (list.length > shown.length
-          ? '<button class="calmore" data-calmore="' + iso + '">+ ' + (list.length - shown.length) + " more</button>"
+          ? '<button class="calmore" data-calmore="' + iso + '">' + esc(T("cal.more", { n: list.length - shown.length })) + "</button>"
           : "") +
         "</div>";
     }
@@ -2250,7 +2582,7 @@
       }).join("") + "</div></div>" +
       '<div class="legend" style="margin:0;padding:2px 15px 14px;flex-wrap:wrap">' +
       mix.map(function (r) {
-        return '<span><i style="background:' + r.st.color + '"></i>' + r.st.label +
+        return '<span><i style="background:' + r.st.color + '"></i>' + esc(L(r.st)) +
           ' <b class="tnum">' + r.n + "</b></span>";
       }).join("") + "</div>";
 
@@ -2260,7 +2592,7 @@
     }).sort(function (a, b) { return b.h - a.h; });
     var maxH = Math.max.apply(null, streamRows.map(function (r) { return r.h; })) || 1;
     var streamBars = streamRows.map(function (r) {
-      return '<div class="hbar" style="--sc:' + r.g.color + '"><span>' + esc(r.g.name) + "</span>" +
+      return '<div class="hbar" style="--sc:' + r.g.color + '"><span>' + esc(L(r.g)) + "</span>" +
         '<span class="track"><i style="width:' + ((r.h / maxH) * 100) + '%"></i></span>' +
         '<span class="num tnum">' + r.h + " h</span></div>";
     }).join("");
@@ -2277,7 +2609,7 @@
         '<span class="num tnum">' + r.h + " h</span></div>";
     }).join("");
 
-    var hist = CLOSED_HISTORY.concat([{ w: "This week", n: base.filter(function (t) { return t.s === "done"; }).length, now: true }]);
+    var hist = CLOSED_HISTORY.concat([{ w: T("rep.thisweek"), n: base.filter(function (t) { return t.s === "done"; }).length, now: true }]);
     var maxN = Math.max.apply(null, hist.map(function (h) { return h.n; })) || 1;
     var bars = '<div class="vbars">' + hist.map(function (h) {
       return '<div class="vbarcol' + (h.now ? " now" : "") + '"><b class="tnum">' + h.n + "</b>" +
@@ -2286,10 +2618,10 @@
 
     var buRows = BUS.map(function (x) {
       var rows = open.filter(function (t) { return t.bu === x.id; });
-      return { name: x.name, color: x.color, h: rows.reduce(function (a, t) { return a + t.e; }, 0), n: rows.length };
+      return { name: L(x), color: x.color, h: rows.reduce(function (a, t) { return a + t.e; }, 0), n: rows.length };
     });
     var noBu = open.filter(function (t) { return !t.bu; });
-    if (noBu.length) buRows.push({ name: "No business unit", color: "var(--ink-muted)",
+    if (noBu.length) buRows.push({ name: T("chip.nobu"), color: "var(--ink-muted)",
       h: noBu.reduce(function (a, t) { return a + t.e; }, 0), n: noBu.length });
     var maxBu = Math.max.apply(null, buRows.map(function (r) { return r.h; })) || 1;
     var buBars = buRows.map(function (r) {
@@ -2299,12 +2631,125 @@
     }).join("");
 
     document.getElementById("view").innerHTML = '<div class="repgrid">' +
-      card("Where the work stands", base.length + " tasks", mixBar) +
-      card("Open hours by business unit", null, buBars) +
-      card("Open hours by stream", null, streamBars) +
-      card("Open hours by person", "capacity " + state.capacity + " h", peopleBars) +
-      card("Tasks closed per week", "last five weeks are sample data", bars) +
+      card(T("rep.stands"), T("rep.tasks", { n: base.length }), mixBar) +
+      card(T("rep.bu"), null, buBars) +
+      card(T("rep.stream"), null, streamBars) +
+      card(T("rep.person"), T("rep.capacity", { h: state.capacity }), peopleBars) +
+      card(T("rep.closed"), T("rep.sample"), bars) +
       "</div>";
+  }
+
+  // ---------- translating what people write ----------
+  var TCACHE = {};
+  var TPENDING = {};
+  var trQueue = [];
+  var trTimer = null;
+  var samplePromise = null;
+
+  function isThai(txt) { return /[฀-๿]/.test(txt || ""); }
+  function langOf(txt) { return isThai(txt) ? "th" : "en"; }
+
+  function getSample() {
+    if (!samplePromise) {
+      samplePromise = (window.claude && claude.use)
+        ? claude.use("sample").catch(function () { return null; })
+        : Promise.resolve(null);
+    }
+    return samplePromise;
+  }
+
+  function queueTr(text) {
+    var key = state.lang + "|" + text;
+    if (TCACHE[key] !== undefined || TPENDING[key]) return;
+    TPENDING[key] = true;
+    trQueue.push({ text: text, target: state.lang });
+    if (trTimer) clearTimeout(trTimer);
+    trTimer = setTimeout(flushTr, 250);
+  }
+
+  function flushTr() {
+    var batch = trQueue.splice(0, 30);
+    if (!batch.length) return;
+    var target = batch[0].target;
+    var texts = batch.map(function (b) { return b.text; });
+    function settle(map) {
+      batch.forEach(function (b, i) {
+        var key = b.target + "|" + b.text;
+        var v = map ? (map[String(i)] || map[i]) : null;
+        TCACHE[key] = (typeof v === "string" && v) ? v : null;
+        delete TPENDING[key];
+      });
+      refresh();
+    }
+    getSample().then(function (ns) {
+      if (!ns) { settle(null); return; }
+      ns.json(
+        "You are the translation layer of a seafood company's task board. Translate each string into " +
+          (target === "th" ? "Thai" : "English") + ".\n" +
+          "Rules: keep any HTML tags and inline styles exactly as they are and translate only the text between them; " +
+          "leave people's names, product names, codes, numbers and dates unchanged; keep it short and plain, the way a colleague writes.\n" +
+          "Answer with a JSON object mapping the index of each input to its translation, for example {\"0\": \"...\"}.\n\n" +
+          "Input strings:\n" + JSON.stringify(texts),
+        { modelTier: "quick", cache: true }
+      ).then(settle, function () { settle(null); });
+    }, function () { settle(null); });
+  }
+
+  function trMark(from) {
+    var lbl = T(from === "th" ? "tr.from.th" : "tr.from.en");
+    return ' <span class="trmark" title="' + esc(lbl) + '">⇄ ' + esc(lbl) + "</span>";
+  }
+
+  function content(text) {
+    if (!text) return "";
+    if (!state.autotr) return esc(text);
+    var from = langOf(text);
+    if (from === state.lang) return esc(text);
+    var key = state.lang + "|" + text;
+    if (TCACHE[key]) return esc(TCACHE[key]) + trMark(from);
+    if (TCACHE[key] === null) return esc(text);
+    queueTr(text);
+    return esc(text) + ' <span class="trmark working">' + T("tr.working") + "</span>";
+  }
+
+  function contentHtml(html) {
+    if (!html) return "";
+    if (!state.autotr) return html;
+    var from = langOf(plain(html));
+    if (from === state.lang) return html;
+    var key = state.lang + "|" + html;
+    if (TCACHE[key]) return clean(TCACHE[key]) + '<p class="trline">' + trMark(from) + "</p>";
+    if (TCACHE[key] === null) return html;
+    queueTr(html);
+    return html + '<p class="trline"><span class="trmark working">' + T("tr.working") + "</span></p>";
+  }
+
+  function trAside(text) {
+    if (!text || !state.autotr) return "";
+    var from = langOf(text);
+    if (from === state.lang) return "";
+    var key = state.lang + "|" + text;
+    if (TCACHE[key]) return '<p class="trline">' + esc(TCACHE[key]) + trMark(from) + "</p>";
+    if (TCACHE[key] === null) return "";
+    queueTr(text);
+    return '<p class="trline"><span class="trmark working">' + T("tr.working") + "</span></p>";
+  }
+
+  var TSEED = [
+    ["Replace the chiller-room door seal", "เปลี่ยนซีลประตูห้องเย็น"],
+    ["<p>ปิดห้องเย็นได้ตอนตี 4 ก่อนของเข้า จะได้ไม่กระทบไลน์ผลิต</p>",
+     "<p>We can shut the cold room down at 4am, before the delivery arrives, so the cutting line is not affected.</p>"],
+    ["<p>ช่างบอกว่าอะไหล่มาจากระยอง <b>ประมาณสองสัปดาห์</b> ขอยางชั่วคราวมาใช้ก่อนได้ไหมครับ</p>",
+     "<p>The supplier says the part ships from Rayong, <b>about two weeks</b>. Can we get a temporary gasket in the meantime?</p>"],
+    ["ตรวจอุณหภูมิตู้แช่ก่อนเปิดร้าน", "Check the display fridge temperatures before the store opens"],
+    ["<p>เคาน์เตอร์ทองหล่อขายชุดซาชิมิหมดตั้งแต่บ่ายสองครับ <span style=\"background-color:#ffe08a\">สั่งเพิ่มพรุ่งนี้</span></p>",
+     "<p>The Thonglor counter sold out of sashimi sets by two in the afternoon. <span style=\"background-color:#ffe08a\">Ordering more tomorrow.</span></p>"]
+  ];
+  function warmTranslations() {
+    TSEED.forEach(function (pair) {
+      TCACHE[langOf(pair[1]) + "|" + pair[0]] = pair[1];
+      TCACHE[langOf(pair[0]) + "|" + pair[1]] = pair[0];
+    });
   }
 
   // ---------- notifications ----------
@@ -2329,7 +2774,7 @@
     return ids;
   }
 
-  function notify(t, kind, head, body, sb, extra) {
+  function notify(t, kind, key, args, body, sb, extra) {
     if (!t || !NOTIFY[kind]) return;
     var a = session();
     var actorId = a ? a.p : null;
@@ -2345,12 +2790,12 @@
         any = true;
         OUTBOX.unshift({
           id: "m" + (msgSeq++), ch: ch.id, to: pid, at: "Just now", kind: kind, task: t.id,
-          subject: "[" + group(t.g).name + "] " + t.t, head: head, body: body || ""
+          stream: t.g, title: t.t, k: key, args: args || {}, body: body || ""
         });
       });
       if (any) sent.push(person(pid).name);
     });
-    if (sent.length) toast(head + " — notified " + sent.join(", "));
+    if (sent.length) toast(T("n.notified", { head: T(key, args), who: sent.join(", ") }));
   }
 
   var toastTimer = null;
@@ -2378,29 +2823,29 @@
   function renderMail() {
     var list = myMail().filter(function (m) { return state.mailCh === "all" || m.ch === state.mailCh; });
     var tabs = '<div class="tabs2" style="margin-bottom:12px">' +
-      [{ id: "all", label: "All" }, { id: "email", label: "Email" }, { id: "line", label: "LINE" }].map(function (c) {
+      [{ id: "all", label: T("mail.all") }, { id: "email", label: "Email" }, { id: "line", label: "LINE" }].map(function (c) {
         return '<button data-mailch="' + c.id + '"' + (state.mailCh === c.id ? ' aria-selected="true"' : "") + ">" + c.label + "</button>";
       }).join("") + "</div>";
 
     var rows = list.length ? list.map(function (m) {
       var to = person(m.to), acc = account(m.to);
-      var line = "🐟 Harbour · " + m.head + " — " + plain(m.subject) +
+      var head = T(m.k, m.args), subject = "[" + L(group(m.stream)) + "] " + m.title;
+      var line = "🐟 Harbour · " + head + " — " + subject +
         (m.body ? " — “" + plain(m.body).slice(0, 90) + "”" : "");
       return '<article class="msg"><header>' +
         '<span class="chch ' + m.ch + '">' + (m.ch === "email" ? "Email" : "LINE") + "</span>" +
         avatar(to) + "<b>" + esc(to.full) + "</b>" +
         '<span class="at">' + esc(m.ch === "email" ? acc.email : acc.line) + " · " + esc(m.at) + "</span></header>" +
         (m.ch === "email"
-          ? '<div class="subj">' + esc(m.subject) + "</div>" +
-            '<div class="prev rtbody"><b>' + esc(m.head) + "</b>" + m.body + "</div>"
+          ? '<div class="subj">' + esc(subject) + "</div>" +
+            '<div class="prev rtbody"><b>' + esc(head) + "</b>" + m.body + "</div>"
           : '<div class="bubble">' + esc(line) + "</div>") +
         "</article>";
-    }).join("") : '<p class="cempty">Nothing here yet. Comment on a task or change a status to see what goes out.</p>';
+    }).join("") : '<p class="cempty">' + T("mail.empty") + "</p>";
 
     document.getElementById("view").innerHTML = tabs +
-      card(can("manage") ? "Everything the app sent" : "Sent to you", list.length, rows) +
-      '<p class="ro-note" style="margin-top:12px">Prototype — nothing leaves this browser. In the real app these go out over SMTP and the LINE Messaging API, ' +
-      'to the task owner, the subtask owner and everyone already in the thread, never to whoever made the change.</p>';
+      card(can("manage") ? T("mail.everything") : T("mail.toyou"), list.length, rows) +
+      '<p class="ro-note" style="margin-top:12px">' + T("mail.fine") + "</p>";
 
     myMail().forEach(function (m) { state.seen[m.id] = true; });
   }
@@ -2415,21 +2860,21 @@
               (can("manage") ? '<button data-unassign="' + ac.p + "|" + pid +
                 '" aria-label="Unassign ' + esc(pp.full) + '">×</button>' : "") + "</span>";
           }).join("")
-        : '<span class="ro-note">Nobody assigned yet — this account sees only its own work.</span>') +
+        : '<span class="ro-note">' + T("acc.noassign") + "</span>") +
       (can("manage") ? '<button class="btn" data-assign="' + ac.p +
-        '" style="padding:3px 10px;font-size:12px">+ Assign someone</button>' : "") + "</div>";
+        '" style="padding:3px 10px;font-size:12px">' + T("acc.assign") + "</button>" : "") + "</div>";
   }
 
   function renderAccess() {
     var mg = can("manage");
     var reqs = REQUESTS.length ? REQUESTS.map(function (r) {
       return '<div class="reqrow"><div class="g"><b>' + esc(r.name) + "</b>" +
-        "<div>" + esc(r.email) + " · asked for " + esc(roleOf(r.role).name) + " · " + esc(r.at) + "</div>" +
+        "<div>" + esc(r.email) + " · " + T("acc.asked") + " " + esc(L(roleOf(r.role))) + " · " + esc(r.at) + "</div>" +
         (r.note ? '<div style="color:var(--ink-2)">' + esc(r.note) + "</div>" : "") + "</div>" +
-        (mg ? '<button class="btn btn-primary" data-approve="' + r.id + '">Approve as…</button>' +
-          '<button class="btn" data-decline="' + r.id + '">Decline</button>'
-            : '<span class="ro-note">Only an administrator can approve this.</span>') + "</div>";
-    }).join("") : '<p class="cempty">No requests waiting.</p>';
+        (mg ? '<button class="btn btn-primary" data-approve="' + r.id + '">' + T("acc.approve") + "</button>" +
+          '<button class="btn" data-decline="' + r.id + '">' + T("acc.decline") + "</button>"
+            : '<span class="ro-note">' + T("acc.onlyadmin") + "</span>") + "</div>";
+    }).join("") : '<p class="cempty">' + T("acc.norequests") + "</p>";
 
     var accs = ACCOUNTS.map(function (ac) {
       var pp = person(ac.p);
@@ -2437,14 +2882,14 @@
       return '<div class="accrow">' +
         '<div class="who3">' + avatar(pp) + "<div><b>" + esc(pp.full) + '</b><span class="mail">' +
           esc(ac.email) + " · LINE " + esc(ac.line || "—") + "</span></div></div>" +
-        '<div class="mail">Member since ' + esc(ac.since) + " · " + mine + " open task" + (mine === 1 ? "" : "s") + "</div>" +
+        '<div class="mail">' + esc(T("acc.since", { d: ac.since, n: mine })) + "</div>" +
         '<select data-accrole="' + ac.p + '"' + (mg ? "" : " disabled") + ' aria-label="Account type for ' + esc(pp.full) + '">' +
           ROLES.map(function (r) {
-            return '<option value="' + r.id + '"' + (r.id === ac.role ? " selected" : "") + ">" + esc(r.name) + "</option>";
+            return '<option value="' + r.id + '"' + (r.id === ac.role ? " selected" : "") + ">" + esc(L(r)) + "</option>";
           }).join("") + "</select>" +
-        '<span class="statustag ' + ac.status + '">' + (ac.status === "active" ? "Active" : "Blocked") + "</span>" +
+        '<span class="statustag ' + ac.status + '">' + (ac.status === "active" ? T("acc.active") : T("acc.blocked")) + "</span>" +
         '<div style="text-align:right">' + (mg ? '<button class="btn" data-accstatus="' + ac.p +
-          '" style="padding:4px 10px;font-size:12px">' + (ac.status === "active" ? "Block" : "Restore") + "</button>" : "") + "</div>" +
+          '" style="padding:4px 10px;font-size:12px">' + (ac.status === "active" ? T("acc.block") : T("acc.restore")) + "</button>" : "") + "</div>" +
         "</div>" + (roleOf(ac.role).perms.all_people ? "" : assignedChips(ac));
     }).join("");
 
@@ -2455,17 +2900,17 @@
           (locked ? " readonly" : "") + ' aria-label="Account type name">' +
         PERMS.map(function (pm) {
           return "<label><input type=\"checkbox\" data-perm=\"" + r.id + "|" + pm.id + "\"" +
-            (r.perms[pm.id] ? " checked" : "") + (locked ? " disabled" : "") + "> " + pm.label + "</label>";
+            (r.perms[pm.id] ? " checked" : "") + (locked ? " disabled" : "") + "> " + L(pm) + "</label>";
         }).join("") +
-        (r.id === "admin" ? '<span class="ro-note">Administrators always keep full access.</span>' : "") +
+        (r.id === "admin" ? '<span class="ro-note">' + T("acc.adminlock") + "</span>" : "") +
         "</div>";
-    }).join("") + (mg ? '<div style="padding-top:12px"><button class="btn" data-addrole>+ Add an account type</button></div>' : "") + "</div>";
+    }).join("") + (mg ? '<div style="padding-top:12px"><button class="btn" data-addrole>' + T("acc.addrole") + "</button></div>" : "") + "</div>";
 
     document.getElementById("view").innerHTML = '<div class="colstack" style="margin-top:18px">' +
-      (mg ? "" : '<p class="ro-note" style="margin-top:2px">Read-only — only an administrator can approve accounts or change what each type may do.</p>') +
-      card("Requests waiting for approval", REQUESTS.length, reqs) +
-      card("Accounts", ACCOUNTS.length, accs) +
-      card("Account types and permissions", ROLES.length, roles) +
+      (mg ? "" : '<p class="ro-note" style="margin-top:2px">' + T("acc.readonly") + "</p>") +
+      card(T("acc.requests"), REQUESTS.length, reqs) +
+      card(T("acc.accounts"), ACCOUNTS.length, accs) +
+      card(T("acc.types"), ROLES.length, roles) +
       "</div>";
   }
 
@@ -2490,29 +2935,36 @@
       var n = TASKS.filter(function (t) { return t.g === g.id && t.s !== "done"; }).length;
       return '<div class="setrow"><span class="swatch-lg" style="background:' + g.color + '"></span>' +
         '<input class="setinput" data-gname="' + g.id + '" value="' + esc(g.name) + '"' + (mg ? "" : " readonly") + ' aria-label="Rename stream">' +
-        '<span class="v tnum">' + n + " open</span></div>";
+        '<span class="v tnum">' + esc(T("set.open", { n: n })) + "</span></div>";
     }).join("");
 
     var statuses = STATUS.map(function (st) {
       var n = TASKS.filter(function (t) { return t.s === st.id; }).length;
       return '<div class="setrow"><span class="swatch-lg" style="background:' + st.color + '"></span>' +
-        '<span class="k">' + st.label + '</span><span class="v tnum">' + n + "</span></div>";
+        '<span class="k">' + esc(L(st)) + '</span><span class="v tnum">' + n + "</span></div>";
     }).join("");
 
     var people = rosterAll().map(function (pp) {
       var n = TASKS.filter(function (t) { return t.o === pp.id && t.s !== "done"; }).length;
       return '<div class="setrow">' + avatar(pp) + '<span class="k">' + esc(pp.full) +
-        '<br><span class="v">' + esc(pp.role) + "</span></span>" +
-        '<span class="v tnum">' + n + " open</span>" +
-        '<button class="btn" style="padding:3px 9px;font-size:12px" data-week="' + pp.id + '">Open week</button></div>';
+        '<br><span class="v">' + esc(personRole(pp)) + "</span></span>" +
+        '<span class="v tnum">' + esc(T("set.open", { n: n })) + "</span>" +
+        '<button class="btn" style="padding:3px 9px;font-size:12px" data-week="' + pp.id + '">' + T("people.openweek") + "</button></div>";
     }).join("");
 
     var prefs =
-      '<div class="setrow"><span class="k">Weekly capacity per person<br><span class="v">Drives the capacity line on People and Reports</span></span>' +
+      '<div class="setrow"><span class="k">' + T("set.capacity") + '<br><span class="v">' + T("set.capacity.sub") + "</span></span>" +
         '<input class="setnum tnum" type="number" min="1" max="60" value="' + state.capacity + '" data-cap' + (mg ? "" : " disabled") + ' aria-label="Weekly capacity in hours"></div>' +
-      '<div class="setrow"><span class="k">Show completed tasks<br><span class="v">Otherwise they drop off the board once ticked</span></span>' +
-        '<label class="toggle"><input type="checkbox" data-setdone ' + (state.showDone ? "checked" : "") + "> Show done</label></div>" +
-      '<div class="setrow"><span class="k">Signed in as<br><span class="v">Whose week “My work” opens on</span></span>' +
+      '<div class="setrow"><span class="k">' + T("set.showdone") + '<br><span class="v">' + T("set.showdone.sub") + "</span></span>" +
+        '<label class="toggle"><input type="checkbox" data-setdone ' + (state.showDone ? "checked" : "") + "> " + T("filter.showdone") + "</label></div>" +
+      '<div class="setrow"><span class="k">' + T("set.lang") + '<br><span class="v">' + T("set.lang.sub") + "</span></span>" +
+        '<select class="setnum" style="width:auto" data-langsel aria-label="Language">' +
+          '<option value="en"' + (state.lang === "en" ? " selected" : "") + ">English</option>" +
+          '<option value="th"' + (state.lang === "th" ? " selected" : "") + ">ไทย</option></select></div>" +
+      '<div class="setrow"><span class="k">' + T("set.autotr") + '<br><span class="v">' + T("set.autotr.sub") + "</span></span>" +
+        '<label class="toggle"><input type="checkbox" data-autotr ' + (state.autotr ? "checked" : "") + "> " +
+        (state.lang === "th" ? "เปิด" : "On") + "</label></div>" +
+      '<div class="setrow"><span class="k">' + T("set.signedin") + '<br><span class="v">' + T("set.signedin.sub") + "</span></span>" +
         '<select class="setnum" style="width:auto" data-me aria-label="Signed in as">' +
         scopedPeople().map(function (pp) {
           return '<option value="' + pp.id + '"' + (pp.id === state.me ? " selected" : "") + ">" + esc(pp.full) + "</option>";
@@ -2523,38 +2975,53 @@
       return '<div class="setrow"><span class="swatch-lg" style="background:' + x.color + '"></span>' +
         '<input class="setinput" data-buname="' + x.id + '" value="' + esc(x.name) + '"' + (mg ? "" : " readonly") + ' aria-label="Rename business unit">' +
         '<span class="v tnum">' + n + " open</span></div>";
-    }).join("") + '<div class="setrow"><span class="k v">Tasks with no business unit</span><span class="v tnum">' +
+    }).join("") + '<div class="setrow"><span class="k v">' + T("set.nobu") + '</span><span class="v tnum">' +
       TASKS.filter(function (t) { return !t.bu && t.s !== "done"; }).length + "</span></div>";
 
     var noti =
-      '<div class="notirow"><span class="k" style="width:100%;font-weight:600">Channels</span>' +
+      '<div class="notirow"><span class="k" style="width:100%;font-weight:600">' + T("set.channels") + '</span>' +
         CHANNELS.map(function (c) {
           return "<label><input type=\"checkbox\" data-notich=\"" + c.id + "\"" +
-            (NOTIFY_CH[c.id] ? " checked" : "") + (mg ? "" : " disabled") + "> " + c.label + "</label>";
+            (NOTIFY_CH[c.id] ? " checked" : "") + (mg ? "" : " disabled") + "> " + L(c) + "</label>";
         }).join("") + "</div>" +
-      '<div class="notirow"><span class="k" style="width:100%;font-weight:600">Send a message when…</span>' +
-        [["comment", "someone comments"], ["status", "the status changes"], ["owner", "the task changes hands"],
-         ["due", "the due date moves"], ["files", "a document is attached"], ["subtask", "a subtask is added or ticked"],
-         ["update", "priority or business unit changes"], ["created", "a task is created"]].map(function (n) {
-          return "<label><input type=\"checkbox\" data-noti=\"" + n[0] + "\"" +
-            (NOTIFY[n[0]] ? " checked" : "") + (mg ? "" : " disabled") + "> " + n[1] + "</label>";
+      '<div class="notirow"><span class="k" style="width:100%;font-weight:600">' + T("set.when") + '</span>' +
+        ["comment", "status", "owner", "due", "files", "subtask", "update", "created"].map(function (k) {
+          return "<label><input type=\"checkbox\" data-noti=\"" + k + "\"" +
+            (NOTIFY[k] ? " checked" : "") + (mg ? "" : " disabled") + "> " + T("set.n." + k) + "</label>";
         }).join("") + "</div>" +
-      '<div class="setrow"><span class="k v">Recipients are the task owner, the subtask owner and everyone already in the thread — ' +
-        'never the person who made the change. Nothing is actually sent from this prototype.</span></div>';
+      '<div class="setrow"><span class="k v">' + T("set.recipients") + "</span></div>";
 
     document.getElementById("view").innerHTML = '<div class="setgrid">' +
-      card("Notifications — email and LINE", null, noti) +
-      card("Streams", GROUPS.length, streams) +
-      card("Business units", BUS.length, units) +
-      card("Statuses", STATUS.length, statuses) +
-      card("People", PEOPLE.length, people) +
-      card("Preferences", null, prefs) +
+      card(T("set.noti"), null, noti) +
+      card(T("set.streams"), GROUPS.length, streams) +
+      card(T("set.bus"), BUS.length, units) +
+      card(T("set.statuses"), STATUS.length, statuses) +
+      card(T("set.people"), rosterAll().length, people) +
+      card(T("set.prefs"), null, prefs) +
       "</div>";
+  }
+
+  function applyT(root) {
+    var r = root || document, i;
+    var tt = r.querySelectorAll("[data-t]");
+    for (i = 0; i < tt.length; i++) tt[i].textContent = T(tt[i].getAttribute("data-t"));
+    var ph = r.querySelectorAll("[data-tph]");
+    for (i = 0; i < ph.length; i++) ph[i].setAttribute("placeholder", T(ph[i].getAttribute("data-tph")));
+  }
+
+  function renderFilters() {
+    document.getElementById("bufilter").innerHTML =
+      '<option value="">' + T("filter.allbu") + "</option>" +
+      BUS.map(function (b) {
+        return '<option value="' + b.id + '"' + (state.bu === b.id ? " selected" : "") + ">" + esc(L(b)) + "</option>";
+      }).join("");
   }
 
   function render() {
     if (!renderGate()) return;
     renderTopbar();
+    applyT();
+    renderFilters();
     var pg = PAGES[state.page] || PAGES.home;
     if (pg.perm && !can(pg.perm)) { state.page = "home"; pg = PAGES.home; }
     document.getElementById("pagetitle").textContent = pg.title();
@@ -2566,11 +3033,17 @@
     if (pg.filters) renderFacepile();
     renderRail();
     pg.render();
-    document.getElementById("foot").textContent =
-      "Prototype — sample content. Every entry in the left rail opens a working page. Click a task anywhere — board, Home, My work or the calendar — to open its panel: description, subtasks, documents and comments, all taking bold, colours, highlight and lists. On the board, drag a task by its grip to reorder it or move it to another stream. Nothing is saved and no file is uploaded — changes live in this browser tab only.";
+    document.getElementById("foot").textContent = T("foot");
   }
 
   document.addEventListener("click", function (e) {
+    var lng = closestEl(e.target, "[data-lang]");
+    if (lng) {
+      state.lang = lng.dataset.lang;
+      if (session()) render(); else renderGate();
+      return;
+    }
+
     var mch = closestEl(e.target, "[data-mailch]");
     if (mch) { state.mailCh = mch.dataset.mailch; renderMail(); return; }
 
@@ -2584,9 +3057,9 @@
     if (meMenu) {
       var items = ACCOUNTS.filter(function (ac) { return ac.status === "active"; }).map(function (ac) {
         var pp = person(ac.p);
-        return { label: pp.full + " — " + roleOf(ac.role).name, id: ac.email, avatar: avatar(pp) };
+        return { label: pp.full + " — " + L(roleOf(ac.role)), id: ac.email, avatar: avatar(pp) };
       });
-      items.push({ label: "Sign out", id: "__out" });
+      items.push({ label: T("gate.signout"), id: "__out" });
       openMenu(meMenu, items, function (it) {
         if (it.id === "__out") signOut(); else signIn(it.id);
       });
@@ -2596,7 +3069,7 @@
     var appr = closestEl(e.target, "[data-approve]");
     if (appr && can("manage")) {
       var rid = appr.dataset.approve;
-      openMenu(appr, ROLES.map(function (r) { return { label: "Approve as " + r.name, id: r.id }; }),
+      openMenu(appr, ROLES.map(function (r) { return { label: T("acc.approve") + " " + L(r), id: r.id }; }),
         function (it) { approveRequest(rid, it.id); });
       return;
     }
@@ -2679,7 +3152,7 @@
         function (it) {
           if (bt && bt.bu !== it.id) {
             bt.bu = it.id;
-            notify(bt, "update", actorName() + " moved this to " + (businessUnit(it.id) ? businessUnit(it.id).name : "no business unit"));
+            notify(bt, "update", "n.bu", { who: actorName(), what: businessUnit(it.id) ? L(businessUnit(it.id)) : T("chip.nobu") });
           }
           refresh();
         });
@@ -2693,7 +3166,7 @@
         function (it) {
           if (pt && pt.p !== it.id) {
             pt.p = it.id;
-            notify(pt, "update", actorName() + " set the priority to " + it.label);
+            notify(pt, "update", "n.prio", { who: actorName(), what: L(prio(it.id)) });
           }
           refresh();
         });
@@ -2787,7 +3260,7 @@
     if (chk) {
       var t = TASKS.filter(function (x) { return x.id === chk.dataset.check; })[0];
       t.s = t.s === "done" ? "doing" : "done";
-      notify(t, "status", actorName() + (t.s === "done" ? " ticked this off" : " reopened this"));
+      notify(t, "status", t.s === "done" ? "n.ticked" : "n.reopened", { who: actorName() });
       refresh();
       return;
     }
@@ -2799,7 +3272,7 @@
         function (it) {
           if (task.s !== it.id) {
             task.s = it.id;
-            notify(task, "status", actorName() + " set the status to " + it.label);
+            notify(task, "status", "n.status", { who: actorName(), what: L(status(it.id)) });
           }
           refresh();
         });
@@ -2814,7 +3287,7 @@
         function (it) {
           if (tk.o !== it.id) {
             tk.o = it.id;
-            notify(tk, "owner", actorName() + " handed this to " + person(it.id).full, "", null, wasOwner);
+            notify(tk, "owner", "n.owner", { who: actorName(), what: person(it.id).full }, "", null, wasOwner);
           }
           refresh();
         });
@@ -2835,7 +3308,7 @@
       var q2 = sck.dataset.subcheck.split("|"), sb = findSub(q2[0], q2[1]);
       if (sb) {
         sb.done = !sb.done;
-        notify(findTask(q2[0]), "subtask", actorName() + (sb.done ? " completed “" : " reopened “") + sb.t + "”", "", sb);
+        notify(findTask(q2[0]), "subtask", sb.done ? "n.subdone" : "n.subopen", { who: actorName(), what: sb.t }, "", sb);
       }
       refresh();
       return;
@@ -2848,7 +3321,7 @@
         function (it) {
           if (sb2 && sb2.o !== it.id) {
             sb2.o = it.id;
-            notify(findTask(q3[0]), "owner", actorName() + " handed “" + sb2.t + "” to " + person(it.id).full, "", sb2);
+            notify(findTask(q3[0]), "owner", "n.owner.sub", { who: actorName(), sub: sb2.t, what: person(it.id).full }, "", sb2);
           }
           refresh();
         });
@@ -2894,7 +3367,7 @@
       var t1 = findTask(state.open);
       if (t1 && dd.value && t1.d !== dd.value) {
         t1.d = dd.value;
-        notify(t1, "due", actorName() + " moved the due date to " + fmtDate(t1.d));
+        notify(t1, "due", "n.due", { who: actorName(), what: fmtDate(t1.d) });
       }
       laterRefresh();
       return;
@@ -2906,6 +3379,10 @@
       laterRefresh();
       return;
     }
+    var ls = closestEl(e.target, "[data-langsel]");
+    if (ls) { state.lang = ls.value; laterRender(); return; }
+    var at = closestEl(e.target, "[data-autotr]");
+    if (at) { state.autotr = at.checked; laterRender(); return; }
     var nt = closestEl(e.target, "[data-noti]");
     if (nt) { NOTIFY[nt.dataset.noti] = nt.checked; laterRender(); return; }
     var nc = closestEl(e.target, "[data-notich]");
@@ -3011,7 +3488,7 @@
     });
     document.getElementById("f-title").value = "";
     state.collapsed = {};
-    notify(TASKS[0], "created", actorName() + " assigned you a new task");
+    notify(TASKS[0], "created", "n.created", { who: actorName() });
     go("board");
   });
 
@@ -3057,7 +3534,7 @@
     if (!html || html === "<br>") return;
     if (!sb.comments) sb.comments = [];
     sb.comments.push({ id: "c" + Date.now(), o: state.me, at: "Just now", html: html });
-    notify(findTask(q[0]), "comment", actorName() + " commented on “" + sb.t + "”", html, sb);
+    notify(findTask(q[0]), "comment", "n.comment.sub", { who: actorName(), what: sb.t }, html, sb);
     state.draft[key] = "";
     state.focus = { kind: "scomment", id: key };
     refresh();
@@ -3070,7 +3547,7 @@
     var html = clean(box.innerHTML).trim();
     if (!html || html === "<br>") return;
     t.comments.push({ id: "c" + Date.now(), o: state.me, at: "Just now", html: html });
-    notify(t, "comment", actorName() + " commented", html);
+    notify(t, "comment", "n.comment", { who: actorName() }, html);
     state.draft[t.id] = "";
     refresh();
   }
@@ -3199,29 +3676,29 @@
 
     var meta =
       '<div class="dmeta">' +
-        '<span class="k">Owner</span><span>' +
+        '<span class="k">' + T("drawer.owner") + "</span><span>" +
           (rw ? '<button class="owner-cell" data-owner="' + t.id + '">' + avatar(p) +
             '<span class="nm">' + esc(p.full) + "</span></button>"
               : '<span class="owner-cell ro">' + avatar(p) + '<span class="nm">' + esc(p.full) + "</span></span>") + "</span>" +
-        '<span class="k">Status</span><span>' +
+        '<span class="k">' + T("drawer.status") + "</span><span>" +
           (rw ? statusCell(t) : '<span class="status ro" style="--sc:' + dst.color + '">' + dst.label + "</span>") + "</span>" +
-        '<span class="k">Business unit</span><span>' +
+        '<span class="k">' + T("drawer.bu") + "</span><span>" +
           (rw ? '<button class="btn" data-bu="' + t.id + '">' +
-            (dbu ? esc(dbu.name) : "No business unit") + " ▾</button>"
-              : '<span class="ro-note">' + (dbu ? esc(dbu.name) : "No business unit") + "</span>") + "</span>" +
-        '<span class="k">Priority</span><span>' +
-          (rw ? '<button class="btn" data-prio="' + t.id + '">' + pr.label + " ▾</button>"
-              : '<span class="ro-note">' + pr.label + "</span>") + "</span>" +
-        '<span class="k">Due</span><span>' +
+            (dbu ? esc(L(dbu)) : T("chip.nobu")) + " ▾</button>"
+              : '<span class="ro-note">' + (dbu ? esc(L(dbu)) : T("chip.nobu")) + "</span>") + "</span>" +
+        '<span class="k">' + T("drawer.priority") + "</span><span>" +
+          (rw ? '<button class="btn" data-prio="' + t.id + '">' + esc(L(pr)) + " ▾</button>"
+              : '<span class="ro-note">' + esc(L(pr)) + "</span>") + "</span>" +
+        '<span class="k">' + T("drawer.due") + "</span><span>" +
           (rw ? '<input type="date" data-ddue value="' + t.d + '">' : '<span class="tnum">' + fmtDate(t.d) + "</span>") +
           '<span class="due tnum ' + dm.cls + '" style="margin-left:8px">' + dm.hint + "</span></span>" +
-        '<span class="k">Estimate</span><span>' +
+        '<span class="k">' + T("drawer.est") + "</span><span>" +
           (rw ? '<input type="number" step="0.5" min="0" data-dest value="' + t.e + '"> h'
               : '<span class="tnum">' + t.e + " h</span>") + "</span>" +
       "</div>" +
-      (rw ? "" : '<p class="ro-note">Read-only — this task belongs to someone outside your scope. You can still comment on it.</p>');
+      (rw ? "" : '<p class="ro-note">' + T("drawer.readonly") + "</p>");
 
-    var swatches = '<div class="colorrow"><span class="lbl">Title colour</span>' +
+    var swatches = '<div class="colorrow"><span class="lbl">' + T("drawer.titlecolour") + "</span>" +
       TEXT_COLORS.map(function (c) {
         return '<button type="button" class="swatchbtn' + (c.hex === t.color ? " on" : "") + (c.hex ? "" : " none") +
           '" data-tcolor="' + c.hex + '" title="' + c.label + '"' +
@@ -3230,36 +3707,37 @@
 
     var comments = t.comments.map(function (c) {
       return commentArticle(c, 'data-cdel="' + t.id + "|" + c.id + '"');
-    }).join("") || '<p class="cempty" style="padding:6px 0">No comments yet. Start the thread.</p>';
+    }).join("") || '<p class="cempty" style="padding:6px 0">' + T("comment.none") + "</p>";
 
     dr.innerHTML =
       '<header class="dhead"><span class="streamtag" style="--sc:' + g.color + '"><i></i>' + esc(g.name) + "</span>" +
-        '<button class="btn" data-showboard="' + t.id + '" style="margin-left:auto;padding:4px 10px;font-size:12px">Show on board</button>' +
+        '<button class="btn" data-showboard="' + t.id + '" style="margin-left:auto;padding:4px 10px;font-size:12px">' +
+          T("drawer.showboard") + "</button>" +
         '<button class="iconbtn-sm" data-dclose aria-label="Close">×</button></header>' +
       '<div class="dbody">' +
         "<div>" +
           '<h2 class="dtitle" contenteditable="' + (rw ? "true" : "false") + '" data-dtitle' +
             (t.color ? ' style="color:' + t.color + '"' : "") + ">" + esc(t.t) + "</h2>" +
-          (rw ? swatches : "") +
+          trAside(t.t) + (rw ? swatches : "") +
         "</div>" +
         meta +
-        '<section class="dsec"><h3>Description</h3>' +
+        '<section class="dsec"><h3>' + T("drawer.desc") + "</h3>" +
           '<div class="rt">' + (rw ? rtToolbar() : "") +
           '<div class="rtarea" data-desc contenteditable="' + (rw ? "true" : "false") +
-            '" data-ph="What does done look like?">' + t.desc + "</div></div></section>" +
-        '<section class="dsec"><h3>Subtasks <span class="n tnum">' + doneN + " / " + t.sub.length + "</span></h3>" +
+            '" data-ph="' + T("drawer.descph") + '">' + t.desc + "</div></div>" + trAside(plain(t.desc)) + "</section>" +
+        '<section class="dsec"><h3>' + T("drawer.subs") + ' <span class="n tnum">' + doneN + " / " + t.sub.length + "</span></h3>" +
           subPanel(t, true) + "</section>" +
-        '<section class="dsec"><h3>Documents <span class="n tnum">' + t.files.length + "</span></h3>" +
-          (rw ? '<div class="dropbox" data-dropzone="' + t.id + '">Drop documents here' +
-            '<br><button class="btn" data-attach="' + t.id + '">Choose files</button></div>' : "") +
+        '<section class="dsec"><h3>' + T("drawer.docs") + ' <span class="n tnum">' + t.files.length + "</span></h3>" +
+          (rw ? '<div class="dropbox" data-dropzone="' + t.id + '">' + T("docs.drop") +
+            '<br><button class="btn" data-attach="' + t.id + '">' + T("docs.choose") + "</button></div>" : "") +
           fileRow(t.files, t.id + "|") + "</section>" +
-        '<section class="dsec"><h3>Comments <span class="n tnum">' + t.comments.length + "</span></h3>" +
+        '<section class="dsec"><h3>' + T("drawer.comments") + ' <span class="n tnum">' + t.comments.length + "</span></h3>" +
           comments +
           '<div class="composer"><div class="rt">' + rtToolbar() +
-            '<div class="rtarea" data-comment contenteditable="true" data-ph="Write a comment…">' +
+            '<div class="rtarea" data-comment contenteditable="true" data-ph="' + T("comment.ph") + '">' +
             (state.draft[t.id] || "") + "</div></div>" +
-            '<div class="crow"><span class="hint">Ctrl or ⌘ + Enter to post</span>' +
-            '<button class="btn btn-primary" data-cpost="' + t.id + '">Comment</button></div></div>' +
+            '<div class="crow"><span class="hint">' + T("comment.hint") + "</span>" +
+            '<button class="btn btn-primary" data-cpost="' + t.id + '">' + T("comment.post") + "</button></div></div>" +
         "</section>" +
       "</div>";
 
@@ -3307,8 +3785,8 @@
   picker.addEventListener("change", function () {
     if (pickTarget && picker.files && picker.files.length) {
       addFiles(pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : findTask(pickTarget.task), picker.files);
-      notify(findTask(pickTarget.task), "files",
-        actorName() + " attached " + picker.files.length + " document" + (picker.files.length === 1 ? "" : "s"),
+      notify(findTask(pickTarget.task), "files", "n.files",
+        { who: actorName(), what: T("n.docs", { n: picker.files.length }) },
         "", pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : null);
       state.expanded[pickTarget.task] = state.expanded[pickTarget.task] || !!pickTarget.sub;
       refresh();
@@ -3347,7 +3825,7 @@
     var title = input.value.trim();
     if (!t || !title) return;
     t.sub.push({ id: "s" + Date.now(), t: title, o: t.o, done: false, files: [], comments: [] });
-    notify(t, "subtask", actorName() + " added a subtask: " + title);
+    notify(t, "subtask", "n.subadd", { who: actorName(), what: title });
     state.focus = { kind: "addsub", id: t.id };
     refresh();
   });
@@ -3486,19 +3964,19 @@
       e.preventDefault();
       clearMarks();
       var box2 = closestEl(e.target, "[data-dropzone]");
-      var dropped = e.dataTransfer.files.length + " document" + (e.dataTransfer.files.length === 1 ? "" : "s");
+      var dropped = T("n.docs", { n: e.dataTransfer.files.length });
       if (sub) {
         var q = sub.dataset.sub.split("|"), dsb = findSub(q[0], q[1]);
         addFiles(dsb, e.dataTransfer.files);
-        notify(findTask(q[0]), "files", actorName() + " attached " + dropped + " to “" + dsb.t + "”", "", dsb);
+        notify(findTask(q[0]), "files", "n.files.sub", { who: actorName(), what: dropped, sub: dsb.t }, "", dsb);
         refresh();
       } else if (box2) {
         addFiles(findTask(box2.dataset.dropzone), e.dataTransfer.files);
-        notify(findTask(box2.dataset.dropzone), "files", actorName() + " attached " + dropped);
+        notify(findTask(box2.dataset.dropzone), "files", "n.files", { who: actorName(), what: dropped });
         refresh();
       } else if (item) {
         addFiles(findTask(item.dataset.item), e.dataTransfer.files);
-        notify(findTask(item.dataset.item), "files", actorName() + " attached " + dropped);
+        notify(findTask(item.dataset.item), "files", "n.files", { who: actorName(), what: dropped });
         refresh();
       }
       return;
@@ -3529,6 +4007,7 @@
 
   normaliseSubs();
   normaliseAccounts();
+  warmTranslations();
   renderRail();
   render();
 })();
