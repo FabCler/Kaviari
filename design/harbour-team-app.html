@@ -601,6 +601,34 @@
     .assignrow { padding-left: 15px; }
   }
 
+  .toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 95;
+    display: flex; align-items: center; gap: 9px; max-width: min(560px, calc(100vw - 32px));
+    background: var(--sea-900); color: var(--bar-ink); border-radius: 99px;
+    padding: 9px 18px; font-size: 12.5px; box-shadow: 0 14px 34px -14px rgb(7 51 61 / 0.6);
+  }
+  .toast[hidden] { display: none !important; }
+  .toast svg { color: var(--tide); flex: none; }
+
+  .msg { padding: 12px 15px; border-top: 1px solid var(--line-soft); }
+  .msg:first-child { border-top: 0; }
+  .msg > header { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+  .msg > header b { font-size: 13px; }
+  .msg > header .at { margin-left: auto; font-size: 11.5px; color: var(--ink-muted); }
+  .chch { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; }
+  .chch.email { background: var(--tide-wash); color: var(--tide-600); }
+  .chch.line { background: rgb(6 199 85 / 0.14); color: #0a8a3f; }
+  :root[data-theme="dark"] .chch.line { color: #4fd07f; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chch.line { color: #4fd07f; } }
+  .msg .subj { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .msg .prev { color: var(--ink-2); border-left: 2px solid var(--line); padding-left: 11px; }
+  .msg .bubble {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px;
+    padding: 9px 12px; font-size: 12.5px; color: var(--ink-2); max-width: 60ch;
+  }
+  .notirow { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 15px; border-top: 1px solid var(--line-soft); }
+  .notirow label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; }
+  .notirow input { accent-color: var(--tide); }
   /* ---------- Cards and the pages behind the rail ---------- */
   .card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
   .card > header { display: flex; align-items: center; gap: 10px; padding: 12px 15px; border-bottom: 1px solid var(--line-soft); }
@@ -865,7 +893,7 @@
   </div>
   <button class="chip" id="ws">Bangkok operations ▾</button>
   <div class="spacer"></div>
-  <button class="iconbtn" aria-label="Notifications" title="Notifications">
+  <button class="iconbtn" data-page="mail" aria-label="Notifications" title="Notifications">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
   </button>
   <div class="me" id="topme"></div>
@@ -907,6 +935,7 @@
   </main>
 </div>
 
+<div class="toast" id="toast" hidden></div>
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-label="Task details" tabindex="-1"></aside>
 
@@ -973,6 +1002,7 @@
     cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     team: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 8.2a3 3 0 0 1 0 5.6M18.5 20a5.5 5.5 0 0 0-2.2-4.4"/>',
     reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    bell: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
     shield: '<path d="M12 3 5 6v6c0 4.2 2.9 7.8 7 9 4.1-1.2 7-4.8 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M4.5 8.5 6 9m12 6 1.5.5M8.5 19.5 9 18m6-12 .5-1.5M4.5 15.5 6 15m12-6 1.5-.5M8.5 4.5 9 6m6 12 .5 1.5"/>'
   };
@@ -982,9 +1012,10 @@
     { page: "board", label: "Team board", icon: "board", perm: "board" },
     { page: "mywork", label: "My work", icon: "my", badge: function () {
       return TASKS.filter(function (t) { return t.o === state.me && t.s !== "done"; }).length; } },
+    { page: "mail", label: "Notifications", icon: "bell", badge: function () { return unseenMail(); } },
     { page: "projects", label: "Projects", icon: "projects", perm: "projects" },
     { page: "calendar", label: "Calendar", icon: "cal" },
-    { page: "people", label: "People", icon: "team" },
+    { page: "people", label: "People", icon: "team", perm: "people" },
     { page: "reports", label: "Reports", icon: "reports", perm: "reports" },
     { page: "access", label: "Access", icon: "shield", perm: "access", badge: function () { return REQUESTS.length; } },
     { page: "settings", label: "Settings", icon: "gear", perm: "settings" }
@@ -1012,23 +1043,51 @@
     { id: "intake",  name: "New requests",          color: "var(--s-intake)" }
   ];
 
+  var CHANNELS = [
+    { id: "email", label: "Email" },
+    { id: "line", label: "LINE" }
+  ];
+
+  // which events raise a notification, and on which channels
+  var NOTIFY = { comment: true, status: true, owner: true, due: true, files: true, subtask: true, created: true, update: true };
+  var NOTIFY_CH = { email: true, line: true };
+
+  var OUTBOX = [
+    { id: "m3", ch: "line", to: "krit", at: "Today 08:07", kind: "comment", task: null,
+      subject: "[Food service accounts] Quote the hotel banquet order (200 pax)",
+      head: "Fabien Clermont commented", body: "<p>Right. Add <b>4%</b> for the ice and the transport.</p>" },
+    { id: "m2", ch: "email", to: "krit", at: "Today 08:07", kind: "comment", task: null,
+      subject: "[Food service accounts] Quote the hotel banquet order (200 pax)",
+      head: "Fabien Clermont commented", body: "<p>Right. Add <b>4%</b> for the ice and the transport.</p>" },
+    { id: "m1", ch: "email", to: "ton", at: "Wednesday 08:45", kind: "comment", task: null,
+      subject: "[Sourcing & cold chain] Replace the chiller-room door seal",
+      head: "Pim R. commented", body: "<p>QA note: if it drifts again we log a deviation. Can we get a temporary gasket?</p>" }
+  ];
+
+  var msgSeq = 100;
+
   var PERMS = [
     { id: "board", label: "See the team board" },
     { id: "all_people", label: "See everyone’s work" },
     { id: "edit_all", label: "Edit anyone’s tasks" },
     { id: "projects", label: "Projects" },
+    { id: "people", label: "People" },
     { id: "reports", label: "Reports" },
-    { id: "settings", label: "Settings — streams, units, capacity" },
-    { id: "access", label: "Accounts and access" }
+    { id: "access", label: "See accounts and access" },
+    { id: "settings", label: "See settings" },
+    { id: "manage", label: "Approve accounts and change settings" }
   ];
 
   var ROLES = [
     { id: "admin", name: "Administrator",
-      perms: { board: true, all_people: true, edit_all: true, projects: true, reports: true, settings: true, access: true } },
+      perms: { board: true, all_people: true, edit_all: true, projects: true, people: true, reports: true,
+        access: true, settings: true, manage: true } },
     { id: "assistant", name: "Admin assistant",
-      perms: { board: true, all_people: false, edit_all: false, projects: true, reports: true, settings: false, access: false } },
+      perms: { board: true, all_people: false, edit_all: false, projects: true, people: true, reports: true,
+        access: true, settings: true, manage: false } },
     { id: "member", name: "Team member",
-      perms: { board: true, all_people: true, edit_all: false, projects: true, reports: false, settings: false, access: false } }
+      perms: { board: true, all_people: true, edit_all: false, projects: true, people: false, reports: false,
+        access: false, settings: false, manage: false } }
   ];
 
   var ACCOUNTS = [
@@ -1195,7 +1254,8 @@
     block: { label: "Blocked", color: "var(--danger)" }
   };
 
-  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "", session: null, gate: "in", gateMsg: "" };
+  var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "", session: null, gate: "in", gateMsg: "",
+    seen: {}, mailCh: "all" };
 
   TASKS.forEach(function (t, i) {
     t.id = "t" + i;
@@ -1206,6 +1266,14 @@
     t.color = t.color || "";
     t.bu = t.bu || BU_BY_TITLE[t.t] || "";
   });
+
+  function normaliseAccounts() {
+    ACCOUNTS.forEach(function (a) {
+      var pp = person(a.p);
+      a.line = a.line || "@" + pp.name.toLowerCase().replace(/[^a-z]/g, "") + ".tms";
+      a.channels = a.channels || { email: true, line: true };
+    });
+  }
 
   function normaliseSubs() {
     TASKS.forEach(function (t) {
@@ -1604,6 +1672,15 @@
       sub: function () { var m = person(state.me); return m.full + " · " + m.role; },
       kpis: false, filters: true, tools: ["person", "task"], render: function () { renderWeek(); }
     },
+    mail: {
+      title: function () { return "Notifications"; },
+      sub: function () {
+        return can("manage")
+          ? "Every email and LINE message the app sent, newest first"
+          : "Email and LINE messages sent to you";
+      },
+      kpis: false, filters: false, tools: [], render: function () { renderMail(); }
+    },
     projects: {
       title: function () { return "Projects"; },
       sub: function () { return PROJECTS.length + " projects across five stages"; },
@@ -1617,7 +1694,7 @@
     people: {
       title: function () { return "People"; },
       sub: function () { return scopedPeople().length + " people · capacity " + state.capacity + " h a week"; },
-      kpis: false, filters: false, tools: [], render: function () { renderPeople(); }
+      kpis: false, filters: false, tools: [], perm: "people", render: function () { renderPeople(); }
     },
     reports: {
       title: function () { return "Reports"; },
@@ -2230,6 +2307,104 @@
       "</div>";
   }
 
+  // ---------- notifications ----------
+  function plain(html) {
+    var d = document.createElement("div");
+    d.innerHTML = html || "";
+    return (d.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function actorName() {
+    var a = session();
+    return a ? person(a.p).full : "Someone";
+  }
+
+  function recipients(t, sb, actorId) {
+    var ids = [];
+    function add(id) { if (id && ids.indexOf(id) === -1 && id !== actorId) ids.push(id); }
+    add(t.o);
+    if (sb) add(sb.o);
+    t.comments.forEach(function (c) { add(c.o); });
+    t.sub.forEach(function (x) { (x.comments || []).forEach(function (c) { add(c.o); }); });
+    return ids;
+  }
+
+  function notify(t, kind, head, body, sb, extra) {
+    if (!t || !NOTIFY[kind]) return;
+    var a = session();
+    var actorId = a ? a.p : null;
+    var ids = recipients(t, sb, actorId);
+    if (extra && ids.indexOf(extra) === -1 && extra !== actorId) ids.push(extra);
+    var sent = [];
+    ids.forEach(function (pid) {
+      var acc = account(pid);
+      if (!acc || acc.status !== "active") return;
+      var any = false;
+      CHANNELS.forEach(function (ch) {
+        if (!NOTIFY_CH[ch.id] || acc.channels[ch.id] === false) return;
+        any = true;
+        OUTBOX.unshift({
+          id: "m" + (msgSeq++), ch: ch.id, to: pid, at: "Just now", kind: kind, task: t.id,
+          subject: "[" + group(t.g).name + "] " + t.t, head: head, body: body || ""
+        });
+      });
+      if (any) sent.push(person(pid).name);
+    });
+    if (sent.length) toast(head + " — notified " + sent.join(", "));
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var el2 = document.getElementById("toast");
+    el2.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg><span>' +
+      esc(msg) + "</span>";
+    el2.hidden = false;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el2.hidden = true; }, 3600);
+  }
+
+  function myMail() {
+    var a = session();
+    if (!a) return [];
+    if (can("manage")) return OUTBOX;
+    return OUTBOX.filter(function (m) { return m.to === a.p; });
+  }
+  function unseenMail() {
+    var a = session();
+    if (!a) return 0;
+    return OUTBOX.filter(function (m) { return m.to === a.p && !state.seen[m.id]; }).length;
+  }
+
+  function renderMail() {
+    var list = myMail().filter(function (m) { return state.mailCh === "all" || m.ch === state.mailCh; });
+    var tabs = '<div class="tabs2" style="margin-bottom:12px">' +
+      [{ id: "all", label: "All" }, { id: "email", label: "Email" }, { id: "line", label: "LINE" }].map(function (c) {
+        return '<button data-mailch="' + c.id + '"' + (state.mailCh === c.id ? ' aria-selected="true"' : "") + ">" + c.label + "</button>";
+      }).join("") + "</div>";
+
+    var rows = list.length ? list.map(function (m) {
+      var to = person(m.to), acc = account(m.to);
+      var line = "🐟 Harbour · " + m.head + " — " + plain(m.subject) +
+        (m.body ? " — “" + plain(m.body).slice(0, 90) + "”" : "");
+      return '<article class="msg"><header>' +
+        '<span class="chch ' + m.ch + '">' + (m.ch === "email" ? "Email" : "LINE") + "</span>" +
+        avatar(to) + "<b>" + esc(to.full) + "</b>" +
+        '<span class="at">' + esc(m.ch === "email" ? acc.email : acc.line) + " · " + esc(m.at) + "</span></header>" +
+        (m.ch === "email"
+          ? '<div class="subj">' + esc(m.subject) + "</div>" +
+            '<div class="prev rtbody"><b>' + esc(m.head) + "</b>" + m.body + "</div>"
+          : '<div class="bubble">' + esc(line) + "</div>") +
+        "</article>";
+    }).join("") : '<p class="cempty">Nothing here yet. Comment on a task or change a status to see what goes out.</p>';
+
+    document.getElementById("view").innerHTML = tabs +
+      card(can("manage") ? "Everything the app sent" : "Sent to you", list.length, rows) +
+      '<p class="ro-note" style="margin-top:12px">Prototype — nothing leaves this browser. In the real app these go out over SMTP and the LINE Messaging API, ' +
+      'to the task owner, the subtask owner and everyone already in the thread, never to whoever made the change.</p>';
+
+    myMail().forEach(function (m) { state.seen[m.id] = true; });
+  }
+
   // ---------- Access ----------
   function assignedChips(ac) {
     return '<div class="assignrow">' +
@@ -2237,39 +2412,44 @@
         ? ac.assigned.map(function (pid) {
             var pp = person(pid);
             return '<span class="assignchip">' + avatar(pp) + esc(pp.full) +
-              '<button data-unassign="' + ac.p + "|" + pid + '" aria-label="Unassign ' + esc(pp.full) + '">×</button></span>';
+              (can("manage") ? '<button data-unassign="' + ac.p + "|" + pid +
+                '" aria-label="Unassign ' + esc(pp.full) + '">×</button>' : "") + "</span>";
           }).join("")
         : '<span class="ro-note">Nobody assigned yet — this account sees only its own work.</span>') +
-      '<button class="btn" data-assign="' + ac.p + '" style="padding:3px 10px;font-size:12px">+ Assign someone</button></div>';
+      (can("manage") ? '<button class="btn" data-assign="' + ac.p +
+        '" style="padding:3px 10px;font-size:12px">+ Assign someone</button>' : "") + "</div>";
   }
 
   function renderAccess() {
+    var mg = can("manage");
     var reqs = REQUESTS.length ? REQUESTS.map(function (r) {
       return '<div class="reqrow"><div class="g"><b>' + esc(r.name) + "</b>" +
         "<div>" + esc(r.email) + " · asked for " + esc(roleOf(r.role).name) + " · " + esc(r.at) + "</div>" +
         (r.note ? '<div style="color:var(--ink-2)">' + esc(r.note) + "</div>" : "") + "</div>" +
-        '<button class="btn btn-primary" data-approve="' + r.id + '">Approve as…</button>' +
-        '<button class="btn" data-decline="' + r.id + '">Decline</button></div>';
+        (mg ? '<button class="btn btn-primary" data-approve="' + r.id + '">Approve as…</button>' +
+          '<button class="btn" data-decline="' + r.id + '">Decline</button>'
+            : '<span class="ro-note">Only an administrator can approve this.</span>') + "</div>";
     }).join("") : '<p class="cempty">No requests waiting.</p>';
 
     var accs = ACCOUNTS.map(function (ac) {
       var pp = person(ac.p);
       var mine = TASKS.filter(function (t) { return t.o === ac.p && t.s !== "done"; }).length;
       return '<div class="accrow">' +
-        '<div class="who3">' + avatar(pp) + "<div><b>" + esc(pp.full) + '</b><span class="mail">' + esc(ac.email) + "</span></div></div>" +
+        '<div class="who3">' + avatar(pp) + "<div><b>" + esc(pp.full) + '</b><span class="mail">' +
+          esc(ac.email) + " · LINE " + esc(ac.line || "—") + "</span></div></div>" +
         '<div class="mail">Member since ' + esc(ac.since) + " · " + mine + " open task" + (mine === 1 ? "" : "s") + "</div>" +
-        '<select data-accrole="' + ac.p + '" aria-label="Account type for ' + esc(pp.full) + '">' +
+        '<select data-accrole="' + ac.p + '"' + (mg ? "" : " disabled") + ' aria-label="Account type for ' + esc(pp.full) + '">' +
           ROLES.map(function (r) {
             return '<option value="' + r.id + '"' + (r.id === ac.role ? " selected" : "") + ">" + esc(r.name) + "</option>";
           }).join("") + "</select>" +
         '<span class="statustag ' + ac.status + '">' + (ac.status === "active" ? "Active" : "Blocked") + "</span>" +
-        '<div style="text-align:right"><button class="btn" data-accstatus="' + ac.p +
-          '" style="padding:4px 10px;font-size:12px">' + (ac.status === "active" ? "Block" : "Restore") + "</button></div>" +
+        '<div style="text-align:right">' + (mg ? '<button class="btn" data-accstatus="' + ac.p +
+          '" style="padding:4px 10px;font-size:12px">' + (ac.status === "active" ? "Block" : "Restore") + "</button>" : "") + "</div>" +
         "</div>" + (roleOf(ac.role).perms.all_people ? "" : assignedChips(ac));
     }).join("");
 
     var roles = '<div class="permgrid">' + ROLES.map(function (r) {
-      var locked = r.id === "admin";
+      var locked = r.id === "admin" || !mg;
       return '<div class="permrow">' +
         '<input class="setinput rn" data-rolename="' + r.id + '" value="' + esc(r.name) + '"' +
           (locked ? " readonly" : "") + ' aria-label="Account type name">' +
@@ -2277,11 +2457,12 @@
           return "<label><input type=\"checkbox\" data-perm=\"" + r.id + "|" + pm.id + "\"" +
             (r.perms[pm.id] ? " checked" : "") + (locked ? " disabled" : "") + "> " + pm.label + "</label>";
         }).join("") +
-        (locked ? '<span class="ro-note">Administrators always keep full access.</span>' : "") +
+        (r.id === "admin" ? '<span class="ro-note">Administrators always keep full access.</span>' : "") +
         "</div>";
-    }).join("") + '<div style="padding-top:12px"><button class="btn" data-addrole>+ Add an account type</button></div></div>';
+    }).join("") + (mg ? '<div style="padding-top:12px"><button class="btn" data-addrole>+ Add an account type</button></div>' : "") + "</div>";
 
     document.getElementById("view").innerHTML = '<div class="colstack" style="margin-top:18px">' +
+      (mg ? "" : '<p class="ro-note" style="margin-top:2px">Read-only — only an administrator can approve accounts or change what each type may do.</p>') +
       card("Requests waiting for approval", REQUESTS.length, reqs) +
       card("Accounts", ACCOUNTS.length, accs) +
       card("Account types and permissions", ROLES.length, roles) +
@@ -2304,10 +2485,11 @@
 
   // ---------- Settings ----------
   function renderSettings() {
+    var mg = can("manage");
     var streams = GROUPS.map(function (g) {
       var n = TASKS.filter(function (t) { return t.g === g.id && t.s !== "done"; }).length;
       return '<div class="setrow"><span class="swatch-lg" style="background:' + g.color + '"></span>' +
-        '<input class="setinput" data-gname="' + g.id + '" value="' + esc(g.name) + '" aria-label="Rename stream">' +
+        '<input class="setinput" data-gname="' + g.id + '" value="' + esc(g.name) + '"' + (mg ? "" : " readonly") + ' aria-label="Rename stream">' +
         '<span class="v tnum">' + n + " open</span></div>";
     }).join("");
 
@@ -2327,7 +2509,7 @@
 
     var prefs =
       '<div class="setrow"><span class="k">Weekly capacity per person<br><span class="v">Drives the capacity line on People and Reports</span></span>' +
-        '<input class="setnum tnum" type="number" min="1" max="60" value="' + state.capacity + '" data-cap aria-label="Weekly capacity in hours"></div>' +
+        '<input class="setnum tnum" type="number" min="1" max="60" value="' + state.capacity + '" data-cap' + (mg ? "" : " disabled") + ' aria-label="Weekly capacity in hours"></div>' +
       '<div class="setrow"><span class="k">Show completed tasks<br><span class="v">Otherwise they drop off the board once ticked</span></span>' +
         '<label class="toggle"><input type="checkbox" data-setdone ' + (state.showDone ? "checked" : "") + "> Show done</label></div>" +
       '<div class="setrow"><span class="k">Signed in as<br><span class="v">Whose week “My work” opens on</span></span>' +
@@ -2339,12 +2521,29 @@
     var units = BUS.map(function (x) {
       var n = TASKS.filter(function (t) { return t.bu === x.id && t.s !== "done"; }).length;
       return '<div class="setrow"><span class="swatch-lg" style="background:' + x.color + '"></span>' +
-        '<input class="setinput" data-buname="' + x.id + '" value="' + esc(x.name) + '" aria-label="Rename business unit">' +
+        '<input class="setinput" data-buname="' + x.id + '" value="' + esc(x.name) + '"' + (mg ? "" : " readonly") + ' aria-label="Rename business unit">' +
         '<span class="v tnum">' + n + " open</span></div>";
     }).join("") + '<div class="setrow"><span class="k v">Tasks with no business unit</span><span class="v tnum">' +
       TASKS.filter(function (t) { return !t.bu && t.s !== "done"; }).length + "</span></div>";
 
+    var noti =
+      '<div class="notirow"><span class="k" style="width:100%;font-weight:600">Channels</span>' +
+        CHANNELS.map(function (c) {
+          return "<label><input type=\"checkbox\" data-notich=\"" + c.id + "\"" +
+            (NOTIFY_CH[c.id] ? " checked" : "") + (mg ? "" : " disabled") + "> " + c.label + "</label>";
+        }).join("") + "</div>" +
+      '<div class="notirow"><span class="k" style="width:100%;font-weight:600">Send a message when…</span>' +
+        [["comment", "someone comments"], ["status", "the status changes"], ["owner", "the task changes hands"],
+         ["due", "the due date moves"], ["files", "a document is attached"], ["subtask", "a subtask is added or ticked"],
+         ["update", "priority or business unit changes"], ["created", "a task is created"]].map(function (n) {
+          return "<label><input type=\"checkbox\" data-noti=\"" + n[0] + "\"" +
+            (NOTIFY[n[0]] ? " checked" : "") + (mg ? "" : " disabled") + "> " + n[1] + "</label>";
+        }).join("") + "</div>" +
+      '<div class="setrow"><span class="k v">Recipients are the task owner, the subtask owner and everyone already in the thread — ' +
+        'never the person who made the change. Nothing is actually sent from this prototype.</span></div>';
+
     document.getElementById("view").innerHTML = '<div class="setgrid">' +
+      card("Notifications — email and LINE", null, noti) +
       card("Streams", GROUPS.length, streams) +
       card("Business units", BUS.length, units) +
       card("Statuses", STATUS.length, statuses) +
@@ -2372,6 +2571,9 @@
   }
 
   document.addEventListener("click", function (e) {
+    var mch = closestEl(e.target, "[data-mailch]");
+    if (mch) { state.mailCh = mch.dataset.mailch; renderMail(); return; }
+
     var gtab = closestEl(e.target, "[data-gate]");
     if (gtab) { state.gate = gtab.dataset.gate; state.gateMsg = ""; renderGate(); return; }
 
@@ -2392,7 +2594,7 @@
     }
 
     var appr = closestEl(e.target, "[data-approve]");
-    if (appr) {
+    if (appr && can("manage")) {
       var rid = appr.dataset.approve;
       openMenu(appr, ROLES.map(function (r) { return { label: "Approve as " + r.name, id: r.id }; }),
         function (it) { approveRequest(rid, it.id); });
@@ -2400,14 +2602,14 @@
     }
 
     var decl = closestEl(e.target, "[data-decline]");
-    if (decl) {
+    if (decl && can("manage")) {
       REQUESTS = REQUESTS.filter(function (x) { return x.id !== decl.dataset.decline; });
       render();
       return;
     }
 
     var accst = closestEl(e.target, "[data-accstatus]");
-    if (accst) {
+    if (accst && can("manage")) {
       var ac2 = account(accst.dataset.accstatus);
       if (ac2 && ac2.p !== state.session) ac2.status = ac2.status === "active" ? "blocked" : "active";
       render();
@@ -2415,7 +2617,7 @@
     }
 
     var asg = closestEl(e.target, "[data-assign]");
-    if (asg) {
+    if (asg && can("manage")) {
       var ac3 = account(asg.dataset.assign);
       var free = teamRoster().filter(function (pp) {
         return pp.id !== ac3.p && ac3.assigned.indexOf(pp.id) === -1;
@@ -2427,14 +2629,14 @@
     }
 
     var unasg = closestEl(e.target, "[data-unassign]");
-    if (unasg) {
+    if (unasg && can("manage")) {
       var uq = unasg.dataset.unassign.split("|"), ac4 = account(uq[0]);
       if (ac4) ac4.assigned = ac4.assigned.filter(function (x) { return x !== uq[1]; });
       render();
       return;
     }
 
-    if (closestEl(e.target, "[data-addrole]")) {
+    if (closestEl(e.target, "[data-addrole]") && can("manage")) {
       ROLES.push({ id: "role" + Date.now(), name: "New account type", perms: { board: true, projects: true } });
       render();
       return;
@@ -2474,7 +2676,13 @@
       var bt = findTask(bub.dataset.bu);
       openMenu(bub, BUS.map(function (x) { return { label: x.name, id: x.id, color: x.color }; })
         .concat([{ label: "No business unit", id: "" }]),
-        function (it) { if (bt) bt.bu = it.id; refresh(); });
+        function (it) {
+          if (bt && bt.bu !== it.id) {
+            bt.bu = it.id;
+            notify(bt, "update", actorName() + " moved this to " + (businessUnit(it.id) ? businessUnit(it.id).name : "no business unit"));
+          }
+          refresh();
+        });
       return;
     }
 
@@ -2482,7 +2690,13 @@
     if (prb) {
       var pt = findTask(prb.dataset.prio);
       openMenu(prb, PRIOS.map(function (x) { return { label: x.label, id: x.id, color: x.color }; }),
-        function (it) { if (pt) pt.p = it.id; refresh(); });
+        function (it) {
+          if (pt && pt.p !== it.id) {
+            pt.p = it.id;
+            notify(pt, "update", actorName() + " set the priority to " + it.label);
+          }
+          refresh();
+        });
       return;
     }
 
@@ -2573,6 +2787,7 @@
     if (chk) {
       var t = TASKS.filter(function (x) { return x.id === chk.dataset.check; })[0];
       t.s = t.s === "done" ? "doing" : "done";
+      notify(t, "status", actorName() + (t.s === "done" ? " ticked this off" : " reopened this"));
       refresh();
       return;
     }
@@ -2581,15 +2796,28 @@
     if (stBtn) {
       var task = TASKS.filter(function (x) { return x.id === stBtn.dataset.status; })[0];
       openMenu(stBtn, STATUS.map(function (s) { return { label: s.label, id: s.id, color: s.color }; }),
-        function (it) { task.s = it.id; refresh(); });
+        function (it) {
+          if (task.s !== it.id) {
+            task.s = it.id;
+            notify(task, "status", actorName() + " set the status to " + it.label);
+          }
+          refresh();
+        });
       return;
     }
 
     var ownBtn = e.target.closest("[data-owner]");
     if (ownBtn) {
       var tk = TASKS.filter(function (x) { return x.id === ownBtn.dataset.owner; })[0];
+      var wasOwner = tk.o;
       openMenu(ownBtn, assignable().map(function (p) { return { label: p.full, id: p.id, avatar: avatar(p) }; }),
-        function (it) { tk.o = it.id; refresh(); });
+        function (it) {
+          if (tk.o !== it.id) {
+            tk.o = it.id;
+            notify(tk, "owner", actorName() + " handed this to " + person(it.id).full, "", null, wasOwner);
+          }
+          refresh();
+        });
       return;
     }
 
@@ -2605,7 +2833,10 @@
     var sck = closestEl(e.target, "[data-subcheck]");
     if (sck) {
       var q2 = sck.dataset.subcheck.split("|"), sb = findSub(q2[0], q2[1]);
-      if (sb) sb.done = !sb.done;
+      if (sb) {
+        sb.done = !sb.done;
+        notify(findTask(q2[0]), "subtask", actorName() + (sb.done ? " completed “" : " reopened “") + sb.t + "”", "", sb);
+      }
       refresh();
       return;
     }
@@ -2614,7 +2845,13 @@
     if (sow) {
       var q3 = sow.dataset.subowner.split("|"), sb2 = findSub(q3[0], q3[1]);
       openMenu(sow, assignable().map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
-        function (it) { if (sb2) sb2.o = it.id; refresh(); });
+        function (it) {
+          if (sb2 && sb2.o !== it.id) {
+            sb2.o = it.id;
+            notify(findTask(q3[0]), "owner", actorName() + " handed “" + sb2.t + "” to " + person(it.id).full, "", sb2);
+          }
+          refresh();
+        });
       return;
     }
 
@@ -2655,7 +2892,10 @@
     var dd = closestEl(e.target, "[data-ddue]");
     if (dd) {
       var t1 = findTask(state.open);
-      if (t1 && dd.value) t1.d = dd.value;
+      if (t1 && dd.value && t1.d !== dd.value) {
+        t1.d = dd.value;
+        notify(t1, "due", actorName() + " moved the due date to " + fmtDate(t1.d));
+      }
       laterRefresh();
       return;
     }
@@ -2666,6 +2906,10 @@
       laterRefresh();
       return;
     }
+    var nt = closestEl(e.target, "[data-noti]");
+    if (nt) { NOTIFY[nt.dataset.noti] = nt.checked; laterRender(); return; }
+    var nc = closestEl(e.target, "[data-notich]");
+    if (nc) { NOTIFY_CH[nc.dataset.notich] = nc.checked; laterRender(); return; }
     var ar = closestEl(e.target, "[data-accrole]");
     if (ar) {
       var aca = account(ar.dataset.accrole);
@@ -2767,6 +3011,7 @@
     });
     document.getElementById("f-title").value = "";
     state.collapsed = {};
+    notify(TASKS[0], "created", actorName() + " assigned you a new task");
     go("board");
   });
 
@@ -2812,6 +3057,7 @@
     if (!html || html === "<br>") return;
     if (!sb.comments) sb.comments = [];
     sb.comments.push({ id: "c" + Date.now(), o: state.me, at: "Just now", html: html });
+    notify(findTask(q[0]), "comment", actorName() + " commented on “" + sb.t + "”", html, sb);
     state.draft[key] = "";
     state.focus = { kind: "scomment", id: key };
     refresh();
@@ -2824,6 +3070,7 @@
     var html = clean(box.innerHTML).trim();
     if (!html || html === "<br>") return;
     t.comments.push({ id: "c" + Date.now(), o: state.me, at: "Just now", html: html });
+    notify(t, "comment", actorName() + " commented", html);
     state.draft[t.id] = "";
     refresh();
   }
@@ -3060,6 +3307,9 @@
   picker.addEventListener("change", function () {
     if (pickTarget && picker.files && picker.files.length) {
       addFiles(pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : findTask(pickTarget.task), picker.files);
+      notify(findTask(pickTarget.task), "files",
+        actorName() + " attached " + picker.files.length + " document" + (picker.files.length === 1 ? "" : "s"),
+        "", pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : null);
       state.expanded[pickTarget.task] = state.expanded[pickTarget.task] || !!pickTarget.sub;
       refresh();
     }
@@ -3097,6 +3347,7 @@
     var title = input.value.trim();
     if (!t || !title) return;
     t.sub.push({ id: "s" + Date.now(), t: title, o: t.o, done: false, files: [], comments: [] });
+    notify(t, "subtask", actorName() + " added a subtask: " + title);
     state.focus = { kind: "addsub", id: t.id };
     refresh();
   });
@@ -3235,15 +3486,19 @@
       e.preventDefault();
       clearMarks();
       var box2 = closestEl(e.target, "[data-dropzone]");
+      var dropped = e.dataTransfer.files.length + " document" + (e.dataTransfer.files.length === 1 ? "" : "s");
       if (sub) {
-        var q = sub.dataset.sub.split("|");
-        addFiles(findSub(q[0], q[1]), e.dataTransfer.files);
+        var q = sub.dataset.sub.split("|"), dsb = findSub(q[0], q[1]);
+        addFiles(dsb, e.dataTransfer.files);
+        notify(findTask(q[0]), "files", actorName() + " attached " + dropped + " to “" + dsb.t + "”", "", dsb);
         refresh();
       } else if (box2) {
         addFiles(findTask(box2.dataset.dropzone), e.dataTransfer.files);
+        notify(findTask(box2.dataset.dropzone), "files", actorName() + " attached " + dropped);
         refresh();
       } else if (item) {
         addFiles(findTask(item.dataset.item), e.dataTransfer.files);
+        notify(findTask(item.dataset.item), "files", actorName() + " attached " + dropped);
         refresh();
       }
       return;
@@ -3273,6 +3528,7 @@
   });
 
   normaliseSubs();
+  normaliseAccounts();
   renderRail();
   render();
 })();
