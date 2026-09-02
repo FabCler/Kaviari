@@ -14,7 +14,7 @@ department access.
 | --- | --- | --- |
 | Dashboard | everyone | Where each shipment stands |
 | Shipment Setup | Purchasing | The shipment, its ETA and the CS tolerance |
-| SAP Imports | Purchasing | PO, supplier invoice and customer SO exports (.xlsx / .csv) |
+| SAP Imports | Purchasing | PO, supplier invoice and customer SO exports (.xlsx / .csv / PDF) |
 | Validation | Purchasing, Sales, CS | The four lanes: Hold → Purchase Review → Sale Review → Ready |
 | SO Adjustment | Customer Service, Sales | Allocating the invoiced quantity across the customer orders |
 | Exceptions | every desk | The open queue, its own first |
@@ -36,6 +36,19 @@ department access.
 - A line is READY only when all three documents are in, every desk has
   confirmed its exception, and the revised customer SO total plus approved free
   stock equals the invoiced quantity.
+
+### Reading a PDF
+
+A supplier PDF is a drawing, not a table: there are no columns, only strings at
+coordinates. `lib/import/pdf.ts` extracts the text with its positions, clusters
+it into lines, and accepts a line as a document row only when its numbers obey
+**quantity × price = amount** — the invariant that keeps a page-break overlay or
+a footer out of the result. European and English decimals are detected per
+document.
+
+What comes out is a proposal: the rows open in an editable preview and nothing
+is written until the desk confirms them. A PDF that is a scan or a photo has no
+text layer at all, and the app says so plainly instead of importing nothing.
 
 ### Accounts
 

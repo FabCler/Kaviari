@@ -28,10 +28,12 @@ export default async function ImportsPage() {
         subtitle="Bring the SAP purchase orders, supplier invoices and customer sales orders into a shipment."
       />
       <Callout>
-        <strong>Import formats:</strong> Excel (<strong>.xlsx</strong>), CSV and
-        tab-separated text. Column headers are matched by name, so an export
-        that says <em>Vendor Code</em> and one that says <em>Supplier Code</em>
-        both land in the right place.
+        <strong>Import formats:</strong> Excel (<strong>.xlsx</strong>),{" "}
+        <strong>PDF</strong>, CSV and tab-separated text. Column headers are
+        matched by name, so an export that says <em>Vendor Code</em> and one
+        that says <em>Supplier Code</em> both land in the right place. A PDF has
+        no columns at all, so it is read line by line and always opens a preview
+        first — you confirm every row before it reaches the shipment.
       </Callout>
 
       <ImportPanel
