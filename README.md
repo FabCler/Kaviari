@@ -115,6 +115,51 @@ promo shortcut.
   **line by line** (duplicates are never merged) and pre-fills the
   reference, lines and quantities, which you can edit before saving.
 
+## Supply chain — procurement, receiving, allocation & shipment
+
+A second module lives under **Supply chain** in the sidebar, covering the flow
+from a customer order to the delivery:
+
+```
+Customer order → Sales SO/PR → Purchasing PO → Supplier invoice
+  → PO/Invoice reconciliation → Invoice/SO reconciliation
+  → Warehouse receiving → Product allocation → Customer shipment
+```
+
+Four departments work in it — **Sales, Purchasing, Warehouse and
+Management/Admin** — each with its own screens and permissions
+(`Settings → Users` assigns a department; the owner account is the admin).
+
+What it does:
+
+- **Import files** — purchasing demand (PR/SO), purchase orders, sales orders
+  (`.xlsx`/`.csv`, English or Thai headers) and supplier invoices (PDF, read
+  automatically then verified line by line). Every file is validated first:
+  duplicates, unknown product codes, unit mismatches, zero quantities, missing
+  PO/SO links and bad dates are shown row by row before anything is written.
+- **Order management** — the demand with no PO, or a PO that does not cover it.
+  Ordering more than the demand (MOQ, pack size…) is allowed but the reason is
+  mandatory and travels to the audit trail and the supplier summary.
+- **PO vs Invoice** — quantity and price differences with their percentages.
+  Purchasing confirms the corrected quantity, and from that point **the
+  corrected quantity — not the ordered one — drives every later step.**
+- **Sales review** — a short delivery records which customer is cut, by how
+  much, why, and whether they accepted; an over-delivery goes to a customer or
+  into warehouse stock with a location, a reason and an owner.
+- **Allocation** — customers + warehouse stock must equal the actual quantity.
+  Products weighed piece by piece (fish, crab, shrimp) get one row per item,
+  each assigned to its customer.
+- **Receiving** — six checks stand between a PO and the "Receive" button; a
+  purchase order that fails any of them shows **BLOCKED** and which step is
+  holding it up. The same check runs server-side.
+- **Dashboard, exceptions, audit trail and document trace** — open any PO, SO
+  or PR and see the whole chain with its statuses.
+
+Design documents (architecture, ER diagram, data dictionary, permission
+matrix, status diagram, wireframes, validation and business rules, exception
+handling, dashboard, sample data, E2E test cases and the UAT checklist) are in
+[`docs/scm/`](docs/scm/README.md).
+
 ## Assistant & reports
 
 Each user has their **own private chats** with the Caviar Assistant

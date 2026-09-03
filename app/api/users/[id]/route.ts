@@ -1,14 +1,18 @@
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { DEPARTMENTS } from "@/lib/scm/domain";
+import { recordAudit } from "@/lib/scm/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 const patchSchema = z.object({
-  action: z.enum(["approve", "reject"]),
+  action: z.enum(["approve", "reject", "set_department"]),
+  // Supply-chain department driving the permission matrix (lib/scm/permissions).
+  department: z.enum(DEPARTMENTS).optional(),
 });
 
-/** Owner only: approve or reject an access request. */
+/** Owner only: approve/reject an access request, or set the department. */
 export async function PATCH(request: Request, ctx: Ctx) {
   const gate = await requireOwner();
   if (gate instanceof Response) return gate;
@@ -34,6 +38,33 @@ export async function PATCH(request: Request, ctx: Ctx) {
       { status: 400 }
     );
   }
+  if (parsed.data.action === "set_department") {
+    if (!parsed.data.department) {
+      return Response.json(
+        { error: "A department is required." },
+        { status: 400 }
+      );
+    }
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { department: parsed.data.department },
+      select: { id: true, department: true },
+    });
+    await recordAudit(
+      { entity: "user", entityId: id, documentNumber: user.email, actor: gate },
+      [
+        {
+          action: "update",
+          field: "department",
+          oldValue: user.department,
+          newValue: parsed.data.department,
+          reason: "Permission change",
+        },
+      ]
+    );
+    return Response.json({ ok: true, user: updated });
+  }
+
   const updated = await prisma.user.update({
     where: { id },
     data: { status: parsed.data.action === "approve" ? "approved" : "rejected" },

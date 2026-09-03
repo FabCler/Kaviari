@@ -21,6 +21,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DEPARTMENTS, DEPARTMENT_LABELS } from "@/lib/scm/domain";
 
 interface UserRow {
   id: string;
@@ -28,6 +36,7 @@ interface UserRow {
   email: string;
   role: string;
   status: string;
+  department: string;
   createdAt: string;
 }
 
@@ -72,6 +81,25 @@ export function UsersCard() {
     }
   }
 
+  /** Supply-chain department — this is what the permission matrix reads. */
+  async function setDepartment(id: string, department: string) {
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_department", department }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Department updated.");
+      await load();
+    } catch {
+      toast.error("The action failed. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function remove(id: string) {
     setBusy(id);
     try {
@@ -98,8 +126,9 @@ export function UsersCard() {
       <CardHeader>
         <CardTitle>Users &amp; access requests</CardTitle>
         <CardDescription>
-          Anyone who registers gets access immediately. Block or remove an
-          account here to revoke its access.
+          Anyone who registers gets access immediately. The supply-chain
+          department decides what they can do in the procurement, sales and
+          warehouse screens; block or remove an account here to revoke access.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -120,6 +149,7 @@ export function UsersCard() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Supply-chain department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -136,6 +166,35 @@ export function UsersCard() {
                       <Badge variant="gold">Owner</Badge>
                     ) : (
                       <Badge variant="secondary">Member</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {user.role === "owner" ? (
+                      <span className="text-sm text-muted-foreground">
+                        Admin (owner)
+                      </span>
+                    ) : (
+                      <Select
+                        value={user.department}
+                        disabled={busy === user.id}
+                        onValueChange={(value) => setDepartment(user.id, value)}
+                      >
+                        <SelectTrigger
+                          className="w-40"
+                          aria-label={`Department for ${user.name}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPARTMENTS.filter(
+                            (department) => department !== "admin"
+                          ).map((department) => (
+                            <SelectItem key={department} value={department}>
+                              {DEPARTMENT_LABELS[department]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   </TableCell>
                   <TableCell>{statusBadge(user.status)}</TableCell>
