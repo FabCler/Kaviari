@@ -123,12 +123,19 @@ from a customer order to the delivery:
 ```
 Customer order → Sales SO/PR → Purchasing PO → Supplier invoice
   → PO/Invoice reconciliation → Invoice/SO reconciliation
-  → Warehouse receiving → Product allocation → Customer shipment
+  → Warehouse receiving → Customer allocation → Picking → Shipment
 ```
 
 Four departments work in it — **Sales, Purchasing, Warehouse and
-Management/Admin** — each with its own screens and permissions
-(`Settings → Users` assigns a department; the owner account is the admin).
+Management/Admin** — across four **business channels**: Food Service, Retail,
+Store and Central Kitchen. A sales user sees only the channels they are
+assigned; a sales manager sees them all; purchasing, warehouse and management
+always see the whole business (`Settings → Users` assigns both; the owner
+account is the admin).
+
+**Channels are data, not structure.** Adding a fifth channel is one row in
+Master data — it appears in every filter, permission list and report without a
+migration or a deploy.
 
 What it does:
 
@@ -137,28 +144,50 @@ What it does:
   automatically then verified line by line). Every file is validated first:
   duplicates, unknown product codes, unit mismatches, zero quantities, missing
   PO/SO links and bad dates are shown row by row before anything is written.
-- **Order management** — the demand with no PO, or a PO that does not cover it.
-  Ordering more than the demand (MOQ, pack size…) is allowed but the reason is
-  mandatory and travels to the audit trail and the supplier summary.
+- **Purchase planning** — required, already ordered and still remaining per
+  demand line. One PO can serve many sales orders and one sales order can be
+  split across many POs; the mapping lives at line level, with the quantity it
+  carries. Ordering more than the demand (MOQ, pack size…) is allowed but the
+  reason is mandatory and travels to the audit trail and the supplier summary.
 - **PO vs Invoice** — quantity and price differences with their percentages.
   Purchasing confirms the corrected quantity, and from that point **the
   corrected quantity — not the ordered one — drives every later step.**
 - **Sales review** — a short delivery records which customer is cut, by how
   much, why, and whether they accepted; an over-delivery goes to a customer or
   into warehouse stock with a location, a reason and an owner.
+- **Cross-channel shortage** — when one delivery cannot cover the demand of
+  several channels, the system lays the shortfall out per channel, proposes a
+  split from the channel priorities, and **stops**. Nothing reaches a customer
+  order until management or a sales manager approves quantities that add up
+  exactly to what arrived. The system never reduces a customer on its own.
 - **Allocation** — customers + warehouse stock must equal the actual quantity.
   Products weighed piece by piece (fish, crab, shrimp) get one row per item,
   each assigned to its customer.
 - **Receiving** — six checks stand between a PO and the "Receive" button; a
   purchase order that fails any of them shows **BLOCKED** and which step is
-  holding it up. The same check runs server-side.
-- **Dashboard, exceptions, audit trail and document trace** — open any PO, SO
-  or PR and see the whole chain with its statuses.
+  holding it up. The same check runs server-side. A PO can arrive over several
+  deliveries: the line stays *partially received* until the running total
+  reaches the confirmed quantity.
+- **Warehouse stock & leftover** — anything received that did not go straight
+  to a customer keeps its whole origin chain (supplier, PO, invoice, the sales
+  order it was bought for, the channel), and every movement writes a
+  transaction with its balance and a mandatory reason.
+- **Tolerances and SLA** — a difference inside the tolerance proceeds
+  automatically; tolerances are set per supplier, channel or product type, most
+  specific first. Every handover carries a due date, an owner and a priority,
+  and the Exception Center sorts by overdue, then priority, then due date.
+- **Performance** — supplier accuracy (short %, excess %, price variance,
+  on-time delivery) and channel performance (SO, PO, actual, shipment, short,
+  excess, stock).
+- **Dashboard, exception center, audit trail and document trace** — KPIs per
+  channel and per department; open any PO, SO or PR and see the whole chain
+  with its statuses.
 
-Design documents (architecture, ER diagram, data dictionary, permission
-matrix, status diagram, wireframes, validation and business rules, exception
-handling, dashboard, sample data, E2E test cases and the UAT checklist) are in
-[`docs/scm/`](docs/scm/README.md).
+Design documents (architecture and BPMN, ER diagram, data dictionary,
+business-channel structure and SO-PO mapping, permission matrix, status
+diagram, wireframes, validation and business rules, tolerance rules, exception
+handling, dashboards, API structure, sample data, E2E test cases and the UAT
+checklist) are in [`docs/scm/`](docs/scm/README.md).
 
 ## Assistant & reports
 

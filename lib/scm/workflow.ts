@@ -9,7 +9,10 @@ import { evaluateGate, type GateResult } from "@/lib/scm/gate";
 import { raiseException, resolveExceptions } from "@/lib/scm/exceptions";
 import { notify } from "@/lib/scm/notify";
 import { resolveStatus, type WorkflowStatus } from "@/lib/scm/status";
-import { getScmSettings } from "@/lib/scm/settings";
+import { QTY_EPSILON } from "@/lib/scm/domain";
+import { loadToleranceResolver } from "@/lib/scm/tolerance";
+import { detectCrossChannelShortage } from "@/lib/scm/shortage";
+import { dueDateFor } from "@/lib/scm/sla";
 
 /**
  * Orchestration: the steps that move a demand line through the 17 states.
@@ -67,11 +70,11 @@ export async function runPoInvoiceReconciliation(
   poId: string,
   actorName?: string | null
 ): Promise<{ created: number; needsReview: number }> {
-  const settings = await getScmSettings();
+  const tolerances = await loadToleranceResolver();
   const po = await prisma.scmPurchaseOrder.findUnique({
     where: { id: poId },
     include: {
-      lines: true,
+      lines: { include: { product: true, demandLinks: { include: { soLine: { include: { so: true } } } } } },
       invoices: { include: { lines: true } },
     },
   });
@@ -122,13 +125,23 @@ export async function runPoInvoiceReconciliation(
 
   for (const poLine of po.lines) {
     const invoiced = invoiceByPoLine.get(poLine.id) ?? null;
+    // §28 — the tolerance that applies to *this* supplier, channel and
+    // product type, not one global number for the whole business.
+    const channelId =
+      poLine.demandLinks.find((link) => link.soLine?.so.channelId)?.soLine?.so
+        .channelId ?? null;
+    const tolerance = tolerances.resolve({
+      supplierId: po.supplierId,
+      channelId,
+      productType: poLine.product.category,
+    });
     const comparison = comparePoInvoice({
       poQuantity: poLine.baseQuantity,
       invoiceQuantity: invoiced?.quantity ?? null,
       poUnitPrice: poLine.unitPrice,
       invoiceUnitPrice: invoiced?.unitPrice ?? null,
-      qtyTolerancePct: settings.qtyTolerancePct,
-      priceTolerancePct: settings.priceTolerancePct,
+      qtyTolerancePct: tolerance.qtyTolerancePct,
+      priceTolerancePct: tolerance.priceTolerancePct,
     });
 
     const autoApprove = !comparison.needsReview && invoiced != null;
@@ -259,8 +272,8 @@ export async function runPoInvoiceReconciliation(
 export async function runSoReconciliation(
   poId: string,
   actorName?: string | null
-): Promise<{ pending: number }> {
-  const settings = await getScmSettings();
+): Promise<{ pending: number; shortageCases: string[] }> {
+  const tolerances = await loadToleranceResolver();
   const po = await prisma.scmPurchaseOrder.findUnique({
     where: { id: poId },
     include: {
@@ -274,9 +287,10 @@ export async function runSoReconciliation(
       },
     },
   });
-  if (!po) return { pending: 0 };
+  if (!po) return { pending: 0, shortageCases: [] };
 
   let pending = 0;
+  const shortageCases: string[] = [];
 
   for (const poLine of po.lines) {
     const recon = poLine.recons[0];
@@ -307,6 +321,44 @@ export async function runSoReconciliation(
       continue;
     }
 
+    // §20 — when the shortfall spans more than one business channel the
+    // system must NOT decide who gets cut. It raises a case and stops here;
+    // the sales reviews are written from the approved numbers instead.
+    const shortage = await detectCrossChannelShortage(
+      poLine.id,
+      confirmed,
+      actorName
+    );
+    if (shortage) {
+      shortageCases.push(shortage.caseNumber);
+      await raiseException({
+        type: "SUPPLIER_SHORT",
+        severity: "high",
+        documentType: "shortage_case",
+        documentId: shortage.caseId,
+        documentNumber: shortage.caseNumber,
+        productId: poLine.productId,
+        description: `${shortage.caseNumber}: ${confirmed} available against demand from more than one channel — management must rank the channels.`,
+        responsibleDept: "management",
+        action: "Approve the cross-channel split before allocation can start.",
+        dueDate: dueDateFor(poLine.deliveryDate, "shortageApproval"),
+        priority: "critical",
+        createdByName: actorName ?? null,
+      });
+      await notify({
+        department: "management",
+        type: "cross_channel_shortage",
+        severity: "critical",
+        title: `${shortage.caseNumber}: cross-channel shortage needs a decision`,
+        body: `${po.poNumber} — ${confirmed} available, demand spans several channels.`,
+        documentType: "shortage_case",
+        documentId: shortage.caseId,
+        documentNumber: shortage.caseNumber,
+        link: `/scm/sales/shortage/${shortage.caseId}`,
+      });
+      continue;
+    }
+
     const shares = distributeConfirmed(
       confirmed,
       soDemands.map((link) => ({ id: link.id, quantity: link.quantity }))
@@ -315,10 +367,14 @@ export async function runSoReconciliation(
     for (const link of soDemands) {
       const soLine = link.soLine!;
       const share = shares.get(link.id) ?? 0;
+      const tolerance = tolerances.resolve({
+        supplierId: po.supplierId,
+        channelId: soLine.so.channelId,
+      });
       const result = compareSoConfirmed(
         soLine.quantity,
         share,
-        settings.qtyTolerancePct
+        tolerance.qtyTolerancePct
       );
 
       const existing = await prisma.scmSoPoRecon.findFirst({
@@ -363,6 +419,9 @@ export async function runSoReconciliation(
           productId: soLine.productId,
           description: `${soLine.so.soNumber}: SO ${soLine.quantity} vs confirmed ${share} (${result.diff > 0 ? "+" : ""}${result.diff}).`,
           responsibleDept: "sales",
+          channelId: soLine.so.channelId,
+          dueDate: dueDateFor(soLine.deliveryDate, "salesReview"),
+          priority: result.diffStatus === "short" ? "high" : "medium",
           action:
             result.diffStatus === "short"
               ? "Decide which customer takes the shortfall and confirm the new SO quantity."
@@ -393,7 +452,7 @@ export async function runSoReconciliation(
   }
 
   await syncPoStatuses(poId);
-  return { pending };
+  return { pending, shortageCases };
 }
 
 // -------------------------------------------------------------- status sync
@@ -408,7 +467,10 @@ export async function syncPoStatuses(poId: string): Promise<void> {
         include: {
           recons: true,
           soPoRecons: true,
-          allocations: { include: { lines: true } },
+          shortageCases: { select: { status: true } },
+          allocations: {
+            include: { lines: { include: { shipmentLines: true } } },
+          },
           receivingLines: { include: { receiving: true } },
           demandLinks: true,
         },
@@ -437,19 +499,48 @@ export async function syncPoStatuses(poId: string): Promise<void> {
       salesRecons.every((r) => r.status === "completed");
     const allocation = line.allocations[0] ?? null;
     const allocationCompleted = allocation?.status === "completed";
-    const received = line.receivingLines.some(
-      (rl) => rl.status === "received" || rl.receiving.status === "completed"
+
+    // §23 — a PO line can be delivered over several receipts. What decides
+    // PARTIALLY vs FULLY received is the running total against the quantity
+    // purchasing confirmed, not the number of receipts.
+    const expected = confirmedQuantity({
+      poQuantity: line.baseQuantity,
+      correctedQuantity: line.correctedQuantity,
+      invoiceVerified: true,
+    });
+    const receivedQuantity = round(
+      line.receivingLines.reduce((sum, rl) => sum + rl.actualQuantity, 0)
     );
-    const partialReceived = line.receivingLines.some(
-      (rl) => rl.status === "partial"
+    const received = line.receivingLines.length > 0;
+    const fullyReceived = received && receivedQuantity >= expected - QTY_EPSILON;
+    const partiallyReceived = received && !fullyReceived;
+
+    const customerLines = (allocation?.lines ?? []).filter(
+      (allocationLine) => allocationLine.target === "customer"
     );
-    const shipped = line.receivingLines.some(
-      (rl) => rl.receiving.status === "completed"
+    const shippedLines = customerLines.filter(
+      (allocationLine) => allocationLine.shipmentLines.length > 0
     );
+    const shipped = shippedLines.length > 0;
+    // Complete only when every customer line has actually left. A leftover
+    // that stayed in the warehouse does not hold the line open.
+    const completed =
+      fullyReceived &&
+      customerLines.length > 0 &&
+      shippedLines.length === customerLines.length;
+
+    // A cross-channel shortage waiting for management is not "blocked by a
+    // mistake" — it is an approval the workflow is holding for (§20).
+    const shortagePending = line.shortageCases.some((shortage) =>
+      ["open", "pending_approval"].includes(shortage.status)
+    );
+    const rejected = recons.some((r) => r.status === "rejected");
 
     const status: WorkflowStatus = resolveStatus({
       cancelled: po.status === "cancelled",
+      rejected,
       blocked: Boolean(line.blockedReason),
+      exception: shortagePending,
       poQuantity: line.baseQuantity,
       requiredQuantity: line.requiredQuantity,
       hasInvoice,
@@ -460,8 +551,11 @@ export async function syncPoStatuses(poId: string): Promise<void> {
       allocationRequired: poInvoiceApproved && !allocationCompleted,
       allocationCompleted,
       received,
-      partialReceived,
+      partiallyReceived,
+      fullyReceived,
+      readyToShip: fullyReceived && allocationCompleted && !shipped,
       shipped,
+      completed,
     });
 
     if (status !== line.status) {
@@ -529,6 +623,10 @@ export async function gateForPo(poId: string): Promise<GateResult | null> {
             select: { status: true, unallocatedQuantity: true, poLineId: true },
           },
           soPoRecons: { select: { status: true } },
+          shortageCases: {
+            where: { status: { in: ["open", "pending_approval"] } },
+            select: { caseNumber: true },
+          },
         },
       },
     },
@@ -552,6 +650,7 @@ export async function gateForPo(poId: string): Promise<GateResult | null> {
     invoices: po.invoices,
     poInvoiceRecons: po.recons,
     salesRecons: po.lines.flatMap((line) => line.soPoRecons),
+    openShortageCases: po.lines.flatMap((line) => line.shortageCases),
     allocations,
     requiredAllocationLineIds: po.lines.map((line) => line.id),
   });

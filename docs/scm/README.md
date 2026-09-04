@@ -26,29 +26,41 @@ each design deliverable to the code that implements it.
 | 13 | ตัวอย่างหน้าจอแต่ละแผนก | [05-ui-wireframes.md](05-ui-wireframes.md#6-ตัวอย่างหน้าจอแต่ละแผนก) |
 | 14 | End-to-End Test Case | [10-test-cases.md](10-test-cases.md) |
 | 15 | UAT Checklist | [11-uat-checklist.md](11-uat-checklist.md) |
+| 16 | BPMN | [01-architecture.md](01-architecture.md#bpmn--กระบวนการหลักแบบมี-lane-และ-gateway) |
+| 17 | Business Channel Structure | [13-business-channels.md](13-business-channels.md) |
+| 18 | SO-PO Mapping | [13-business-channels.md](13-business-channels.md#4-so--po-mapping-§6-§7) |
+| 19 | Tolerance Rules | [06-rules.md](06-rules.md#br-08--tolerance-ตาม-product-type--supplier--channel-§28) |
+| 20 | API Structure | [14-api-structure.md](14-api-structure.md) |
+| 21 | Notification Logic | [07-exceptions.md](07-exceptions.md#6-การแจ้งเตือนที่คู่กัน-§40) |
 | — | ERP / SAP Business One extension | [12-erp-integration.md](12-erp-integration.md) |
 
 ## โครงสร้างโค้ด (Where the code lives)
 
 ```
 lib/scm/
-  domain.ts        vocabulary — departments, statuses, reasons, exception types
-  status.ts        the 17 central workflow states + resolveStatus()
-  permissions.ts   the role & permission matrix
-  units.ts         unit conversion (every comparison happens in the stock unit)
-  reconcile.ts     PO↔Invoice, Invoice↔SO and PO↔SO comparison math
-  allocation.ts    allocation totals, the "unallocated = 0" invariant, weighing
-  gate.ts          the six receiving checks (§7.1)
-  workflow.ts      orchestration: run reconciliations, sync statuses, gate a PO
-  audit.ts         the audit trail
-  exceptions.ts    raise / resolve exceptions
-  notify.ts        workflow notifications
-  numbering.ts     PO-2026-0001, RCV-…, ALC-…, SHP-…, EXC-…
-  queries.ts       read models for the boards and the dashboard
-  trace.ts         document relationship trace (§13)
-  settings.ts      tolerances, editable by an admin
-  guard.ts         server-side permission guards
-  import/          column mapping, row reader, validators, commit, invoice OCR
+  domain.ts          vocabulary — departments, statuses, reasons, exception types
+  channels.ts        business-channel scoping (§2, §39) — channels are DATA
+  status.ts          the 22-state engine + resolveStatus() (§42)
+  permissions.ts     the role & permission matrix, incl. the sales manager
+  units.ts           unit conversion (every comparison in the stock unit)
+  tolerance.ts       tolerance by supplier / channel / product type (§28)
+  sla.ts             due date, remaining days, priority, on track/overdue (§27)
+  reconcile.ts       PO↔Invoice, Invoice↔SO and PO↔SO comparison math
+  shortage.ts        cross-channel shortage: propose, never decide (§20, §45)
+  allocation.ts      allocation totals, "unallocated = 0", per-piece weighing
+  warehouse-stock.ts leftover with its origin chain + movement history (§24)
+  gate.ts            the six receiving checks (§22)
+  workflow.ts        orchestration: reconciliations, statuses, gate a PO
+  reports.ts         supplier (§33) and channel (§34) performance
+  audit.ts           the audit trail
+  exceptions.ts      raise / resolve exceptions
+  notify.ts          workflow notifications, scoped by channel
+  numbering.ts       PO-… RCV-… ALC-… SHP-… EXC-… SHT-… STK-…
+  queries.ts         read models for the boards and the dashboards
+  trace.ts           document relationship trace (§37)
+  settings.ts        fallback tolerances, editable by an admin
+  guard.ts           server-side permission + channel guards
+  import/            column mapping, row reader, validators, commit, invoice OCR
 
 app/api/scm/       route handlers (import, invoices, purchase-orders,
                    reconcile, allocations, receiving, shipments, master,
@@ -59,7 +71,7 @@ prisma/seed-scm.ts sample data (four scenarios)
 tests/scm-*.test.ts unit tests for the rules above
 ```
 
-## หลักการออกแบบ 5 ข้อ (Design principles)
+## หลักการออกแบบ 7 ข้อ (Design principles)
 
 1. **จำนวนที่ยืนยันล่าสุดคือความจริง (§14).** ทุกขั้นตอนถัดไปใช้
    `correctedQuantity` ที่ Purchasing ยืนยัน ไม่ใช่จำนวนที่สั่งไปแต่แรก —
@@ -71,8 +83,13 @@ tests/scm-*.test.ts unit tests for the rules above
    reason ลง `audit_logs`; master data ปิดการใช้งาน (`active=false`) แทนการลบ
 4. **เปรียบเทียบในหน่วยเดียวกันเสมอ (§11).** ทุกเอกสารเก็บ `baseQuantity`
    ในหน่วยคลังของสินค้า การนำเข้าที่แปลงหน่วยไม่ได้จะถูกปฏิเสธ
-5. **ความต่างต้องมีเหตุผลและเจ้าของ (§15).** ทุก exception มี reason +
-   responsible department + action + due date + status
+5. **ความต่างต้องมีเหตุผลและเจ้าของ (§26, §27).** ทุก exception มี reason +
+   responsible department + owner + action + due date + priority + status
+6. **Business Channel เป็นข้อมูล ไม่ใช่โครงสร้าง (§2).** เพิ่ม channel ใหม่ =
+   insert 1 แถว ไม่ต้องแก้ schema ไม่ต้องแก้โค้ด และ scope ว่างแปลว่า
+   "ไม่เห็นอะไรเลย" ไม่ใช่ "เห็นทุกอย่าง"
+7. **ระบบไม่ตัดลูกค้าเอง (§20).** เมื่อของไม่พอและมีหลาย channel แข่งกัน
+   ระบบเสนอการแบ่งแล้ว *หยุด* จนกว่าผู้บริหารหรือ Sales Manager จะอนุมัติ
 
 ## การเริ่มใช้งาน
 

@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/db";
-import { currentActor } from "@/lib/scm/guard";
+import { currentScope } from "@/lib/scm/guard";
+import { narrowScope } from "@/lib/scm/channels";
 import { can } from "@/lib/scm/permissions";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { KpiCard } from "@/components/scm/kpi-card";
 import { ExceptionBoard } from "@/components/scm/exception-board";
+import { NoAccess } from "@/components/scm/no-access";
+import { ChannelFilter } from "@/components/scm/channel-filter";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Exceptions — Kaviari Cellar" };
+export const metadata = { title: "Exception center — Kaviari Cellar" };
 
 /**
  * §15 — every exception carries a reason, a responsible department, an
@@ -16,19 +19,30 @@ export const metadata = { title: "Exceptions — Kaviari Cellar" };
 export default async function ExceptionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; dept?: string }>;
+  searchParams: Promise<{ status?: string; dept?: string; channel?: string }>;
 }) {
-  const actor = (await currentActor())!;
+  const context = await currentScope();
+  if (!context) return <NoAccess what="the exception center" />;
+  const { actor, scope } = context;
   const filters = await searchParams;
+  const visible = narrowScope(scope, filters.channel);
 
   const exceptions = await prisma.scmException.findMany({
     where: {
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.dept ? { responsibleDept: filters.dept } : {}),
+      // An exception with no channel belongs to the whole business and is
+      // shown to everyone; a channel-tagged one follows the user's scope.
+      ...(visible.all
+        ? {}
+        : { OR: [{ channelId: null }, { channelId: { in: visible.ids } }] }),
     },
-    orderBy: [{ status: "asc" }, { severity: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ status: "asc" }, { priority: "desc" }, { dueDate: "asc" }],
     take: 300,
   });
+  const channelById = new Map(
+    scope.channels.map((channel) => [channel.id, channel])
+  );
 
   const open = exceptions.filter((row) => row.status === "open").length;
   const inProgress = exceptions.filter((row) => row.status === "in_progress").length;
@@ -42,9 +56,13 @@ export default async function ExceptionsPage({
   return (
     <div>
       <PageHeader
-        title="Exception management"
+        title="Exception center"
         description="Short and over deliveries, price and unit mismatches, orphan documents, excess stock — each with an owner and an action."
       />
+
+      <div className="mb-4">
+        <ChannelFilter channels={scope.channels} />
+      </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Open" value={open} tone={open > 0 ? "danger" : "success"} />
@@ -67,6 +85,11 @@ export default async function ExceptionsPage({
             code: row.code,
             type: row.type,
             severity: row.severity,
+            priority: row.priority,
+            ownerName: row.ownerName,
+            channelCode: row.channelId
+              ? (channelById.get(row.channelId)?.code ?? null)
+              : null,
             documentNumber: row.documentNumber,
             documentType: row.documentType,
             description: row.description,

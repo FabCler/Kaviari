@@ -3,6 +3,7 @@ import { comparePoSo } from "@/lib/scm/reconcile";
 import { round } from "@/lib/scm/units";
 import type { ComparisonStatus } from "@/lib/scm/domain";
 import { getScmSettings } from "@/lib/scm/settings";
+import { channelPerformance } from "@/lib/scm/reports";
 
 /**
  * Read models for the screens. Every board the spec asks for is a join over
@@ -15,6 +16,9 @@ export interface DemandRow {
   lineId: string;
   documentNumber: string;
   documentId: string;
+  channelId: string | null;
+  channelCode: string | null;
+  channelName: string | null;
   productId: string;
   productCode: string;
   productName: string;
@@ -41,21 +45,38 @@ export interface DemandRow {
  */
 export async function demandBoard(options?: {
   includeCovered?: boolean;
+  /** Restrict to these business channels (§39). Undefined = every channel. */
+  channelIds?: string[] | null;
+  channelId?: string | null;
 }): Promise<DemandRow[]> {
+  // A demand line is in scope when its sales order is — a PR line with no SO
+  // belongs to no channel and is only shown to users who see everything.
+  const channelFilter = options?.channelId
+    ? { channelId: options.channelId }
+    : options?.channelIds
+      ? { channelId: { in: options.channelIds } }
+      : null;
+
   const [prLines, soLines] = await Promise.all([
     prisma.scmPurchaseRequestLine.findMany({
+      where: channelFilter ? { soLine: { so: channelFilter } } : undefined,
       include: {
         pr: true,
         product: { include: { defaultSupplier: true } },
         demandLinks: true,
-        soLine: { include: { so: { include: { customer: true } } } },
+        soLine: {
+          include: { so: { include: { customer: true, channel: true } } },
+        },
       },
       orderBy: { deliveryDate: "asc" },
     }),
     prisma.scmSalesOrderLine.findMany({
-      where: { prLines: { none: {} } },
+      where: {
+        prLines: { none: {} },
+        ...(channelFilter ? { so: channelFilter } : {}),
+      },
       include: {
-        so: { include: { customer: true } },
+        so: { include: { customer: true, channel: true } },
         product: { include: { defaultSupplier: true } },
         demandLinks: true,
       },
@@ -76,6 +97,9 @@ export async function demandBoard(options?: {
       lineId: line.id,
       documentNumber: line.pr.prNumber,
       documentId: line.prId,
+      channelId: line.soLine?.so.channelId ?? null,
+      channelCode: line.soLine?.so.channel?.code ?? null,
+      channelName: line.soLine?.so.channel?.name ?? null,
       productId: line.productId,
       productCode: line.product.prCode,
       productName: line.product.name,
@@ -108,6 +132,9 @@ export async function demandBoard(options?: {
       lineId: line.id,
       documentNumber: line.so.soNumber,
       documentId: line.soId,
+      channelId: line.so.channelId,
+      channelCode: line.so.channel?.code ?? null,
+      channelName: line.so.channel?.name ?? null,
       productId: line.productId,
       productCode: line.product.prCode,
       productName: line.product.name,
@@ -138,6 +165,7 @@ export interface SupplierSummaryRow {
   supplierId: string;
   supplierCode: string;
   supplierName: string;
+  channelCodes: string[];
   productId: string;
   productCode: string;
   productName: string;
@@ -160,6 +188,8 @@ export async function supplierSummary(filters?: {
   supplierId?: string;
   productId?: string;
   status?: string;
+  channelId?: string | null;
+  channelIds?: string[] | null;
   from?: Date;
   to?: Date;
 }): Promise<SupplierSummaryRow[]> {
@@ -176,8 +206,21 @@ export async function supplierSummary(filters?: {
           }
         : {}),
       po: filters?.supplierId ? { supplierId: filters.supplierId } : undefined,
+      ...(filters?.channelId
+        ? { demandLinks: { some: { soLine: { so: { channelId: filters.channelId } } } } }
+        : filters?.channelIds
+          ? {
+              demandLinks: {
+                some: { soLine: { so: { channelId: { in: filters.channelIds } } } },
+              },
+            }
+          : {}),
     },
-    include: { po: { include: { supplier: true } }, product: true },
+    include: {
+      po: { include: { supplier: true } },
+      product: true,
+      demandLinks: { include: { soLine: { include: { so: { include: { channel: true } } } } } },
+    },
     orderBy: { deliveryDate: "asc" },
   });
 
@@ -187,6 +230,13 @@ export async function supplierSummary(filters?: {
       supplierId: line.po.supplierId,
       supplierCode: line.po.supplier.code,
       supplierName: line.po.supplier.name,
+      channelCodes: [
+        ...new Set(
+          line.demandLinks
+            .map((link) => link.soLine?.so.channel?.code)
+            .filter((code): code is string => Boolean(code))
+        ),
+      ],
       productId: line.productId,
       productCode: line.product.prCode,
       productName: line.product.name,
@@ -334,6 +384,19 @@ export async function poVsSo(): Promise<PoVsSoRow[]> {
     });
 }
 
+export interface ChannelKpi {
+  channelId: string | null;
+  channelCode: string;
+  channelName: string;
+  soQuantity: number;
+  poQuantity: number;
+  actualQuantity: number;
+  shipmentQuantity: number;
+  shortQuantity: number;
+  excessQuantity: number;
+  stockQuantity: number;
+}
+
 export interface ScmDashboard {
   purchasing: {
     poPending: number;
@@ -373,11 +436,28 @@ export interface ScmDashboard {
     quantityVariance: number;
     priceVariance: number;
   };
+  /** Per-channel KPI row (§29, §34). */
+  channels: ChannelKpi[];
   openExceptions: number;
+  overdueExceptions: number;
+  pendingShortages: number;
 }
 
-/** §9 — every number on the management dashboard, in one round trip. */
-export async function dashboardMetrics(now = new Date()): Promise<ScmDashboard> {
+/** §29–§32 — every number on the dashboards, in one round trip. */
+export async function dashboardMetrics(
+  options: { now?: Date; channelIds?: string[] | null; channelId?: string | null } = {}
+): Promise<ScmDashboard> {
+  const now = options.now ?? new Date();
+  const channelFilter = options.channelId
+    ? { channelId: options.channelId }
+    : options.channelIds
+      ? { channelId: { in: options.channelIds } }
+      : null;
+  // A line belongs to a channel through the sales order it serves. Purchasing
+  // work with no customer behind it is only counted for unscoped users.
+  const poLineChannelWhere = channelFilter
+    ? { demandLinks: { some: { soLine: { so: channelFilter } } } }
+    : {};
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(startOfDay);
@@ -392,13 +472,18 @@ export async function dashboardMetrics(now = new Date()): Promise<ScmDashboard> 
     shipmentsToday,
     totals,
     openExceptions,
+    overdueExceptions,
+    pendingShortages,
+    channelRows,
     poWithoutInvoice,
     supplierStats,
   ] = await Promise.all([
     prisma.scmPurchaseOrderLine.findMany({
+      where: poLineChannelWhere,
       select: { status: true, baseQuantity: true, correctedQuantity: true },
     }),
     prisma.scmPoInvoiceRecon.findMany({
+      where: channelFilter ? { poLine: poLineChannelWhere } : undefined,
       select: {
         status: true,
         qtyStatus: true,
@@ -410,6 +495,7 @@ export async function dashboardMetrics(now = new Date()): Promise<ScmDashboard> 
       },
     }),
     prisma.scmSoPoRecon.findMany({
+      where: channelFilter ? { soLine: { so: channelFilter } } : undefined,
       select: { status: true, diffStatus: true, decision: true, diff: true },
     }),
     prisma.scmAllocation.findMany({
@@ -424,7 +510,10 @@ export async function dashboardMetrics(now = new Date()): Promise<ScmDashboard> 
       select: { status: true, actualQuantity: true },
     }),
     prisma.scmShipment.count({
-      where: { shipDate: { gte: startOfDay, lt: endOfDay } },
+      where: {
+        shipDate: { gte: startOfDay, lt: endOfDay },
+        ...(channelFilter ? { customer: channelFilter } : {}),
+      },
     }),
     Promise.all([
       prisma.scmPurchaseOrder.count(),
@@ -432,6 +521,19 @@ export async function dashboardMetrics(now = new Date()): Promise<ScmDashboard> 
       prisma.scmInvoice.count(),
     ]),
     prisma.scmException.count({ where: { status: { in: ["open", "in_progress"] } } }),
+    prisma.scmException.count({
+      where: {
+        status: { in: ["open", "in_progress"] },
+        dueDate: { lt: now },
+      },
+    }),
+    prisma.scmShortageCase.count({
+      where: { status: { in: ["open", "pending_approval"] } },
+    }),
+    channelPerformance({
+      channelId: options.channelId ?? null,
+      channelIds: options.channelIds ?? null,
+    }),
     prisma.scmPurchaseOrder.count({
       where: { invoices: { none: {} }, status: { notIn: ["draft", "cancelled"] } },
     }),
@@ -527,6 +629,20 @@ export async function dashboardMetrics(now = new Date()): Promise<ScmDashboard> 
       quantityVariance: quantityDifference,
       priceVariance: priceDifference,
     },
+    channels: channelRows.map((row) => ({
+      channelId: row.channelId,
+      channelCode: row.channelCode,
+      channelName: row.channelName,
+      soQuantity: row.soQuantity,
+      poQuantity: row.poQuantity,
+      actualQuantity: row.actualQuantity,
+      shipmentQuantity: row.shipmentQuantity,
+      shortQuantity: row.shortQuantity,
+      excessQuantity: row.excessQuantity,
+      stockQuantity: row.stockQuantity,
+    })),
     openExceptions,
+    overdueExceptions,
+    pendingShortages,
   };
 }

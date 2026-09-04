@@ -38,6 +38,7 @@ export default async function NewReceivingPage({
         include: {
           product: true,
           recons: true,
+          receivingLines: { select: { actualQuantity: true } },
           allocations: { include: { lines: { include: { customer: true } } } },
         },
         orderBy: { lineNo: "asc" },
@@ -46,9 +47,8 @@ export default async function NewReceivingPage({
   });
   if (!po) notFound();
 
-  if (po.receivings.length > 0) {
-    redirect(`/scm/warehouse/receiving/${po.receivings[0].id}`);
-  }
+  // §23 — a PO may be delivered in several drops, so an existing receipt is
+  // not a reason to refuse another one; only a fully delivered PO is.
 
   const [gate, settings] = await Promise.all([gateForPo(po.id), getScmSettings()]);
 
@@ -88,13 +88,20 @@ export default async function NewReceivingPage({
                 invoiceVerified: true,
               });
               const allocation = line.allocations[0] ?? null;
+              const alreadyReceived = line.receivingLines.reduce(
+                (sum, rl) => sum + rl.actualQuantity,
+                0
+              );
               return {
                 poLineId: line.id,
                 productCode: line.product.prCode,
                 productName: line.product.name,
                 unit: line.product.unit,
                 weightControlled: line.product.weightControlled,
+                lotRequired: line.product.lotRequired,
+                expiryRequired: line.product.expiryRequired,
                 expectedQuantity: expected,
+                alreadyReceived: Math.round(alreadyReceived * 10000) / 10000,
                 allocationLines:
                   allocation?.lines
                     .filter((allocationLine) => allocationLine.target === "customer")

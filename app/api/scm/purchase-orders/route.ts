@@ -32,6 +32,10 @@ const lineSchema = z
     adjustmentReason: z.enum(ORDER_ADJUSTMENT_REASONS).nullable().optional(),
     adjustmentNote: z.string().max(500).nullable().optional(),
     remark: z.string().max(500).nullable().optional(),
+    // §8 — one SO line may be split across several POs: the planner says how
+    // much of each demand line this PO covers. Missing = the whole line.
+    soQuantities: z.record(z.string(), z.number().min(0)).optional(),
+    mappingReason: z.string().max(500).nullable().optional(),
   })
   .strict();
 
@@ -213,12 +217,21 @@ export async function POST(request: Request) {
     for (const prLineId of line.input.prLineIds) {
       const prLine = prById.get(prLineId);
       if (!prLine) continue;
-      await prisma.scmPoLineDemand.create({
+      await prisma.scmSoPoMapping.create({
         data: {
+          poId: po.id,
           poLineId: poLine.id,
           prLineId,
           soLineId: prLine.soLineId,
+          soId: prLine.soLineId
+            ? (soById.get(prLine.soLineId)?.soId ?? null)
+            : null,
+          productId: poLine.productId,
           quantity: prLine.baseQuantity,
+          unit: poLine.unit,
+          reason: line.input.mappingReason ?? null,
+          createdById: actor.id,
+          createdByName: actor.name,
         },
       });
       await prisma.scmPurchaseRequestLine.update({
@@ -233,11 +246,20 @@ export async function POST(request: Request) {
         (prLineId) => prById.get(prLineId)?.soLineId === soLineId
       );
       if (!alreadyLinked) {
-        await prisma.scmPoLineDemand.create({
+        await prisma.scmSoPoMapping.create({
           data: {
+            poId: po.id,
             poLineId: poLine.id,
             soLineId,
-            quantity: soLine.baseQuantity,
+            soId: soLine.soId,
+            productId: poLine.productId,
+            // The share of the PO line this SO line takes: what the planner
+            // typed, or the whole demand when they did not split it.
+            quantity: line.input.soQuantities?.[soLineId] ?? soLine.baseQuantity,
+            unit: poLine.unit,
+            reason: line.input.mappingReason ?? null,
+            createdById: actor.id,
+            createdByName: actor.name,
           },
         });
       }

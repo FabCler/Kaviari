@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  PIPELINE_STATUSES,
   WORKFLOW_STATUSES,
   canTransition,
   resolveStatus,
@@ -19,15 +20,32 @@ const BASE: PipelineFacts = {
   allocationRequired: false,
   allocationCompleted: false,
   received: false,
-  partialReceived: false,
+  partiallyReceived: false,
+  fullyReceived: false,
+  readyToShip: false,
   shipped: false,
+  completed: false,
 };
 
-describe("the 17 central statuses (§8)", () => {
-  it("defines exactly the states the spec lists", () => {
-    expect(WORKFLOW_STATUSES).toHaveLength(17);
+describe("the central status engine (§42)", () => {
+  it("defines the whole pipeline plus the four exception states", () => {
+    expect(PIPELINE_STATUSES).toHaveLength(18);
+    expect(WORKFLOW_STATUSES).toHaveLength(22);
     expect(WORKFLOW_STATUSES[0]).toBe("IMPORTED");
-    expect(WORKFLOW_STATUSES.at(-1)).toBe("CANCELLED");
+    for (const status of [
+      "PENDING_RECONCILIATION",
+      "RECONCILED",
+      "PARTIALLY_RECEIVED",
+      "FULLY_RECEIVED",
+      "READY_TO_SHIP",
+      "SHIPPED",
+      "BLOCKED",
+      "EXCEPTION",
+      "REJECTED",
+      "CANCELLED",
+    ]) {
+      expect(WORKFLOW_STATUSES).toContain(status);
+    }
   });
 
   it("orders the pipeline so progress can be compared", () => {
@@ -50,11 +68,11 @@ describe("resolveStatus", () => {
     const invoiced = { ...BASE, poQuantity: 100, hasInvoice: true };
     expect(resolveStatus(invoiced)).toBe("INVOICE_UPLOADED");
     expect(resolveStatus({ ...invoiced, poInvoiceOpen: true })).toBe(
-      "PENDING_PO_INVOICE_RECONCILIATION"
+      "PENDING_RECONCILIATION"
     );
 
     const approved = { ...invoiced, poInvoiceApproved: true };
-    expect(resolveStatus(approved)).toBe("PO_INVOICE_MATCHED");
+    expect(resolveStatus(approved)).toBe("RECONCILED");
     expect(
       resolveStatus({ ...approved, salesReviewRequired: true })
     ).toBe("PENDING_SALES_REVIEW");
@@ -66,13 +84,50 @@ describe("resolveStatus", () => {
     ).toBe("READY_TO_RECEIVE");
   });
 
-  it("ends at RECEIVED, PARTIAL_RECEIVED and COMPLETED", () => {
+  it("distinguishes partial from full receipts (§23)", () => {
     const base = { ...BASE, poQuantity: 100, allocationCompleted: true };
     expect(resolveStatus({ ...base, received: true })).toBe("RECEIVED");
-    expect(resolveStatus({ ...base, partialReceived: true })).toBe(
-      "PARTIAL_RECEIVED"
+    expect(
+      resolveStatus({ ...base, received: true, partiallyReceived: true })
+    ).toBe("PARTIALLY_RECEIVED");
+    expect(
+      resolveStatus({ ...base, received: true, fullyReceived: true })
+    ).toBe("FULLY_RECEIVED");
+  });
+
+  it("runs through shipment to completion", () => {
+    const base = {
+      ...BASE,
+      poQuantity: 100,
+      allocationCompleted: true,
+      received: true,
+      fullyReceived: true,
+    };
+    expect(resolveStatus({ ...base, readyToShip: true })).toBe("READY_TO_SHIP");
+    expect(resolveStatus({ ...base, shipped: true })).toBe("SHIPPED");
+    expect(resolveStatus({ ...base, shipped: true, completed: true })).toBe(
+      "COMPLETED"
     );
-    expect(resolveStatus({ ...base, shipped: true })).toBe("COMPLETED");
+  });
+
+  it("holds at EXCEPTION while an approval is outstanding (§20)", () => {
+    // A cross-channel shortage is not a mistake to unblock — it is a decision
+    // the workflow is waiting for, and it outranks everything downstream.
+    expect(
+      resolveStatus({
+        ...BASE,
+        poQuantity: 100,
+        poInvoiceApproved: true,
+        allocationRequired: true,
+        exception: true,
+      })
+    ).toBe("EXCEPTION");
+  });
+
+  it("marks a rejected reconciliation as REJECTED", () => {
+    expect(resolveStatus({ ...BASE, rejected: true, poQuantity: 100 })).toBe(
+      "REJECTED"
+    );
   });
 
   it("lets BLOCKED and CANCELLED win over everything", () => {
@@ -94,6 +149,20 @@ describe("transitions (§21 — no skipping the workflow)", () => {
   it("refuses to jump straight to receiving", () => {
     expect(canTransition("PO_CREATED", "READY_TO_RECEIVE")).toBe(false);
     expect(canTransition("PENDING_SALES_REVIEW", "RECEIVED")).toBe(false);
+    expect(canTransition("PARTIALLY_RECEIVED", "SHIPPED")).toBe(false);
+  });
+
+  it("only ships what has been fully received", () => {
+    expect(canTransition("FULLY_RECEIVED", "READY_TO_SHIP")).toBe(true);
+    expect(canTransition("READY_TO_SHIP", "SHIPPED")).toBe(true);
+    expect(canTransition("SHIPPED", "COMPLETED")).toBe(true);
+  });
+
+  it("treats REJECTED and CANCELLED as final, BLOCKED as recoverable", () => {
+    expect(canTransition("REJECTED", "PENDING_ALLOCATION")).toBe(false);
+    expect(canTransition("CANCELLED", "PENDING_PO")).toBe(false);
+    expect(canTransition("BLOCKED", "PENDING_ALLOCATION")).toBe(true);
+    expect(canTransition("EXCEPTION", "PENDING_ALLOCATION")).toBe(true);
   });
 
   it("lets anything be blocked or cancelled, and a block be recovered", () => {

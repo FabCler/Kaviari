@@ -13,7 +13,48 @@
 | ☐ | Master data มี Supplier 3, Customer 4, Unit 9 รายการ | |
 | ☐ | Product master แสดงชื่อไทย, หน่วยซื้อ, conversion, MOQ | |
 
-## B. Master data (§11)
+## A2. Business Channel (§2, §3, §39)
+
+| ✔ | รายการ | ผู้ตรวจ |
+|:--:|---|---|
+| ☐ | Master data → Business channels แสดง FS, RTL, STR, CK | |
+| ☐ | เพิ่ม channel ใหม่ได้ และปรากฏใน filter ทุกหน้าทันที **โดยไม่ต้อง deploy** | |
+| ☐ | ลูกค้าทุกรายผูกกับ channel ได้ | |
+| ☐ | SO แสดง channel ของลูกค้า | |
+| ☐ | เปลี่ยน channel ของลูกค้าแล้ว SO เก่ายังอยู่ channel เดิม | |
+| ☐ | Admin กำหนด channel ให้ Sales ได้ที่ Settings → Users | |
+| ☐ | Sales เห็นเฉพาะ channel ที่ได้รับมอบหมาย | |
+| ☐ | Sales ใส่ `?channel=` ของ channel อื่นใน URL แล้วไม่เห็นอะไร | |
+| ☐ | Sales Manager (Manager · all) เห็นทุก channel | |
+| ☐ | Purchasing / Warehouse / Management เห็นทุก channel เสมอ | |
+| ☐ | ผู้ใช้ sales ที่ยังไม่มี channel ไม่เห็นรายการใด ๆ | |
+| ☐ | ทุกกระดานมี filter ตาม channel | |
+| ☐ | Dashboard แสดง KPI แยกตาม channel | |
+| ☐ | การเปลี่ยน channel permission ถูกบันทึกลง audit | |
+
+## A3. Cross-Channel Shortage (§20, §45)
+
+| ✔ | รายการ | ผู้ตรวจ |
+|:--:|---|---|
+| ☐ | ระบบสร้าง case อัตโนมัติเมื่อของขาดและ demand ข้าม channel | |
+| ☐ | ของขาดใน channel เดียวไม่สร้าง case (เป็น Sales review ปกติ) | |
+| ☐ | หน้า case แสดง demand แยกตาม channel พร้อม priority | |
+| ☐ | **ช่อง Approved ว่างเปล่าตอนเปิดหน้า — ระบบไม่กรอกให้** | |
+| ☐ | ปุ่ม "Fill in the proposal" เติมข้อเสนอตาม channel priority | |
+| ☐ | แก้ตัวเลขเองได้ทุกบรรทัด | |
+| ☐ | **Approve ไม่ได้จนกว่าผลรวมจะเท่ากับจำนวนที่ได้จริงพอดี** | |
+| ☐ | ให้ลูกค้าเกินที่สั่งไม่ได้ | |
+| ☐ | Sales ของ channel เดียวอนุมัติไม่ได้ (403) | |
+| ☐ | Management อนุมัติได้ | |
+| ☐ | Sales Manager อนุมัติได้ | |
+| ☐ | **Allocation ถูกบล็อกจนกว่าจะอนุมัติ** | |
+| ☐ | ด่านที่ 4 ของ receiving ไม่ผ่านระหว่างที่ case ค้าง | |
+| ☐ | หลังอนุมัติ SO quantity เปลี่ยนตามที่อนุมัติ | |
+| ☐ | `originalQuantity` เดิมยังอยู่ | |
+| ☐ | audit บันทึกผู้อนุมัติ เวลา และเหตุผล | |
+| ☐ | Reject ได้พร้อมเหตุผล | |
+
+## B. Master data (§11, §35)
 
 | ✔ | รายการ | ผู้ตรวจ |
 |:--:|---|---|
@@ -25,7 +66,12 @@
 | ☐ | ตั้ง MOQ แล้วจำนวนตั้งต้นตอนสร้าง PO ถูกยกขึ้นตาม MOQ | |
 | ☐ | เปิด "Weighed" ให้สินค้าแล้วหน้ารับของขึ้นส่วนชั่งน้ำหนัก | |
 | ☐ | เพิ่ม unit conversion ใหม่ได้ และมีผลกับการนำเข้า | |
-| ☐ | เปลี่ยน tolerance เป็น 5% แล้วความต่าง 4% ถูก auto-approve | |
+| ☐ | เปลี่ยน tolerance global เป็น 5% แล้วความต่าง 4% ถูก auto-approve | |
+| ☐ | เพิ่ม tolerance rule ตาม supplier ได้ | |
+| ☐ | เพิ่ม tolerance rule ตาม business channel ได้ | |
+| ☐ | เพิ่ม tolerance rule ตาม product type ได้ | |
+| ☐ | กฎ supplier ชนะกฎ channel ชนะกฎ product type ชนะ global | |
+| ☐ | ตั้ง Lot required / Expiry required ที่ product master แล้วรับของบังคับกรอก | |
 
 ## C. Import Files (§1)
 
@@ -118,11 +164,37 @@
 | ☐ | **รับของไม่ได้ถ้ายังชั่งไม่ครบ หรือยังจ่ายชิ้นไม่ครบ** | |
 | ☐ | น้ำหนักที่จ่ายไม่ตรงกับที่ allocate จะถูกปฏิเสธ | |
 | ☐ | หน้ารายละเอียดการรับแสดงรายชิ้นพร้อมลูกค้า | |
+| ☐ | รับของหลายงวดต่อ PO เดียวได้ (§23) | |
+| ☐ | งวดแรกทำให้สถานะเป็น PARTIALLY_RECEIVED | |
+| ☐ | หน้ารับของงวดถัดไปตั้งจำนวนเป็นส่วนที่เหลือ และบอกว่ารับไปแล้วเท่าไร | |
+| ☐ | รับเกินจำนวนที่ยืนยันไม่ได้ | |
+| ☐ | รับครบแล้วเป็น FULLY_RECEIVED และ PO ปิด | |
+| ☐ | บันทึกสภาพสินค้ารายชิ้น (good/damaged/rejected) ได้ | |
+| ☐ | itemNo ซ้ำในบรรทัดเดียวกันไม่ได้ | |
+| ☐ | จ่ายชิ้นให้ลูกค้าที่ไม่อยู่ใน allocation ไม่ได้ | |
+| ☐ | ของที่เข้าคลังถูกสร้างเป็น Warehouse stock อัตโนมัติ | |
+| ☐ | Warehouse stock แสดง supplier / PO / invoice / SO ต้นทาง / channel | |
+| ☐ | ย้าย stock ต้องมีเหตุผลเสมอ | |
+| ☐ | ย้ายเกินยอดคงเหลือไม่ได้ | |
+| ☐ | ทุกการเคลื่อนไหวมี transaction พร้อมยอดคงเหลือ | |
 | ☐ | สร้าง Shipment จากรายการที่จัดสรรแล้วได้ | |
 | ☐ | หนึ่ง Shipment ต้องเป็นลูกค้าเดียว | |
 | ☐ | ส่งซ้ำบรรทัดเดิมไม่ได้ | |
 
-## H. Dashboard (§9)
+## G2. Performance reports (§33, §34)
+
+| ✔ | รายการ | ผู้ตรวจ |
+|:--:|---|---|
+| ☐ | Supplier performance แสดง PO qty / Invoice qty / Actual qty | |
+| ☐ | แสดง Short % และ Excess % | |
+| ☐ | แสดง Price variance | |
+| ☐ | แสดง Quantity accuracy % และ Price accuracy % | |
+| ☐ | แสดง On-time delivery % | |
+| ☐ | Channel performance แสดง SO / PO / Actual / Shipment / Short / Excess / Stock | |
+| ☐ | channel ที่ยังไม่มีความเคลื่อนไหวยังขึ้นเป็นแถวศูนย์ | |
+| ☐ | filter ตาม Supplier / Product / Channel / ช่วงวันที่ได้ | |
+
+## H. Dashboard (§29–§32)
 
 | ✔ | รายการ | ผู้ตรวจ |
 |:--:|---|---|
@@ -130,6 +202,9 @@
 | ☐ | Sales: SO ไม่ตรง, ต้องถามลูกค้า, ต้องลด, ส่งเกิน, ฝาก stock | |
 | ☐ | Warehouse: Shipment วันนี้, Ready to receive, Pending allocation, Received, Blocked, Unallocated | |
 | ☐ | Management: Total PO/SO/Invoice/Received/Allocation/Stock + Quantity/Price variance | |
+| ☐ | ตาราง By business channel แสดงทุก channel ที่ผู้ใช้เห็นได้ | |
+| ☐ | แถบเตือน cross-channel shortage ขึ้นเฉพาะคนที่อนุมัติได้ | |
+| ☐ | ตัวนับ exception แสดงจำนวน overdue ด้วย | |
 | ☐ | Supplier performance แสดงรายที่ส่งไม่ตรง PO | |
 | ☐ | ตัวเลขทุกตัวกดแล้วไปที่คิวที่ถูกต้อง | |
 | ☐ | ตัวเลขตรงกับข้อมูลจริงในฐานข้อมูล | |
@@ -153,7 +228,10 @@
 
 | ✔ | รายการ | ผู้ตรวจ |
 |:--:|---|---|
-| ☐ | Exception ทุกรายการมี Reason, Responsible Dept, Action, Due Date, Status | |
+| ☐ | Exception ทุกรายการมี Reason, Responsible Dept, **Owner**, Action, Due Date, **Priority**, Status | |
+| ☐ | Exception Center แสดง channel ของแต่ละรายการ | |
+| ☐ | เรียงตาม overdue → priority → วันครบกำหนด | |
+| ☐ | แสดงสถานะ SLA (On track / Due soon / Overdue / Completed) | |
 | ☐ | เปลี่ยนแผนกที่รับผิดชอบได้ | |
 | ☐ | เปลี่ยนกำหนดเสร็จได้ | |
 | ☐ | Start / Resolve พร้อม resolution ได้ | |

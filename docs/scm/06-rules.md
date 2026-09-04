@@ -22,7 +22,7 @@
 | `DUPLICATE_SO` | 🟡 warning | เลข SO มีอยู่แล้ว | SO X already exists — the line will be added to it. |
 | `DUPLICATE_PO` | 🟡 warning | เลข PO มีอยู่แล้ว | PO X already exists — the line will be linked to it. |
 | `PO_WITHOUT_DEMAND` | 🟡 warning | มี PO แต่ไม่มี PR/SO | PO X has no PR or SO on this row. |
-| `DEMAND_WITHOUT_PO` | 🟡 warning | มี PR/SO แต่ไม่มี PO | No PO yet — the line goes to Order management. |
+| `DEMAND_WITHOUT_PO` | 🟡 warning | มี PR/SO แต่ไม่มี PO | No PO yet — the line goes to Purchase planning. |
 
 > **ทำไม "PR ซ้ำ" เป็น warning ไม่ใช่ error** — PR ใบเดียวมีหลายบรรทัดเป็นเรื่องปกติ
 > การซ้ำที่เป็นปัญหาจริงคือ *ชุดเดียวกันทั้งหมด* (PR+SO+PO+สินค้า+วันที่) ซึ่งจับด้วย
@@ -110,7 +110,12 @@
 | **สินค้า `weightControlled` ⇒ ต้องบันทึกน้ำหนักทุกชิ้น** | 422 |
 | **ทุกชิ้นต้องถูกจ่ายให้ลูกค้า** | 422 พร้อมรายชื่อชิ้นที่ยังไม่จ่าย |
 | น้ำหนักรวมต่อลูกค้าต้องตรงกับที่ allocate (±0.05) | 422 |
-| `itemNo` ห้ามซ้ำในบรรทัดเดียวกัน | unique constraint |
+| **`itemNo` ห้ามซ้ำในบรรทัดเดียวกัน (§19)** | 422 พร้อมบอกเลขที่ซ้ำ |
+| **ลูกค้าต้องอยู่ใน allocation ของบรรทัดนั้น (§19)** | 422 |
+| **ยอดสะสมห้ามเกินจำนวนที่ยืนยัน (§23)** | 422 พร้อมบอกยอดที่รับไปแล้ว |
+| **`lotRequired` ⇒ ต้องกรอก Lot/Batch** | 422 |
+| **`expiryRequired` ⇒ ต้องกรอกวันหมดอายุ** | 422 |
+| บันทึกสภาพสินค้ารายชิ้น (good/damaged/rejected) และเวลาที่รับ | เก็บทุกชิ้น |
 
 ### 1.10 Shipment (§18)
 
@@ -204,11 +209,97 @@ Sales แก้รายบรรทัดได้
 
 ตัวอย่าง: ยืนยัน 30 KG, demand SO-A 24 + SO-B 12 → A ได้ 20, B ได้ 10
 
-### BR-08 — Tolerance
+### BR-08 — Tolerance ตาม Product Type / Supplier / Channel (§28)
 
-Admin ตั้ง `scmQtyTolerancePct` และ `scmPriceTolerancePct` ได้ที่
-Master data → Tolerances ความต่างที่อยู่ในกรอบ tolerance ถือว่า **match**
-และอนุมัติอัตโนมัติ ค่าตั้งต้นคือ **0%** = ต้องมีคนตัดสินใจทุกความต่าง
+Tolerance ไม่ใช่ตัวเลขเดียวทั้งบริษัท — ตั้งได้ 4 ระดับที่
+**Master data → Tolerances** และระบบเลือก **กฎที่เจาะจงที่สุด**:
+
+```
+supplier  →  channel  →  product type  →  global
+```
+
+| Parameter | ใช้กับ |
+|---|---|
+| `qtyTolerancePct` | PO vs Invoice quantity, Invoice/PO vs SO |
+| `priceTolerancePct` | PO vs Invoice price |
+| `weightTolerancePct` | น้ำหนักที่จ่ายรายชิ้น vs ที่ allocate ไว้ |
+
+ตัวอย่างจาก sample data:
+
+| Scope | เป้าหมาย | Qty | Price | Weight | เหตุผล |
+|---|---|---:|---:|---:|---|
+| global | ทั้งหมด | 0% | 0% | 0% | ค่าตั้งต้น — ทุกความต่างต้องมีคนตัดสิน |
+| supplier | Nordic Seafood | 2% | 0% | 5% | ของสดชั่งหน้างาน ต่าง 2% เป็นเรื่องปกติ |
+| channel | Store (STR) | 5% | 1% | 5% | ร้านของตัวเองรับส่วนต่างเล็กน้อยได้ |
+
+พฤติกรรม:
+
+```
+Difference ≤ tolerance  → นับเป็น match → อนุมัติอัตโนมัติ
+Difference > tolerance  → Review Required → บังคับเหตุผล
+```
+
+### BR-08b — SLA (§27)
+
+ทุกงานที่ส่งต่อให้แผนกอื่นมี **due date + owner + priority** และหน้าจอ
+คำนวณ remaining days ให้:
+
+| Step | Due date นับถอยหลังจากวันส่งของ |
+|---|---:|
+| ตรวจ Invoice | −2 วัน |
+| PO/Invoice reconciliation | −2 วัน |
+| Sales review | −2 วัน |
+| Allocation | −1 วัน |
+| อนุมัติ cross-channel shortage | −1 วัน |
+| รับของ | วันส่งของ |
+
+สถานะ: `On track` → `Due soon` (ภายใน 3 วัน ปรับได้) → `Overdue` → `Completed`
+Exception Center เรียงตาม overdue ก่อน แล้วตาม priority แล้วตามวันครบกำหนด
+
+### BR-08c — Cross-channel shortage ต้องมีคนอนุมัติ (§20, §45)
+
+เมื่อ **ทั้งสองข้อ** เป็นจริง ระบบสร้าง shortage case แล้ว **หยุด**:
+
+1. จำนวนที่ยืนยันแล้ว < demand รวมของบรรทัด PO นั้น
+2. demand มาจาก **มากกว่า 1 business channel**
+
+ระหว่างที่ case ยังไม่ถูกตัดสิน:
+
+* บรรทัดนั้นมีสถานะ `EXCEPTION`
+* Allocation ถูกปฏิเสธ (409)
+* ด่านที่ 4 ของ receiving ไม่ผ่าน
+
+`shortage.approve` มีเฉพาะ **Management** และ **Sales Manager**
+Sales ของ channel เดียวอนุมัติไม่ได้ เพราะเป็นการตัดสินแทน channel อื่น
+
+การอนุมัติต้องผ่านสองเงื่อนไข:
+
+```
+Σ approvedQuantity = actualQuantity   (ลงตัวพอดี)
+approvedQuantity ≤ requestedQuantity  (ทุกบรรทัด)
+```
+
+หน้าจอ **ไม่กรอกข้อเสนอให้ล่วงหน้า** — ต้องกด "Fill in the proposal"
+หรือพิมพ์เอง เพื่อไม่ให้เกิดการกด Approve โดยไม่อ่าน
+
+### BR-08d — Partial receiving (§23)
+
+PO บรรทัดเดียวรับได้หลายงวด สถานะตัดสินจาก **ผลรวมสะสม** เทียบกับจำนวน
+ที่ Purchasing ยืนยัน:
+
+```
+PO = 1,000 KG (confirmed)
+Delivery 1 = 600   → รวม 600   → PARTIALLY_RECEIVED, PO ยังเปิด
+Delivery 2 = 400   → รวม 1,000 → FULLY_RECEIVED, PO ปิด
+Delivery 3 = 100   → ปฏิเสธ 422: เกินจำนวนที่ยืนยัน
+```
+
+### BR-08e — Warehouse stock ต้อง trace กลับได้ (§24)
+
+ของที่ allocate เข้าคลังจะถูกบันทึกเป็น `warehouse_stock` พร้อม
+supplier, PO, invoice, **SO ต้นทาง**, channel, lot, วันหมดอายุ และเหตุผล
+จำนวนไม่เคยถูกแก้ตรง ๆ — ทุกการเคลื่อนไหวเขียน transaction พร้อมยอดคงเหลือ
+และ **เหตุผลเป็นค่าบังคับ**
 
 ### BR-09 — หน่วยกลาง (§11)
 
@@ -233,9 +324,11 @@ Master data → Tolerances ความต่างที่อยู่ใน�
 | ต้องการทำ | เงื่อนไข |
 |---|---|
 | Verify invoice | ทุกบรรทัดมีสินค้า + ผูก PO แล้ว |
-| Allocate | PO/Invoice recon approved + ไม่มี sales review ค้าง |
+| Allocate | PO/Invoice recon approved + ไม่มี sales review ค้าง + **ไม่มี shortage case ค้าง** |
 | READY TO RECEIVE | ผ่านครบ 6 ด่าน |
-| Complete shipment | allocation completed + ยังไม่เคยส่ง |
+| รับของเพิ่ม | ยอดสะสมไม่เกินจำนวนที่ยืนยัน |
+| ชั่งของ | ทุกชิ้นมีน้ำหนัก ไม่มี itemNo ซ้ำ ทุกชิ้นจ่ายให้ลูกค้าที่อยู่ใน allocation |
+| Complete shipment | allocation completed + ยังไม่เคยส่ง + ลูกค้าเดียว |
 
 ถ้าจำนวนมีความต่าง ระบบสร้าง task (exception + notification) ให้แผนกที่รับผิดชอบ
 โดยอัตโนมัติ

@@ -8,6 +8,7 @@ import { notify } from "@/lib/scm/notify";
 import { round } from "@/lib/scm/units";
 import { confirmedQuantity } from "@/lib/scm/reconcile";
 import { validateItemAssignments } from "@/lib/scm/allocation";
+import { receiveIntoStock } from "@/lib/scm/warehouse-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,10 @@ const itemSchema = z.object({
   itemNo: z.string().min(1).max(40),
   weight: z.number().positive(),
   lotNumber: z.string().max(60).nullable().optional(),
+  expiryDate: z.string().nullable().optional(),
   storageLocation: z.string().max(120).nullable().optional(),
   allocationLineId: z.string().nullable().optional(),
+  condition: z.enum(["good", "damaged", "rejected"]).default("good"),
 });
 
 const lineSchema = z.object({
@@ -65,7 +68,20 @@ export async function POST(request: Request) {
   const po = await prisma.scmPurchaseOrder.findUnique({
     where: { id: body.poId },
     include: {
-      lines: { include: { product: true, allocations: { include: { lines: true } } } },
+      lines: {
+        include: {
+          product: true,
+          receivingLines: { select: { actualQuantity: true } },
+          allocations: {
+            include: {
+              lines: { include: { customer: true, soLine: { include: { so: true } } } },
+            },
+          },
+          demandLinks: {
+            include: { soLine: { include: { so: true } } },
+          },
+        },
+      },
       invoices: { where: { status: "verified" }, select: { id: true } },
     },
   });
@@ -93,7 +109,25 @@ export async function POST(request: Request) {
     }
   }
 
-  // Weight-controlled products: every piece must be weighed and assigned.
+  // Lot / expiry are enforced from the product master (§35).
+  for (const line of body.lines) {
+    const poLine = poLineById.get(line.poLineId)!;
+    if (poLine.product.lotRequired && !line.lotNumber?.trim()) {
+      return Response.json(
+        { error: `${poLine.product.name} requires a lot / batch number.` },
+        { status: 422 }
+      );
+    }
+    if (poLine.product.expiryRequired && !line.expiryDate) {
+      return Response.json(
+        { error: `${poLine.product.name} requires an expiry date.` },
+        { status: 422 }
+      );
+    }
+  }
+
+  // §18 / §19 — weight-controlled products: every piece weighed, every piece
+  // assigned, no piece assigned twice, and never to a customer outside the SO.
   for (const line of body.lines) {
     const poLine = poLineById.get(line.poLineId)!;
     if (!poLine.product.weightControlled) continue;
@@ -106,11 +140,39 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
+
+    const duplicates = items
+      .map((item) => item.itemNo.trim())
+      .filter((itemNo, index, all) => all.indexOf(itemNo) !== index);
+    if (duplicates.length > 0) {
+      return Response.json(
+        { error: `Item number ${duplicates[0]} is used twice on this line.` },
+        { status: 422 }
+      );
+    }
+
     const allocation = poLine.allocations[0];
+    const customerLines = (allocation?.lines ?? []).filter(
+      (allocationLine) => allocationLine.target === "customer"
+    );
+    const allowedLineIds = new Set(customerLines.map((entry) => entry.id));
+    const stray = items.find(
+      (item) => item.allocationLineId && !allowedLineIds.has(item.allocationLineId)
+    );
+    if (stray) {
+      return Response.json(
+        {
+          error: `${stray.itemNo} is assigned to a customer that is not on this allocation.`,
+        },
+        { status: 422 }
+      );
+    }
+
     const lineQuantities = new Map(
-      (allocation?.lines ?? [])
-        .filter((allocationLine) => allocationLine.target === "customer")
-        .map((allocationLine) => [allocationLine.id, allocationLine.quantity])
+      customerLines.map((allocationLine) => [
+        allocationLine.id,
+        allocationLine.quantity,
+      ])
     );
     const check = validateItemAssignments(
       items.map((item) => ({
@@ -124,6 +186,28 @@ export async function POST(request: Request) {
     if (!check.ok) {
       return Response.json(
         { error: check.errors[0], errors: check.errors },
+        { status: 422 }
+      );
+    }
+  }
+
+  // §23 — a receipt may not take a line past what was confirmed.
+  for (const line of body.lines) {
+    const poLine = poLineById.get(line.poLineId)!;
+    const expected = confirmedQuantity({
+      poQuantity: poLine.baseQuantity,
+      correctedQuantity: poLine.correctedQuantity,
+      invoiceVerified: true,
+    });
+    const alreadyReceived = round(
+      poLine.receivingLines.reduce((sum, rl) => sum + rl.actualQuantity, 0)
+    );
+    const total = round(alreadyReceived + line.actualQuantity);
+    if (total > expected + 0.0001) {
+      return Response.json(
+        {
+          error: `${poLine.product.name}: ${alreadyReceived} already received, ${line.actualQuantity} more would exceed the confirmed ${expected}.`,
+        },
         { status: 422 }
       );
     }
@@ -151,6 +235,10 @@ export async function POST(request: Request) {
             invoiceVerified: true,
           });
           const actual = round(line.actualQuantity);
+          const alreadyReceived = round(
+            poLine.receivingLines.reduce((sum, rl) => sum + rl.actualQuantity, 0)
+          );
+          const cumulative = round(alreadyReceived + actual);
           return {
             poLineId: line.poLineId,
             productId: poLine.productId,
@@ -161,7 +249,14 @@ export async function POST(request: Request) {
             expiryDate: parseDay(line.expiryDate),
             storageLocation: line.storageLocation ?? null,
             remark: line.remark ?? null,
-            status: actual >= expected ? "received" : actual > 0 ? "partial" : "pending",
+            // The status reflects the running total across deliveries, not
+            // this one receipt in isolation (§23).
+            status:
+              cumulative >= expected - 0.0001
+                ? "received"
+                : cumulative > 0
+                  ? "partial"
+                  : "pending",
           };
         }),
       },
@@ -183,11 +278,49 @@ export async function POST(request: Request) {
         weight: item.weight,
         unit: "KG",
         lotNumber: item.lotNumber ?? line.lotNumber ?? null,
+        expiryDate: parseDay(item.expiryDate ?? line.expiryDate),
         storageLocation: item.storageLocation ?? line.storageLocation ?? null,
         allocationLineId: item.allocationLineId ?? null,
+        condition: item.condition,
+        receivedAt: receivedDate,
         status: item.allocationLineId ? "allocated" : "on_hand",
       })),
     });
+  }
+
+  // §24 — everything allocated to the warehouse rather than a customer is
+  // booked as stock, carrying the chain that produced it so it can be traced
+  // back to the order it was bought for.
+  for (const receivingLine of receiving.lines) {
+    const poLine = poLineById.get(receivingLine.poLineId)!;
+    const allocation = poLine.allocations[0];
+    const stockLines = (allocation?.lines ?? []).filter(
+      (allocationLine) => allocationLine.target === "warehouse"
+    );
+    for (const stockLine of stockLines) {
+      const existing = await prisma.scmWarehouseStock.findFirst({
+        where: { allocationLineId: stockLine.id },
+      });
+      if (existing) continue;
+      const originSoLine = poLine.demandLinks.find((link) => link.soLine)?.soLine;
+      await receiveIntoStock({
+        productId: poLine.productId,
+        quantity: stockLine.quantity,
+        unit: stockLine.unit,
+        supplierId: po.supplierId,
+        poId: po.id,
+        invoiceId: po.invoices[0]?.id ?? null,
+        originalSoLineId: originSoLine?.id ?? null,
+        channelId: originSoLine?.so.channelId ?? null,
+        receivingLineId: receivingLine.id,
+        allocationLineId: stockLine.id,
+        reason: stockLine.reason ?? "Leftover after customer allocation",
+        location: stockLine.storageLocation ?? receivingLine.storageLocation,
+        lotNumber: receivingLine.lotNumber,
+        expiryDate: receivingLine.expiryDate,
+        createdByName: actor.name,
+      });
+    }
   }
 
   await recordAudit(
@@ -216,19 +349,39 @@ export async function POST(request: Request) {
     ]
   );
 
-  await prisma.scmPurchaseOrder.update({
-    where: { id: po.id },
-    data: { status: body.complete ? "closed" : "received" },
+  // The PO closes only when every line has had its confirmed quantity
+  // delivered — a first partial delivery leaves it open (§23).
+  const refreshedLines = await prisma.scmPurchaseOrderLine.findMany({
+    where: { poId: po.id },
+    include: { receivingLines: { select: { actualQuantity: true } } },
+  });
+  const allLinesComplete = refreshedLines.every((line) => {
+    const expected = confirmedQuantity({
+      poQuantity: line.baseQuantity,
+      correctedQuantity: line.correctedQuantity,
+      invoiceVerified: true,
+    });
+    const receivedSoFar = round(
+      line.receivingLines.reduce((sum, rl) => sum + rl.actualQuantity, 0)
+    );
+    return receivedSoFar >= expected - 0.0001;
   });
 
-  if (body.complete) await closePoExceptions(po.id, actor.name);
+  await prisma.scmPurchaseOrder.update({
+    where: { id: po.id },
+    data: { status: allLinesComplete ? "closed" : "received" },
+  });
+
+  if (allLinesComplete) await closePoExceptions(po.id, actor.name);
   await syncPoStatuses(po.id);
 
   await notify({
     department: "sales",
     type: "goods_received",
-    title: `${po.poNumber} received (${receiptNumber})`,
-    body: "Allocated quantities are ready to pick and ship.",
+    title: `${po.poNumber} ${allLinesComplete ? "fully" : "partially"} received (${receiptNumber})`,
+    body: allLinesComplete
+      ? "Allocated quantities are ready to pick and ship."
+      : "More deliveries are still expected against this order.",
     documentType: "receiving",
     documentId: receiving.id,
     documentNumber: receiptNumber,
@@ -236,7 +389,12 @@ export async function POST(request: Request) {
   });
 
   return Response.json(
-    { id: receiving.id, receiptNumber, status: receiving.status },
+    {
+      id: receiving.id,
+      receiptNumber,
+      status: receiving.status,
+      fullyReceived: allLinesComplete,
+    },
     { status: 201 }
   );
 }

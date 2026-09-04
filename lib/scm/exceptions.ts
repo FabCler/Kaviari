@@ -6,6 +6,7 @@ import type {
   ExceptionType,
 } from "@/lib/scm/domain";
 import { nextExceptionCode } from "@/lib/scm/numbering";
+import type { Priority } from "@/lib/scm/sla";
 
 /**
  * Exception management (§15). Every exception carries the five things the
@@ -21,9 +22,13 @@ export interface RaiseExceptionInput {
   documentId?: string | null;
   documentNumber?: string | null;
   productId?: string | null;
+  channelId?: string | null;
   description: string;
   reason?: string | null;
   responsibleDept: Department;
+  /** The person accountable, not just the department (§26). */
+  ownerName?: string | null;
+  priority?: Priority;
   action?: string | null;
   dueDate?: Date | null;
   createdByName?: string | null;
@@ -53,9 +58,12 @@ export async function raiseException(
       documentId: input.documentId ?? null,
       documentNumber: input.documentNumber ?? null,
       productId: input.productId ?? null,
+      channelId: input.channelId ?? null,
       description: input.description,
       reason: input.reason ?? null,
       responsibleDept: input.responsibleDept,
+      ownerName: input.ownerName ?? null,
+      priority: input.priority ?? "medium",
       action: input.action ?? null,
       dueDate: input.dueDate ?? null,
       createdByName: input.createdByName ?? null,

@@ -4,6 +4,13 @@
 
 ```mermaid
 erDiagram
+  business_channels ||--o{ customers : "groups"
+  business_channels ||--o{ sales_orders : "scopes"
+  business_channels ||--o{ user_channels : "grants"
+  business_channels ||--o{ tolerances : "tunes"
+  business_channels ||--o{ warehouse_stock : "tags"
+  business_channels ||--o{ shortage_allocations : "competes"
+  users ||--o{ user_channels : "may see"
   users ||--o{ audit_logs : "writes"
   suppliers ||--o{ purchase_orders : "receives"
   suppliers ||--o{ invoices : "issues"
@@ -25,9 +32,9 @@ erDiagram
   sales_order_lines ||--o{ purchase_request_lines : "demand from"
 
   purchase_orders ||--|{ purchase_order_lines : ""
-  purchase_order_lines ||--o{ po_line_demand : "covers"
-  po_line_demand }o--|| purchase_request_lines : ""
-  po_line_demand }o--|| sales_order_lines : ""
+  purchase_order_lines ||--o{ so_po_mapping : "covers"
+  so_po_mapping }o--|| purchase_request_lines : ""
+  so_po_mapping }o--|| sales_order_lines : "many-to-many"
 
   purchase_orders ||--o{ invoices : ""
   invoices ||--|{ invoice_lines : ""
@@ -43,9 +50,14 @@ erDiagram
   allocation_lines ||--o{ receiving_items : "individual pieces"
   allocation_lines ||--o{ shipment_lines : ""
 
-  purchase_orders ||--o{ receiving : ""
+  purchase_orders ||--o{ receiving : "one per delivery"
   receiving ||--|{ receiving_lines : ""
   receiving_lines ||--o{ receiving_items : "weighed pieces"
+  receiving_lines ||--o{ warehouse_stock : "leftover"
+  warehouse_stock ||--|{ warehouse_stock_transactions : "history"
+  purchase_order_lines ||--o{ shortage_cases : "raises"
+  shortage_cases ||--|{ shortage_allocations : "per channel"
+  shortage_allocations }o--|| sales_order_lines : "reduces"
 
   shipment ||--|{ shipment_lines : ""
   sales_order_lines ||--o{ shipment_lines : ""
@@ -56,13 +68,13 @@ erDiagram
   import_batches ||--o{ sales_orders : "importId"
 ```
 
-### เส้นทางความสัมพันธ์หลัก (§13 Document relationship)
+### เส้นทางความสัมพันธ์หลัก (§37 Document relationship)
 
 ```
-Customer → sales_orders → sales_order_lines
+Business Channel → Customer → sales_orders → sales_order_lines
                               ↓ (purchase_request_lines.soLineId)
                           purchase_request_lines
-                              ↓ (po_line_demand)
+                              ↓ (so_po_mapping — many-to-many)
                           purchase_order_lines → purchase_orders → suppliers
                               ↓                        ↓
                           invoice_lines ← invoices ────┘
@@ -72,7 +84,7 @@ Customer → sales_orders → sales_order_lines
                           so_po_reconciliation → sales decision
                               ↓
                           allocation → allocation_lines ─┬→ customers
-                              ↓                          └→ warehouse stock
+                              ↓                          └→ warehouse_stock → transactions
                           receiving → receiving_lines → receiving_items (per-piece weight)
                               ↓
                           shipment → shipment_lines → Customer
@@ -87,6 +99,47 @@ Customer → sales_orders → sales_order_lines
 
 > ทุกตารางมี `id` (cuid) เป็น PK และ `createdAt`/`updatedAt` เว้นแต่ระบุเป็นอย่างอื่น
 > ชื่อในวงเล็บคือชื่อ Prisma model, ชื่อหัวข้อคือชื่อตารางจริง (`@@map`)
+
+### 2.0 Organisation
+
+#### `business_channels` (BusinessChannel)
+
+| Field | Type | Null | คำอธิบาย |
+|---|---|:--:|---|
+| `code` | String | – | `FS` \| `RTL` \| `STR` \| `CK` \| … — **unique** |
+| `name` / `nameTh` | String | –/✓ | ชื่ออังกฤษ / ไทย |
+| `sortOrder` | Int | – | ลำดับที่แสดงบนหน้าจอ |
+| `defaultPriority` | Int | – | ลำดับที่ **เสนอ** เมื่อของไม่พอ (ค่าน้อย = ได้ก่อน) |
+| `active` | Boolean | – | ปิดแทนการลบ — เอกสารเก่ายังชี้มาที่นี่ |
+
+**การเพิ่ม channel ใหม่ = insert 1 แถว** ไม่มี migration ไม่มีการแก้โค้ด
+
+#### `user_channels` (ScmUserChannel)
+
+| Field | Type | คำอธิบาย |
+|---|---|---|
+| `userId` / `channelId` | FK | **unique ร่วมกัน** |
+
+Sales Manager ใช้ `users.allChannels = true` แทนการติ๊กทุก channel เพื่อให้
+channel ที่เพิ่มภายหลังครอบคลุมอัตโนมัติ
+
+#### `departments` / `roles` (ScmDepartment / ScmRole)
+
+ตาราง lookup สำหรับ label บนหน้าจอ — **ตั้งใจไม่เป็น Foreign Key** เพราะ
+`User.department` ต้องอ่านได้แม้ฐานข้อมูลจะยังไม่มีแถวนั้น รหัสที่ไม่รู้จัก
+จะแสดงเป็นตัวมันเอง
+
+#### `tolerances` (ScmTolerance)
+
+| Field | Type | Null | คำอธิบาย |
+|---|---|:--:|---|
+| `scope` | String | – | `global` \| `product_type` \| `supplier` \| `channel` |
+| `key` | String | – | `"<scope>:<target|*>"` — **unique** หนึ่งกฎต่อเป้าหมาย |
+| `productType` / `supplierId` / `channelId` | | ✓ | เป้าหมายตาม scope |
+| `qtyTolerancePct` / `priceTolerancePct` / `weightTolerancePct` | Float | – | เกณฑ์ที่ถือว่า "ตรง" |
+| `note` / `active` | | | |
+
+**ลำดับการเลือกกฎ:** supplier → channel → product type → global
 
 ### 2.1 Master data
 
@@ -109,6 +162,7 @@ Customer → sales_orders → sales_order_lines
 |---|---|:--:|---|
 | `code` | String | – | รหัสลูกค้า — **unique** |
 | `name` / `nameTh` | String | –/✓ | ชื่อลูกค้า อังกฤษ/ไทย |
+| `channelId` | FK business_channels | ✓ | **Business Channel ที่ลูกค้าสังกัด (§3)** |
 | `deliveryLocation` | String | ✓ | สถานที่ส่งของ |
 | `salesOwner` | String | ✓ | Sales ผู้ดูแล |
 | `active` | Boolean | – | |
@@ -140,6 +194,8 @@ Customer → sales_orders → sales_order_lines
 | `moq` | Float | ✓ | ขั้นต่ำการสั่ง (หน่วยซื้อ) |
 | `defaultSupplierId` | FK suppliers | ✓ | Supplier ตั้งต้น |
 | `weightControlled` | Boolean | – | `true` = ชั่งทีละชิ้น (ปลา/ปู/กุ้ง) |
+| `lotRequired` | Boolean | – | รับของไม่ได้ถ้าไม่กรอก Lot/Batch |
+| `expiryRequired` | Boolean | – | รับของไม่ได้ถ้าไม่กรอกวันหมดอายุ |
 
 Field เดิมที่โมดูลนี้ใช้: `prCode` (รหัสสินค้า), `name`, `category` (ประเภทสินค้า),
 `unit` (หน่วยคลัง — เป็นหน่วยกลางของทุกการเปรียบเทียบ), `packingPerBox`
@@ -149,6 +205,7 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | Field ที่เพิ่ม | Type | คำอธิบาย |
 |---|---|---|
 | `department` | String | `admin` \| `purchasing` \| `sales` \| `warehouse` \| `management` \| `none` — ตัวขับ permission matrix |
+| `allChannels` | Boolean | `true` = Sales Manager เห็นทุก channel รวมที่เพิ่มในอนาคต |
 
 ### 2.2 Demand
 
@@ -173,7 +230,9 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | Field | Type | Null | คำอธิบาย |
 |---|---|:--:|---|
 | `soNumber` | String | – | **unique** |
+| `channelId` | FK business_channels | ✓ | **Business Channel — denormalise จากลูกค้า** เพื่อให้ประวัติไม่ย้ายตามเมื่อลูกค้าเปลี่ยน channel |
 | `customerId` | FK customers | – | |
+| `salesOwner` / `deliveryLocation` | String | ✓ | ผู้ดูแล / สถานที่ส่ง |
 | `deliveryDate` / `requester` / `currency` | | | |
 | `status` | String | – | `open` \| `partially_shipped` \| `shipped` \| `closed` \| `cancelled` |
 | **line** `quantity` | Float | – | จำนวนที่ตกลงกับลูกค้า **ปัจจุบัน** (เปลี่ยนได้เมื่อ Sales ลด order) |
@@ -212,18 +271,27 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | `correctedReason` / `correctedAt` / `correctedByName` | | ✓ | ใครยืนยัน เมื่อไร ด้วยเหตุผลอะไร |
 | `status` / `blockedReason` | String | –/✓ | สถานะกลาง |
 
-#### `po_line_demand` (ScmPoLineDemand)
+#### `so_po_mapping` (ScmSoPoMapping) — §6, §7
 
-ตารางเชื่อม PO line ↔ demand แบบหลายต่อหลาย — PO บรรทัดเดียวรวม demand
-หลาย SO/PR ได้ และ demand หนึ่งกระจายไปหลาย PO ได้
+ตารางเชื่อม SO ↔ PO แบบหลายต่อหลาย **ที่ระดับบรรทัด** — ไม่มีคอลัมน์
+`SO → PO` โดยตรงที่ไหนในระบบเลย ตามที่ §6 ห้ามไว้
 
 | Field | Type | Null | คำอธิบาย |
 |---|---|:--:|---|
-| `poLineId` | FK | – | |
-| `prLineId` / `soLineId` | FK | ✓ | อย่างน้อยหนึ่งอัน |
-| `quantity` | Float | – | ส่วนของ PO line ที่ครอบคลุม demand นี้ (หน่วยคลัง) |
+| `id` | String | – | Mapping ID |
+| `poId` / `poLineId` | FK | – | PO และบรรทัด PO |
+| `soId` / `soLineId` | FK | ✓ | SO และบรรทัด SO |
+| `prLineId` | FK | ✓ | บรรทัด PR (ถ้ามี) |
+| `productId` | FK products | – | สินค้า |
+| `quantity` | Float | – | **ส่วนของ PO line ที่ครอบคลุม demand นี้** (หน่วยคลัง) |
+| `unit` | String | – | หน่วย |
+| `reason` | String | ✓ | เหตุผลที่แบ่งแบบนี้ |
+| `createdById` / `createdByName` / `createdAt` | | ✓ | ใครสร้าง เมื่อไร |
 
-### 2.4 Invoice
+รองรับทั้ง **PO 1 ใบ → หลาย SO** และ **SO 1 ใบ → หลาย PO**
+ดูตัวอย่างจริงใน [13-business-channels.md](13-business-channels.md#4-so--po-mapping-§6-§7)
+
+### 2.4 Invoice### 2.4 Invoice
 
 #### `invoices` (ScmInvoice)
 
@@ -323,6 +391,9 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | **line** `status` | String | – | `pending` \| `received` \| `partial` \| `rejected` |
 | **item** `itemNo` | String | – | `CRAB-01` — **unique ร่วมกับ receivingLineId** |
 | **item** `weight` / `unit` | Float | – | น้ำหนักของชิ้นนั้น |
+| **item** `condition` | String | – | `good` \| `damaged` \| `rejected` — สภาพตอนรับ (§18) |
+| **item** `receivedAt` | DateTime | – | เวลาที่รับ (§18) |
+| **item** `expiryDate` | DateTime | ✓ | วันหมดอายุของชิ้นนั้น |
 | **item** `allocationLineId` | FK | ✓ | **ลูกค้าที่ชิ้นนี้จะไป** |
 | **item** `status` | String | – | `on_hand` \| `allocated` \| `shipped` \| `written_off` |
 
@@ -340,6 +411,66 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | **line** `quantity` / `unit` / `weight` | | | |
 | **line** `itemRefs` | String (CSV) | ✓ | id ของ `receiving_items` ที่ส่งไปจริง |
 
+### 2.8b Warehouse stock (§24)
+
+#### `warehouse_stock` (ScmWarehouseStock)
+
+ของที่รับมาแล้วไม่ได้ไปหาลูกค้า — เก็บ **สายเอกสารทั้งเส้นที่ทำให้มันเกิดขึ้น**
+เพื่อให้ trace กลับไปยัง order ต้นทางได้เสมอ
+
+| Field | Type | Null | คำอธิบาย |
+|---|---|:--:|---|
+| `stockNumber` | String | – | `STK-2026-0001` — **unique** |
+| `productId` | FK | – | |
+| `quantity` / `unit` | | – | ยอดคงเหลือปัจจุบัน |
+| `supplierId` / `poId` / `invoiceId` | FK | ✓ | มาจากใคร ใบไหน |
+| `originalSoLineId` | FK sales_order_lines | ✓ | **SO ต้นทางที่ซื้อมาเพื่อคนนี้** |
+| `channelId` | FK business_channels | ✓ | Business Channel ต้นทาง |
+| `receivingLineId` / `allocationLineId` | FK | ✓ | ใบรับ / บรรทัด allocation |
+| `reason` | String | ✓ | ทำไมถึงเหลือ |
+| `location` / `lotNumber` / `expiryDate` | | ✓ | ที่เก็บ / lot / วันหมดอายุ |
+| `status` | String | – | `on_hand` \| `reserved` \| `consumed` \| `written_off` |
+
+#### `warehouse_stock_transactions` (ScmWarehouseStockTransaction)
+
+| Field | Type | คำอธิบาย |
+|---|---|---|
+| `stockId` | FK | |
+| `type` | String | `in` \| `out` \| `adjust` \| `reserve` \| `release` \| `write_off` |
+| `quantity` / `balanceAfter` | Float | จำนวนที่ย้าย และ **ยอดคงเหลือหลังย้าย** |
+| `reason` | String | **บังคับ** |
+| `referenceType` / `referenceId` | String | เอกสารอ้างอิง |
+| `byName` / `createdAt` | | ใครทำ เมื่อไร |
+
+จำนวนไม่เคยถูกแก้ตรง ๆ — ทุกการเคลื่อนไหวเขียน transaction พร้อมยอดคงเหลือ
+ทำให้ประวัติสร้างใหม่ได้เสมอ
+
+### 2.8c Cross-channel shortage (§20)
+
+#### `shortage_cases` (ScmShortageCase)
+
+| Field | Type | Null | คำอธิบาย |
+|---|---|:--:|---|
+| `caseNumber` | String | – | `SHT-2026-0001` — **unique** |
+| `productId` / `poLineId` | FK | –/✓ | |
+| `deliveryDate` | DateTime | ✓ | |
+| `actualQuantity` | Float | – | จำนวนที่มีจริง |
+| `totalSoQuantity` | Float | – | demand รวมทุก channel |
+| `shortageQuantity` | Float | – | ส่วนที่ขาด |
+| `status` | String | – | `open` \| `pending_approval` \| `approved` \| `rejected` \| `applied` \| `cancelled` |
+| `decisionNote` / `approvedByName` / `approvedAt` | | ✓ | **ใครตัดสิน เมื่อไร ว่าอะไร** |
+
+#### `shortage_allocations` (ScmShortageAllocation)
+
+| Field | Type | Null | คำอธิบาย |
+|---|---|:--:|---|
+| `caseId` | FK | – | |
+| `channelId` / `customerId` / `soLineId` | FK | ✓ | ใครแข่งกัน |
+| `requestedQuantity` | Float | – | จำนวนที่สั่งมา |
+| `approvedQuantity` | Float | **✓** | **null จนกว่าคนจะตัดสิน — ข้อเสนอไม่เคยถูกบันทึกเป็นการอนุมัติ** |
+| `priority` | Int | – | ลำดับที่ใช้ตัดสิน |
+| `reason` | String | ✓ | เหตุผลของ channel นี้ |
+
 ### 2.9 Control tables
 
 #### `exceptions` (ScmException)
@@ -353,6 +484,9 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | `description` | String | – | |
 | `reason` | String | ✓ | **เหตุผล** |
 | `responsibleDept` | String | – | **แผนกที่รับผิดชอบ** |
+| `ownerName` | String | ✓ | **คนที่รับผิดชอบ (§26, §27)** |
+| `priority` | String | – | `low` \| `medium` \| `high` \| `critical` |
+| `channelId` | String | ✓ | Business Channel ที่เกี่ยวข้อง |
 | `action` | String | ✓ | **สิ่งที่ต้องทำ** |
 | `dueDate` | DateTime | ✓ | **กำหนดเสร็จ** |
 | `status` | String | – | **`open` \| `in_progress` \| `resolved` \| `cancelled`** |
@@ -377,7 +511,7 @@ Field เดิมที่โมดูลนี้ใช้: `prCode` (รห�
 | ตาราง | ใช้ทำอะไร |
 |---|---|
 | `attachments` | ไฟล์แนบต่อเอกสาร (entity/entityId) — invoice PDF, เอกสารประกอบ |
-| `notifications` | แจ้งเตือนตาม workflow (§16): department, type, severity, link, readAt |
+| `notifications` | แจ้งเตือนตาม workflow (§40): department, **channelId**, type, severity, link, readAt — `channelId` ว่าง = ทั้งบริษัท |
 | `import_batches` | ประวัติการนำเข้า: ไฟล์, จำนวนแถว, ผ่าน/ไม่ผ่าน, issues (JSON), payload ที่ validate แล้วรอ confirm |
 
 ---

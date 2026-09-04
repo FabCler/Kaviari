@@ -28,13 +28,19 @@ export const PERMISSIONS = [
   "warehouse.receive",
   "warehouse.recordWeights",
   "warehouse.ship",
+  // warehouse stock & leftover
+  "warehouse.stock",
+  // cross-channel shortage — only management may rank channels (§20)
+  "shortage.approve",
   // shared
   "exceptions.manage",
   "documents.view",
   "dashboard.view",
+  "reports.view",
   // admin
   "master.manage",
   "users.manage",
+  "channels.manage",
   "audit.view",
   "override",
 ] as const;
@@ -53,6 +59,7 @@ const PURCHASING: Permission[] = [
   "exceptions.manage",
   "documents.view",
   "dashboard.view",
+  "reports.view",
 ];
 
 const SALES: Permission[] = [
@@ -65,6 +72,7 @@ const SALES: Permission[] = [
   "exceptions.manage",
   "documents.view",
   "dashboard.view",
+  "reports.view",
 ];
 
 const WAREHOUSE: Permission[] = [
@@ -72,18 +80,24 @@ const WAREHOUSE: Permission[] = [
   "warehouse.receive",
   "warehouse.recordWeights",
   "warehouse.ship",
+  "warehouse.stock",
   "sales.allocate",
   "exceptions.manage",
   "documents.view",
   "dashboard.view",
+  "reports.view",
 ];
 
 const MANAGEMENT: Permission[] = [
   "purchasing.view",
   "sales.view",
   "warehouse.view",
+  "warehouse.stock",
+  // Ranking channels against each other is a management decision (§20).
+  "shortage.approve",
   "documents.view",
   "dashboard.view",
+  "reports.view",
   "audit.view",
 ];
 
@@ -101,6 +115,23 @@ export interface Actor {
   name: string;
   role: string;
   department: string;
+  /**
+   * A sales manager sees every business channel, including ones created
+   * after their account — which is why this is a flag on the user and not a
+   * set of assignment rows somebody has to remember to extend.
+   */
+  allChannels: boolean;
+}
+
+/**
+ * A sales manager is a sales user who sees the whole business. They inherit
+ * the sales permissions plus the cross-channel shortage approval, because
+ * deciding which channel gets cut is exactly their job (§20, §39).
+ */
+export function isSalesManager(
+  actor: Pick<Actor, "role" | "department" | "allChannels">
+): boolean {
+  return departmentOf(actor) === "sales" && actor.allChannels;
 }
 
 /** The owner account is the system administrator, whatever its department. */
@@ -111,14 +142,15 @@ export function departmentOf(actor: Pick<Actor, "role" | "department">): Departm
 }
 
 export function can(
-  actor: Pick<Actor, "role" | "department">,
+  actor: Pick<Actor, "role" | "department" | "allChannels">,
   permission: Permission
 ): boolean {
+  if (permission === "shortage.approve" && isSalesManager(actor)) return true;
   return MATRIX[departmentOf(actor)].includes(permission);
 }
 
 export function canAny(
-  actor: Pick<Actor, "role" | "department">,
+  actor: Pick<Actor, "role" | "department" | "allChannels">,
   permissions: readonly Permission[]
 ): boolean {
   return permissions.some((permission) => can(actor, permission));
@@ -135,6 +167,8 @@ export function permissionMatrix() {
     admin: MATRIX.admin.includes(permission),
     purchasing: MATRIX.purchasing.includes(permission),
     sales: MATRIX.sales.includes(permission),
+    salesManager:
+      MATRIX.sales.includes(permission) || permission === "shortage.approve",
     warehouse: MATRIX.warehouse.includes(permission),
     management: MATRIX.management.includes(permission),
   }));

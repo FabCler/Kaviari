@@ -23,8 +23,16 @@ export default async function MasterDataPage() {
   const actor = (await currentActor())!;
   if (!can(actor, "master.manage")) return <NoAccess what="master data" />;
 
-  const [suppliers, customers, units, conversions, products, settings] =
-    await Promise.all([
+  const [
+    suppliers,
+    customers,
+    units,
+    conversions,
+    products,
+    settings,
+    channels,
+    tolerances,
+  ] = await Promise.all([
       prisma.supplier.findMany({ orderBy: { code: "asc" } }),
       prisma.customer.findMany({ orderBy: { code: "asc" } }),
       prisma.scmUnit.findMany({ orderBy: { code: "asc" } }),
@@ -38,6 +46,16 @@ export default async function MasterDataPage() {
         take: 500,
       }),
       getScmSettings(),
+      prisma.businessChannel.findMany({
+        orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
+      }),
+      prisma.scmTolerance.findMany({
+        include: {
+          supplier: { select: { name: true } },
+          channel: { select: { code: true, name: true } },
+        },
+        orderBy: { scope: "asc" },
+      }),
     ]);
 
   return (
@@ -62,10 +80,40 @@ export default async function MasterDataPage() {
           id: customer.id,
           code: customer.code,
           name: customer.name,
+          channelId: customer.channelId,
           deliveryLocation: customer.deliveryLocation,
           salesOwner: customer.salesOwner,
           active: customer.active,
         }))}
+        channels={channels.map((channel) => ({
+          id: channel.id,
+          code: channel.code,
+          name: channel.name,
+          nameTh: channel.nameTh,
+          sortOrder: channel.sortOrder,
+          defaultPriority: channel.defaultPriority,
+          active: channel.active,
+        }))}
+        tolerances={tolerances.map((rule) => ({
+          id: rule.id,
+          scope: rule.scope,
+          target:
+            rule.scope === "supplier"
+              ? (rule.supplier?.name ?? "—")
+              : rule.scope === "channel"
+                ? (rule.channel?.code ?? "—")
+                : rule.scope === "product_type"
+                  ? (rule.productType ?? "—")
+                  : "All",
+          qtyTolerancePct: rule.qtyTolerancePct,
+          priceTolerancePct: rule.priceTolerancePct,
+          weightTolerancePct: rule.weightTolerancePct,
+          note: rule.note,
+          active: rule.active,
+        }))}
+        productTypes={[
+          ...new Set(products.map((product) => product.category)),
+        ].sort()}
         units={units.map((unit) => ({
           code: unit.code,
           name: unit.name,
@@ -98,8 +146,10 @@ export default async function MasterDataPage() {
         <CardHeader>
           <CardTitle className="text-base">Role &amp; permission matrix</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Assign a department to each account in Settings → Users. Every route
-            handler re-checks this matrix server-side.
+            Assign a department — and, for Sales, the business channels — to
+            each account in Settings → Users. Every route handler re-checks
+            this matrix server-side. A sales manager is a sales user who sees
+            every channel.
           </p>
         </CardHeader>
         <CardContent className="px-0">
@@ -111,6 +161,7 @@ export default async function MasterDataPage() {
                   <TableHead className="text-center">Admin</TableHead>
                   <TableHead className="text-center">Purchasing</TableHead>
                   <TableHead className="text-center">Sales</TableHead>
+                  <TableHead className="text-center">Sales mgr</TableHead>
                   <TableHead className="text-center">Warehouse</TableHead>
                   <TableHead className="text-center">Management</TableHead>
                 </TableRow>
@@ -126,6 +177,9 @@ export default async function MasterDataPage() {
                       {mark(row.purchasing)}
                     </TableCell>
                     <TableCell className="text-center">{mark(row.sales)}</TableCell>
+                    <TableCell className="text-center">
+                      {mark(row.salesManager)}
+                    </TableCell>
                     <TableCell className="text-center">
                       {mark(row.warehouse)}
                     </TableCell>

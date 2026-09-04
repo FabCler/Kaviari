@@ -56,6 +56,10 @@ export async function POST(request: Request) {
       product: true,
       recons: true,
       soPoRecons: true,
+      shortageCases: {
+        where: { status: { in: ["open", "pending_approval"] } },
+        select: { caseNumber: true },
+      },
       allocations: { include: { lines: true } },
       receivingLines: { include: { items: true } },
     },
@@ -74,6 +78,19 @@ export async function POST(request: Request) {
       { status: 409 }
     );
   }
+  // §20 — a cross-channel shortage is a management decision, and nothing may
+  // be allocated against the disputed quantity until it is made.
+  if (poLine.shortageCases.length > 0) {
+    return Response.json(
+      {
+        error: `Cross-channel shortage ${poLine.shortageCases
+          .map((entry) => entry.caseNumber)
+          .join(", ")} is waiting for a management decision — allocation is blocked.`,
+      },
+      { status: 409 }
+    );
+  }
+
   const openSalesReview = poLine.soPoRecons.filter(
     (row) => row.status === "pending_sales_review"
   ).length;

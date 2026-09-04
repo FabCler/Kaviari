@@ -10,9 +10,9 @@ import { nearlyEqual } from "@/lib/scm/domain";
 export const GATE_CHECKS = [
   { id: "po", label: "Purchase order is valid" },
   { id: "invoice", label: "Supplier invoice is verified" },
-  { id: "qty_recon", label: "Quantity passed purchasing reconciliation" },
-  { id: "sales_recon", label: "SO passed sales reconciliation" },
-  { id: "allocation", label: "Allocation is complete" },
+  { id: "qty_recon", label: "PO vs Invoice reconciliation completed" },
+  { id: "sales_recon", label: "SO review completed" },
+  { id: "allocation", label: "Allocation completed or stock clearly assigned" },
   { id: "unallocated", label: "Unallocated quantity is zero" },
 ] as const;
 
@@ -43,6 +43,8 @@ export interface GateInput {
   poInvoiceRecons: { status: string; qtyStatus: string; priceStatus: string }[];
   /** One entry per Invoice/SO reconciliation row touching this PO. */
   salesRecons: { status: string }[];
+  /** Cross-channel shortage cases still waiting for a management decision. */
+  openShortageCases?: { caseNumber: string }[];
   /** One entry per PO line that needs allocating. */
   allocations: {
     poLineId: string;
@@ -102,7 +104,7 @@ export function evaluateGate(input: GateInput): GateResult {
     rejected.length === 0;
   checks.push({
     id: "qty_recon",
-    label: "Quantity passed purchasing reconciliation",
+    label: "PO vs Invoice reconciliation completed",
     ok: qtyOk,
     detail: qtyOk
       ? `${input.poInvoiceRecons.length} line(s) reconciled and approved.`
@@ -113,18 +115,22 @@ export function evaluateGate(input: GateInput): GateResult {
           : `${openRecons.length} line(s) still pending purchasing review.`,
   });
 
-  // 4 — sales handled every quantity difference against the SO
+  // 4 — sales handled every quantity difference against the SO, and no
+  // cross-channel shortage is still waiting for management (§20)
   const openSales = input.salesRecons.filter((r) => r.status !== "completed");
-  const salesOk = openSales.length === 0;
+  const openShortages = input.openShortageCases ?? [];
+  const salesOk = openSales.length === 0 && openShortages.length === 0;
   checks.push({
     id: "sales_recon",
-    label: "SO passed sales reconciliation",
+    label: "SO review completed",
     ok: salesOk,
-    detail: salesOk
-      ? input.salesRecons.length === 0
-        ? "No SO difference to review."
-        : `${input.salesRecons.length} sales review(s) completed.`
-      : `${openSales.length} sales review(s) still open.`,
+    detail: !salesOk && openShortages.length > 0
+      ? `Cross-channel shortage ${openShortages.map((c) => c.caseNumber).join(", ")} is waiting for a management decision.`
+      : salesOk
+        ? input.salesRecons.length === 0
+          ? "No SO difference to review."
+          : `${input.salesRecons.length} sales review(s) completed.`
+        : `${openSales.length} sales review(s) still open.`,
   });
 
   // 5 — an allocation exists and is completed for every line
@@ -136,10 +142,10 @@ export function evaluateGate(input: GateInput): GateResult {
   const allocationOk = missing.length === 0;
   checks.push({
     id: "allocation",
-    label: "Allocation is complete",
+    label: "Allocation completed or stock clearly assigned",
     ok: allocationOk,
     detail: allocationOk
-      ? `${input.requiredAllocationLineIds.length} line(s) allocated.`
+      ? `${input.requiredAllocationLineIds.length} line(s) allocated to customers or to a named warehouse location.`
       : `${missing.length} line(s) not allocated yet.`,
   });
 

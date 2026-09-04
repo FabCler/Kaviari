@@ -54,7 +54,7 @@ describe("receiving gate (§7.1 / §21)", () => {
     };
     const gate = evaluateGate(input);
     expect(gate.ready).toBe(false);
-    expect(gate.blockedReason).toContain("purchasing reconciliation");
+    expect(gate.blockedReason).toContain("PO vs Invoice reconciliation");
   });
 
   it("blocks while a sales review is still open", () => {
@@ -65,7 +65,7 @@ describe("receiving gate (§7.1 / §21)", () => {
     ];
     const gate = evaluateGate(input);
     expect(gate.ready).toBe(false);
-    expect(gate.blockedReason).toContain("sales reconciliation");
+    expect(gate.blockedReason).toContain("sales review(s) still open");
   });
 
   it("blocks when a line has not been allocated", () => {
@@ -75,7 +75,7 @@ describe("receiving gate (§7.1 / §21)", () => {
     ];
     const gate = evaluateGate(input);
     expect(gate.ready).toBe(false);
-    expect(gate.blockedReason).toContain("Allocation is complete");
+    expect(gate.blockedReason).toContain("Allocation completed");
   });
 
   it("blocks when anything is still unallocated", () => {
@@ -84,6 +84,15 @@ describe("receiving gate (§7.1 / §21)", () => {
     const gate = evaluateGate(input);
     expect(gate.ready).toBe(false);
     expect(gate.checks[5].detail).toContain("UNALLOCATED QUANTITY: 25");
+  });
+
+  it("blocks on a cross-channel shortage waiting for management (§20)", () => {
+    const input = readyInput();
+    input.openShortageCases = [{ caseNumber: "SHT-2026-0001" }];
+    const gate = evaluateGate(input);
+    expect(gate.ready).toBe(false);
+    expect(gate.blockedReason).toContain("SHT-2026-0001");
+    expect(gate.blockedReason).toContain("management decision");
   });
 
   it("names the first failing check, not the last", () => {

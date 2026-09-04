@@ -72,7 +72,8 @@ unknown product codes, unit mismatches, zero/negative quantities…
 
   Expected columns (English or Thai headers)
   [วันที่ส่งสินค้า][รหัสสินค้า][ชื่อสินค้าอังกฤษ][ชื่อสินค้าไทย][หน่วยคลัง]
-  [จำนวน][หน่วยซื้อ][ประเภทสินค้า][เลขเอกสาร PR][เลขเอกสาร SO][ชื่อผู้ขอ][เลขเอกสาร PO]
+  [จำนวน][หน่วยซื้อ][ประเภทสินค้า][เลขเอกสาร PR][เลขเอกสาร SO][ชื่อผู้ขอ]
+  [เลขเอกสาร PO][Business Channel]
 
   ┌──────────────────────────────────────────┐
   │   ⬆  Drop a .xlsx / .csv file here       │
@@ -102,20 +103,24 @@ unknown product codes, unit mismatches, zero/negative quantities…
 
 ## 4. Purchasing
 
-### 4.1 Order management (§2)
+### 4.1 Purchase planning (§8)
 
 ```
-Order management
-PR and SO lines with no purchase order, or a PO that does not cover the demand.
+Purchase planning
+Required, already ordered and still remaining — per demand line, across
+every business channel.
 
+[All channels][FS][RTL][STR][CK]
 [🔍 Search PR, SO, product, customer…] [All suppliers ▾] [Plan a purchase order (2)]
 
-☑ │ Document       │ Product          │ Customer   │ Required │ On PO │ Outstanding │ MOQ │ Delivery
-──┼────────────────┼──────────────────┼────────────┼─────────┼───────┼─────────────┼─────┼─────────
-☑ │ PR-2026-0106   │ Oscietra 125g    │ –          │  12 Tin │   0   │     12 🟡   │  2  │ 21 Sep
-  │ Nattapong      │ 3134 · ออเซตร้า   │            │         │       │             │     │
-☑ │ SO-2026-0107   │ Kristal 125g     │ Phuket     │   6 Tin │   0   │      6 🟡   │  2  │ 23 Sep
-  │ Nattapong      │ 3193 · คริสตัล    │ Beach Club │         │       │             │     │
+☑ │ Document       │Chan.│ Product          │ Customer   │ Required │ On PO │ Remaining │ MOQ │ Delivery
+──┼────────────────┼─────┼──────────────────┼────────────┼─────────┼───────┼───────────┼─────┼─────────
+☑ │ PR-2026-0106   │  —  │ Oscietra 125g    │ –          │  12 Tin │   0   │   12 🟡   │  2  │ 21 Sep
+  │ Nattapong      │     │ 3134 · ออเซตร้า   │            │         │       │           │     │
+☑ │ SO-2026-0107   │[CK] │ Kristal 125g     │ Central    │   6 Tin │   0   │    6 🟡   │  2  │ 23 Sep
+  │ Nattapong      │     │ 3193 · คริสตัล    │ Kitchen    │         │       │           │     │
+  │ SO-2026-0202   │[RTL]│ Salmon           │ Gourmet    │ 500 KG  │  200  │  300 🟡   │ 100 │  6 Sep
+  │ Nattapong      │     │ 3168             │ Market     │         │       │  ← SO เดียวแบ่งไปหลาย PO
 
 ┌─ New purchase order ─────────────────────────────────────────────────────────┐
 │ Ordering more than the demand requires a reason — it is stored on the line,   │
@@ -265,7 +270,7 @@ Nordic   │3208      │       │               │         │           │ 
 
 ## 6. ตัวอย่างหน้าจอแต่ละแผนก
 
-### 6.1 Warehouse — Receiving queue (§7)
+### 6.1 Warehouse — Receiving queue (§21)
 
 ```
 Warehouse receiving
@@ -283,7 +288,7 @@ PO-0002   │Kaviari Paris │ 6 Oct  │  1  │   –   │ Blocked 🔴      
           │              │        │     │       │ still pending review.      │
 ```
 
-### 6.2 Warehouse — Receive goods (§7.1 + §6.2)
+### 6.2 Warehouse — Receive goods (§22 + §18)
 
 ```
 Receive PO-2026-0004                                     [Back to the queue]
@@ -314,7 +319,7 @@ Nordic Seafood A/S · expected 2 Oct 2026
 เมื่อไม่ผ่านด่าน: แผงซ้ายกลายเป็น **BLOCKED 🔴** พร้อมบอกว่าติดด่านไหน และ
 ฟอร์มด้านขวาไม่แสดง
 
-### 6.3 Warehouse — Shipments (§18)
+### 6.3 Warehouse — Shipments (§25)
 
 ```
 Shipments
@@ -332,7 +337,91 @@ Allocated quantities that have been received and are ready to leave.
   ⚠ เลือกข้ามลูกค้าจะขึ้น "One shipment goes to one customer"
 ```
 
-### 6.4 Management — Document trace (§13)
+### 6.3b Management — Cross-channel shortage decision (§20, §45)
+
+```
+SHT-2026-0001                                    [All cases] [Document trace]
+Kaviari Norwegian Smoked Salmon · PO-2026-0005 · Nordic Seafood · delivery 6 Sep
+
+┌ The shortfall ──────────────────────────────── [Pending approval 🟡] ──────┐
+│ TOTAL ORDERED BY CUSTOMERS    ACTUALLY AVAILABLE       SHORT                │
+│ 1,200 KG                      1,150 KG                 50 KG 🔴             │
+│                                                                             │
+│ The quantities below are a PROPOSAL derived from the channel priorities.    │
+│ No customer order has been changed. Approving writes exactly the numbers    │
+│ in the "Approved" column.                                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌ Allocation across channels ─────────────────── [🪄 Fill in the proposal] ──┐
+│ Priority│Channel│Customer / SO         │Ordered│Proposed│Approved│Reduction│
+│ ────────┼───────┼──────────────────────┼───────┼────────┼────────┼─────────│
+│   10    │ [FS]  │Mandarin Oriental     │1,000  │ 1,000  │[  —  ] │    —    │
+│         │       │SO-2026-0201          │       │        │        │         │
+│   20    │ [RTL] │Gourmet Market Paragon│  200  │   150  │[  —  ] │    —    │
+│         │       │SO-2026-0202          │       │        │        │         │
+│ ────────┴───────┴──────────────────────┼───────┼────────┼────────┴─────────│
+│ Total                                  │ 1,200 │ 0/1,150│ 1,150 KG still   │
+│                                        │       │        │ unassigned 🔴    │
+│                                                                             │
+│ Decision note [What was agreed, and with whom                          ]    │
+│ [Approve this split]  [Reject]        ← Approve stays disabled until it     │
+│                                          adds up to exactly 1,150           │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**การออกแบบที่ตั้งใจ:** ช่อง Approved เปิดมาว่าง ไม่ใช่เติมข้อเสนอไว้ให้ —
+ฟอร์มที่เปิดมาพร้อมตัวเลขชวนให้กด Approve โดยไม่อ่าน ผู้อนุมัติต้องกด
+"Fill in the proposal" อย่างตั้งใจ หรือพิมพ์ตัวเลขของตัวเอง
+
+### 6.3c Warehouse — Stock & leftover (§24)
+
+```
+Warehouse stock & leftover
+Everything received that did not go straight to a customer, with the order
+it came from.
+
+[All channels][FS][RTL][STR][CK]
+┌ Stock lines 1 ┐┌ Total quantity 100 ┐┌ Expiring within 14 days 0 🟢 ┐
+
+Stock       │Product    │Quantity│Channel│Origin           │Location│Expiry │Status
+────────────┼───────────┼────────┼───────┼─────────────────┼────────┼───────┼───────
+STK-2026-   │Smoked     │ 100 KG │ [RTL] │PO-2026-0006     │FRZ-02  │21 Oct │On hand
+0001        │Salmon     │        │       │Nordic Seafood   │SAL-    │45 d   │[Move]
+            │3168       │        │       │SO-2026-0202 ·   │2026-11 │       │
+            │           │        │       │Gourmet Market   │        │       │
+
+  Move STK-2026-0001                                          (dialog)
+  100 KG on hand. Every movement is recorded with its reason and the
+  balance it leaves behind.
+  Movement  [Out — sold or transferred ▾]
+  Quantity  [    40    ] KG
+  Reason    [Sold to Villa Market                    ]  ← required
+  [Record the movement]
+```
+
+### 6.3d Management — Performance (§33, §34)
+
+```
+Performance reports
+[All channels][FS][RTL][STR][CK]
+[Supplier ▾][Product ▾][Delivery from][to]                    [Clear filters]
+
+Supplier performance
+Supplier    │PO lines│PO qty│Inv qty│Actual│Short%│Excess%│Price var│Qty acc│On time
+────────────┼────────┼──────┼───────┼──────┼──────┼───────┼─────────┼───────┼───────
+Kaviari     │   4    │  108 │   102 │   24 │25.0% │  0.0% │    4.15 │ 75.0% │100.0%
+Nordic      │   3    │2,120 │ 2,070 │   20 │33.3% │  0.0% │    0.00 │ 66.7% │100.0%
+
+Channel performance
+Channel │Customers│SOs│SO qty│PO qty│Actual│Shipment│Short│Excess│Stock
+────────┼─────────┼───┼──────┼──────┼──────┼────────┼─────┼──────┼─────
+[FS]    │    2    │ 4 │1,024 │1,024 │1,000 │     24 │   0 │    0 │    0
+[RTL]   │    1    │ 2 │  518 │  518 │  450 │      0 │ 350 │    0 │  100
+[STR]   │    1    │ 2 │  308 │  308 │  300 │      8 │   0 │    0 │    0
+[CK]    │    1    │ 2 │  206 │  206 │  200 │      0 │   0 │    0 │    0
+```
+
+### 6.4 Management — Document trace (§37)
 
 ```
 Purchase order PO-2026-0001            Kaviari Paris · 24 Sep 2026 · Mandarin Oriental

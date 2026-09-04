@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { currentActor } from "@/lib/scm/guard";
+import { currentScope } from "@/lib/scm/guard";
+import { narrowScope } from "@/lib/scm/channels";
 import { can } from "@/lib/scm/permissions";
 import { supplierSummary } from "@/lib/scm/queries";
 import { ORDER_ADJUSTMENT_LABELS } from "@/lib/scm/domain";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { NoAccess } from "@/components/scm/no-access";
 import { ExportButton } from "@/components/scm/export-button";
+import { ChannelBadge, ChannelFilter } from "@/components/scm/channel-filter";
 import { StatusBadge } from "@/components/scm/status-badge";
 import { SummaryFilters } from "@/components/scm/purchasing/summary-filters";
 
@@ -31,11 +33,14 @@ export default async function SupplierSummaryPage({
     supplier?: string;
     product?: string;
     status?: string;
+    channel?: string;
     from?: string;
     to?: string;
   }>;
 }) {
-  const actor = (await currentActor())!;
+  const context = await currentScope();
+  if (!context) return <NoAccess what="the supplier summary" />;
+  const { actor, scope } = context;
   if (!can(actor, "purchasing.view")) {
     return <NoAccess what="the supplier summary" />;
   }
@@ -44,11 +49,14 @@ export default async function SupplierSummaryPage({
   const parseDay = (value?: string) =>
     value ? new Date(`${value}T00:00:00Z`) : undefined;
 
+  const visible = narrowScope(scope, filters.channel);
+
   const [rows, suppliers, products] = await Promise.all([
     supplierSummary({
       supplierId: filters.supplier,
       productId: filters.product,
       status: filters.status,
+      channelIds: visible.all ? null : visible.ids,
       from: parseDay(filters.from),
       to: parseDay(filters.to),
     }),
@@ -87,6 +95,10 @@ export default async function SupplierSummaryPage({
         }
       />
 
+      <div className="mb-3">
+        <ChannelFilter channels={scope.channels} />
+      </div>
+
       <SummaryFilters
         suppliers={suppliers.map((supplier) => ({
           id: supplier.id,
@@ -110,6 +122,7 @@ export default async function SupplierSummaryPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Supplier</TableHead>
+                    <TableHead>Channel</TableHead>
                     <TableHead>PO</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead className="text-right">Required qty</TableHead>
@@ -126,6 +139,17 @@ export default async function SupplierSummaryPage({
                   {rows.map((row) => (
                     <TableRow key={row.poLineId}>
                       <TableCell>{row.supplierName}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {row.channelCodes.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            row.channelCodes.map((code) => (
+                              <ChannelBadge key={code} code={code} />
+                            ))
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Link
                           href={`/scm/trace/po/${row.poId}`}
@@ -182,7 +206,7 @@ export default async function SupplierSummaryPage({
                     </TableRow>
                   ))}
                   <TableRow className="border-t-2 border-gold/40 font-medium">
-                    <TableCell colSpan={3}>Total</TableCell>
+                    <TableCell colSpan={4}>Total</TableCell>
                     <TableCell className="tnum text-right">
                       {formatNumber(totals.required)}
                     </TableCell>

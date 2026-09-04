@@ -12,6 +12,8 @@ export type NotificationSeverity = "info" | "warning" | "critical";
 
 export interface NotificationInput {
   department: Department;
+  /** Null = the whole business; set, and only that channel's readers see it. */
+  channelId?: string | null;
   type: string;
   title: string;
   body?: string | null;
@@ -31,6 +33,7 @@ export async function notify(
   await client.scmNotification.createMany({
     data: list.map((input) => ({
       department: input.department,
+      channelId: input.channelId ?? null,
       type: input.type,
       title: input.title,
       body: input.body ?? null,
@@ -43,12 +46,26 @@ export async function notify(
   });
 }
 
-export async function unreadFor(department: string, take = 20) {
+/**
+ * Unread alerts for a department, narrowed to the channels the reader may
+ * see. A notification with no channel concerns the whole business and goes
+ * to everyone in that department.
+ */
+export async function unreadFor(
+  department: string,
+  options: { take?: number; channelIds?: string[] | null } = {}
+) {
+  const { take = 20, channelIds = null } = options;
   return prisma.scmNotification.findMany({
-    where:
-      department === "admin" || department === "management"
-        ? { readAt: null }
-        : { department, readAt: null },
+    where: {
+      readAt: null,
+      ...(department === "admin" || department === "management"
+        ? {}
+        : { department }),
+      ...(channelIds
+        ? { OR: [{ channelId: null }, { channelId: { in: channelIds } }] }
+        : {}),
+    },
     orderBy: { createdAt: "desc" },
     take,
   });

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Bell, ShieldAlert } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { currentActor } from "@/lib/scm/guard";
+import { currentScope } from "@/lib/scm/guard";
+import { narrowScope } from "@/lib/scm/channels";
 import { can, departmentOf } from "@/lib/scm/permissions";
 import { dashboardMetrics } from "@/lib/scm/queries";
 import { unreadFor } from "@/lib/scm/notify";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { KpiCard } from "@/components/scm/kpi-card";
 import { StatusBadge, ToneBadge, documentTone, humanize } from "@/components/scm/status-badge";
+import { ChannelFilter } from "@/components/scm/channel-filter";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Supply chain — Kaviari Cellar" };
@@ -27,22 +29,57 @@ export const metadata = { title: "Supply chain — Kaviari Cellar" };
  * §9 — the management dashboard, with a section per department. Each tile
  * links straight to the queue it counts, so a number is never a dead end.
  */
-export default async function ScmDashboardPage() {
-  const actor = (await currentActor())!;
+export default async function ScmDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ channel?: string }>;
+}) {
+  const context = (await currentScope())!;
+  const { actor, scope } = context;
   const department = departmentOf(actor);
+  const filters = await searchParams;
+  const visible = narrowScope(scope, filters.channel);
 
   const [metrics, notifications, blocked, exceptions] = await Promise.all([
-    dashboardMetrics(),
-    unreadFor(department, 8),
+    dashboardMetrics({
+      channelIds: visible.all ? null : visible.ids,
+    }),
+    unreadFor(department, {
+      take: 8,
+      channelIds: visible.all ? null : visible.ids,
+    }),
     prisma.scmPurchaseOrderLine.findMany({
-      where: { status: { in: ["BLOCKED", "PENDING_SALES_REVIEW", "PENDING_ALLOCATION"] } },
+      where: {
+        status: {
+          in: [
+            "BLOCKED",
+            "EXCEPTION",
+            "PENDING_SALES_REVIEW",
+            "PENDING_ALLOCATION",
+            "PENDING_RECONCILIATION",
+          ],
+        },
+        // A scoped user sees only the lines bought for their channels.
+        ...(visible.all
+          ? {}
+          : {
+              demandLinks: {
+                some: { soLine: { so: { channelId: { in: visible.ids } } } },
+              },
+            }),
+      },
       include: { po: { include: { supplier: true } }, product: true },
       orderBy: { deliveryDate: "asc" },
       take: 12,
     }),
     prisma.scmException.findMany({
-      where: { status: { in: ["open", "in_progress"] } },
-      orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+      where: {
+        status: { in: ["open", "in_progress"] },
+        ...(visible.all
+          ? {}
+          : { OR: [{ channelId: null }, { channelId: { in: visible.ids } }] }),
+      },
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
       take: 8,
     }),
   ]);
@@ -61,8 +98,10 @@ export default async function ScmDashboardPage() {
             <Button variant="outline" asChild>
               <Link href="/scm/exceptions">
                 <ShieldAlert className="size-4" aria-hidden />
-                {metrics.openExceptions} open exception
-                {metrics.openExceptions === 1 ? "" : "s"}
+                {metrics.openExceptions} open
+                {metrics.overdueExceptions > 0
+                  ? ` · ${metrics.overdueExceptions} overdue`
+                  : ""}
               </Link>
             </Button>
             <Button variant="gold" asChild>
@@ -71,6 +110,101 @@ export default async function ScmDashboardPage() {
           </>
         }
       />
+
+      <div className="mb-6">
+        <ChannelFilter channels={scope.channels} />
+      </div>
+
+      {metrics.pendingShortages > 0 && can(actor, "shortage.approve") ? (
+        <Card className="mb-6 border-destructive/40 bg-destructive/5">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <div>
+              <div className="text-sm font-medium text-destructive">
+                {metrics.pendingShortages} cross-channel shortage
+                {metrics.pendingShortages === 1 ? "" : "s"} waiting for a decision
+              </div>
+              <p className="text-xs text-muted-foreground">
+                One delivery cannot cover the demand of several channels. Nothing
+                moves until someone ranks them — the system will not decide.
+              </p>
+            </div>
+            <Button variant="destructive" asChild>
+              <Link href="/scm/sales/shortage">Open the queue</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {metrics.channels.length > 1 ? (
+        <section className="mb-8">
+          <h2 className="mb-3 text-sm font-medium tracking-wide text-muted-foreground uppercase">
+            By business channel
+          </h2>
+          <Card>
+            <CardContent className="px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Channel</TableHead>
+                    <TableHead className="text-right">SO</TableHead>
+                    <TableHead className="text-right">PO</TableHead>
+                    <TableHead className="text-right">Actual</TableHead>
+                    <TableHead className="text-right">Shipment</TableHead>
+                    <TableHead className="text-right">Short</TableHead>
+                    <TableHead className="text-right">Excess</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {metrics.channels.map((channel) => (
+                    <TableRow key={channel.channelId ?? "none"}>
+                      <TableCell>
+                        <span className="font-medium">{channel.channelCode}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {channel.channelName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="tnum text-right">
+                        {formatNumber(channel.soQuantity)}
+                      </TableCell>
+                      <TableCell className="tnum text-right">
+                        {formatNumber(channel.poQuantity)}
+                      </TableCell>
+                      <TableCell className="tnum text-right font-medium">
+                        {formatNumber(channel.actualQuantity)}
+                      </TableCell>
+                      <TableCell className="tnum text-right">
+                        {formatNumber(channel.shipmentQuantity)}
+                      </TableCell>
+                      <TableCell
+                        className={
+                          channel.shortQuantity > 0
+                            ? "tnum text-right text-destructive"
+                            : "tnum text-right"
+                        }
+                      >
+                        {formatNumber(channel.shortQuantity)}
+                      </TableCell>
+                      <TableCell
+                        className={
+                          channel.excessQuantity > 0
+                            ? "tnum text-right text-warning"
+                            : "tnum text-right"
+                        }
+                      >
+                        {formatNumber(channel.excessQuantity)}
+                      </TableCell>
+                      <TableCell className="tnum text-right">
+                        {formatNumber(channel.stockQuantity)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="mb-8">
         <h2 className="mb-3 text-sm font-medium tracking-wide text-muted-foreground uppercase">

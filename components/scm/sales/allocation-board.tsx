@@ -38,6 +38,7 @@ interface DemandInfo {
   soNumber: string;
   customerId: string;
   customerName: string;
+  channelCode: string | null;
   quantity: number;
 }
 
@@ -64,6 +65,7 @@ export interface AllocationRow {
   orderedQuantity: number;
   actualQuantity: number;
   openSalesReviews: number;
+  openShortage: { id: string; caseNumber: string } | null;
   demands: DemandInfo[];
   allocation: {
     id: string;
@@ -168,7 +170,15 @@ export function AllocationBoard({
                               ? humanize(row.allocation.status)
                               : "Not started"}
                           </ToneBadge>
-                          {row.openSalesReviews > 0 ? (
+                          {row.openShortage ? (
+                            <Link
+                              href={`/scm/sales/shortage/${row.openShortage.id}`}
+                              className="mt-0.5 flex items-center gap-1 text-xs text-destructive hover:underline"
+                            >
+                              <TriangleAlert className="size-3" aria-hidden />
+                              {row.openShortage.caseNumber} awaiting approval
+                            </Link>
+                          ) : row.openSalesReviews > 0 ? (
                             <div className="mt-0.5 flex items-center gap-1 text-xs text-destructive">
                               <TriangleAlert className="size-3" aria-hidden />
                               {row.openSalesReviews} sales review(s) open
@@ -185,7 +195,9 @@ export function AllocationBoard({
                                   current === row.poLineId ? null : row.poLineId
                                 )
                               }
-                              disabled={row.openSalesReviews > 0}
+                              disabled={
+                                row.openSalesReviews > 0 || row.openShortage != null
+                              }
                             >
                               {openId === row.poLineId ? "Close" : "Allocate"}
                             </Button>
@@ -419,6 +431,7 @@ function AllocationEditor({
                       <SelectContent>
                         {row.demands.map((demand) => (
                           <SelectItem key={demand.soLineId} value={demand.soLineId}>
+                            {demand.channelCode ? `${demand.channelCode} · ` : ""}
                             {demand.customerName} · {demand.soNumber}
                           </SelectItem>
                         ))}

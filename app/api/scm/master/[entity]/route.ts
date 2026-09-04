@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requirePermission, isResponse } from "@/lib/scm/guard";
 import { auditEvent, diffFields, recordAudit } from "@/lib/scm/audit";
 import { conversionKey, normalizeUnit } from "@/lib/scm/units";
+import { toleranceKey } from "@/lib/scm/tolerance";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ const ENTITIES = [
   "units",
   "conversions",
   "products",
+  "channels",
+  "tolerances",
 ] as const;
 type Entity = (typeof ENTITIES)[number];
 
@@ -40,10 +43,34 @@ const customerSchema = z.object({
   code: z.string().min(1).max(32),
   name: z.string().min(1).max(200),
   nameTh: z.string().max(200).nullable().optional(),
+  channelId: z.string().nullable().optional(),
   deliveryLocation: z.string().max(300).nullable().optional(),
   salesOwner: z.string().max(120).nullable().optional(),
   contactEmail: z.string().max(200).nullable().optional(),
   contactPhone: z.string().max(60).nullable().optional(),
+  active: z.boolean().default(true),
+});
+
+const channelSchema = z.object({
+  id: z.string().optional(),
+  code: z.string().min(1).max(16),
+  name: z.string().min(1).max(120),
+  nameTh: z.string().max(120).nullable().optional(),
+  sortOrder: z.number().int().min(0).max(999).default(0),
+  defaultPriority: z.number().int().min(0).max(999).default(100),
+  active: z.boolean().default(true),
+});
+
+const toleranceSchema = z.object({
+  id: z.string().optional(),
+  scope: z.enum(["global", "product_type", "supplier", "channel"]),
+  productType: z.string().max(60).nullable().optional(),
+  supplierId: z.string().nullable().optional(),
+  channelId: z.string().nullable().optional(),
+  qtyTolerancePct: z.number().min(0).max(100).default(0),
+  priceTolerancePct: z.number().min(0).max(100).default(0),
+  weightTolerancePct: z.number().min(0).max(100).default(0),
+  note: z.string().max(300).nullable().optional(),
   active: z.boolean().default(true),
 });
 
@@ -145,6 +172,7 @@ export async function POST(
         existing
           ? diffFields(existing as never, { ...data, code } as never, [
               "name",
+              "channelId",
               "deliveryLocation",
               "salesOwner",
               "active",
@@ -207,6 +235,101 @@ export async function POST(
       return Response.json({ id: saved.id, key });
     }
 
+    case "channels": {
+      const parsed = channelSchema.safeParse(raw);
+      if (!parsed.success) {
+        return Response.json(
+          { error: parsed.error.issues[0]?.message ?? "Invalid channel." },
+          { status: 400 }
+        );
+      }
+      const { id, ...data } = parsed.data;
+      const code = data.code.trim().toUpperCase();
+      const existing = id
+        ? await prisma.businessChannel.findUnique({ where: { id } })
+        : await prisma.businessChannel.findUnique({ where: { code } });
+      const saved = existing
+        ? await prisma.businessChannel.update({
+            where: { id: existing.id },
+            data: { ...data, code },
+          })
+        : await prisma.businessChannel.create({ data: { ...data, code } });
+      await recordAudit(
+        { entity: "business_channel", entityId: saved.id, documentNumber: code, actor },
+        existing
+          ? diffFields(existing as never, { ...data, code } as never, [
+              "name",
+              "nameTh",
+              "sortOrder",
+              "defaultPriority",
+              "active",
+            ])
+          : [
+              {
+                action: "create",
+                field: "code",
+                newValue: code,
+                oldValue: null,
+              },
+            ]
+      );
+      return Response.json({ id: saved.id, code: saved.code });
+    }
+
+    case "tolerances": {
+      const parsed = toleranceSchema.safeParse(raw);
+      if (!parsed.success) {
+        return Response.json({ error: "Invalid tolerance rule." }, { status: 400 });
+      }
+      const data = parsed.data;
+      const target =
+        data.scope === "supplier"
+          ? data.supplierId
+          : data.scope === "channel"
+            ? data.channelId
+            : data.scope === "product_type"
+              ? data.productType
+              : null;
+      if (data.scope !== "global" && !target) {
+        return Response.json(
+          { error: `A ${data.scope.replace("_", " ")} must be chosen for this rule.` },
+          { status: 422 }
+        );
+      }
+      const key = toleranceKey(data.scope, target);
+      const saved = await prisma.scmTolerance.upsert({
+        where: { key },
+        create: {
+          key,
+          scope: data.scope,
+          productType: data.scope === "product_type" ? data.productType : null,
+          supplierId: data.scope === "supplier" ? data.supplierId : null,
+          channelId: data.scope === "channel" ? data.channelId : null,
+          qtyTolerancePct: data.qtyTolerancePct,
+          priceTolerancePct: data.priceTolerancePct,
+          weightTolerancePct: data.weightTolerancePct,
+          note: data.note ?? null,
+          active: data.active,
+        },
+        update: {
+          qtyTolerancePct: data.qtyTolerancePct,
+          priceTolerancePct: data.priceTolerancePct,
+          weightTolerancePct: data.weightTolerancePct,
+          note: data.note ?? null,
+          active: data.active,
+        },
+      });
+      await auditEvent(
+        { entity: "tolerance", entityId: saved.id, documentNumber: key, actor },
+        "update",
+        {
+          field: "tolerance",
+          newValue: `qty ${data.qtyTolerancePct}% · price ${data.priceTolerancePct}% · weight ${data.weightTolerancePct}%`,
+        }
+      );
+      return Response.json({ id: saved.id, key });
+    }
+
     case "products": {
       const parsed = productSchema.safeParse(raw);
       if (!parsed.success) {
@@ -262,6 +385,12 @@ export async function DELETE(
     await prisma.customer.update({ where: { id }, data: { active: false } });
   } else if (entity === "conversions") {
     await prisma.scmUnitConversion.delete({ where: { id } });
+  } else if (entity === "channels") {
+    // A channel is never deleted: past orders, stock and permissions still
+    // point at it. Deactivating hides it from the pickers instead.
+    await prisma.businessChannel.update({ where: { id }, data: { active: false } });
+  } else if (entity === "tolerances") {
+    await prisma.scmTolerance.update({ where: { id }, data: { active: false } });
   } else {
     return Response.json({ error: `Cannot deactivate "${entity}".` }, { status: 400 });
   }

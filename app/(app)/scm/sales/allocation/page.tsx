@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { currentActor } from "@/lib/scm/guard";
+import { currentScope } from "@/lib/scm/guard";
+import { narrowScope } from "@/lib/scm/channels";
 import { can } from "@/lib/scm/permissions";
 import { confirmedQuantity } from "@/lib/scm/reconcile";
 import { getScmSettings } from "@/lib/scm/settings";
@@ -9,9 +10,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { KpiCard } from "@/components/scm/kpi-card";
 import { NoAccess } from "@/components/scm/no-access";
 import { AllocationBoard } from "@/components/scm/sales/allocation-board";
+import { ChannelFilter } from "@/components/scm/channel-filter";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Order allocation — Kaviari Cellar" };
+export const metadata = { title: "Customer allocation — Kaviari Cellar" };
 
 /**
  * §6 — allocate what actually arrived. A line can only be completed when
@@ -20,28 +22,41 @@ export const metadata = { title: "Order allocation — Kaviari Cellar" };
 export default async function AllocationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ po?: string }>;
+  searchParams: Promise<{ po?: string; channel?: string }>;
 }) {
-  const actor = (await currentActor())!;
+  const context = await currentScope();
+  if (!context) return <NoAccess what="customer allocation" />;
+  const { actor, scope } = context;
   if (!can(actor, "sales.view") && !can(actor, "warehouse.view")) {
-    return <NoAccess what="order allocation" />;
+    return <NoAccess what="customer allocation" />;
   }
 
   const filters = await searchParams;
+  const visible = narrowScope(scope, filters.channel);
+  const channelWhere = visible.all ? null : { channelId: { in: visible.ids } };
   const settings = await getScmSettings();
 
   const poLines = await prisma.scmPurchaseOrderLine.findMany({
     where: {
       ...(filters.po ? { poId: filters.po } : {}),
       recons: { some: { status: "approved" } },
+      ...(channelWhere
+        ? { demandLinks: { some: { soLine: { so: channelWhere } } } }
+        : {}),
     },
     include: {
       po: { include: { supplier: true } },
       product: true,
       recons: true,
       soPoRecons: true,
+      shortageCases: {
+        where: { status: { in: ["open", "pending_approval"] } },
+        select: { id: true, caseNumber: true },
+      },
       demandLinks: {
-        include: { soLine: { include: { so: { include: { customer: true } } } } },
+        include: {
+          soLine: { include: { so: { include: { customer: true, channel: true } } } },
+        },
       },
       allocations: { include: { lines: { include: { customer: true } } } },
       receivingLines: { include: { items: true } },
@@ -83,6 +98,14 @@ export default async function AllocationPage({
       openSalesReviews: line.soPoRecons.filter(
         (recon) => recon.status === "pending_sales_review"
       ).length,
+      // A cross-channel shortage waiting for management blocks allocation
+      // just as firmly as an open sales review (§20).
+      openShortage: line.shortageCases[0]
+        ? {
+            id: line.shortageCases[0].id,
+            caseNumber: line.shortageCases[0].caseNumber,
+          }
+        : null,
       demands: line.demandLinks
         .filter((link) => link.soLine)
         .map((link) => ({
@@ -90,6 +113,7 @@ export default async function AllocationPage({
           soNumber: link.soLine!.so.soNumber,
           customerId: link.soLine!.so.customerId,
           customerName: link.soLine!.so.customer.name,
+          channelCode: link.soLine!.so.channel?.code ?? null,
           quantity: link.soLine!.confirmedQuantity ?? link.soLine!.quantity,
         })),
       allocation: allocation
@@ -123,9 +147,13 @@ export default async function AllocationPage({
   return (
     <div>
       <PageHeader
-        title="Order allocation"
+        title="Customer allocation"
         description="Assign the confirmed quantity to customers and to warehouse stock. Total allocation must equal the actual quantity."
       />
+
+      <div className="mb-4">
+        <ChannelFilter channels={scope.channels} />
+      </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <KpiCard label="Lines to allocate" value={rows.length} />

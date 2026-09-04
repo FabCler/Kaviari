@@ -1,17 +1,19 @@
 /**
  * Sample data for the supply-chain module.
  *
- * Four scenarios, each parked at a different point in the workflow so every
- * screen has something real to show:
+ * Six scenarios across the four business channels, each parked at a different
+ * point in the workflow so every screen has something real to show:
  *
- *   A — clean match .......... invoice equals the PO, auto-approved,
- *                              waiting for allocation
- *   B — supplier short ....... invoice < PO, waiting for purchasing to
- *                              confirm the corrected quantity
- *   C — MOQ over-order ....... PO > demand with a recorded reason, no
- *                              invoice yet
- *   D — weighed product ...... king crab bought by the piece, allocation
- *                              split across two customers
+ *   A — clean match ............ FS: invoice equals the PO, auto-approved,
+ *                                waiting for allocation
+ *   B — supplier short ......... FS: invoice < PO with a price rise, waiting
+ *                                for purchasing to confirm
+ *   C — MOQ over-order ......... RTL: PO > demand with a recorded reason
+ *   D — weighed product ........ FS + STR: king crab bought by the piece
+ *   E — cross-channel shortage . the §45 example: 2,000 KG of salmon ordered
+ *                                across all four channels, 1,700 delivered,
+ *                                waiting for management to rank the channels
+ *   F — open demand ............ CK + RTL lines with no PO yet
  *
  * User accounts are never touched. Everything else under the module is
  * wiped and rebuilt so the sample stays reproducible.
@@ -36,6 +38,39 @@ const GLOBAL_CONVERSIONS = [
   { fromUnit: "CASE", toUnit: "BOX", factor: 1 },
   { fromUnit: "PK", toUnit: "PACK", factor: 1 },
   { fromUnit: "TIN", toUnit: "PC", factor: 1 },
+];
+
+const CHANNELS = [
+  { code: "FS", name: "Food Service", nameTh: "ฟู้ดเซอร์วิส", sortOrder: 1, defaultPriority: 10 },
+  { code: "RTL", name: "Retail", nameTh: "ค้าปลีก", sortOrder: 2, defaultPriority: 20 },
+  { code: "STR", name: "Store", nameTh: "ร้านค้า", sortOrder: 3, defaultPriority: 30 },
+  { code: "CK", name: "Central Kitchen", nameTh: "ครัวกลาง", sortOrder: 4, defaultPriority: 40 },
+];
+
+const DEPARTMENTS = [
+  { code: "admin", name: "Admin", nameTh: "ผู้ดูแลระบบ", sortOrder: 1 },
+  { code: "purchasing", name: "Purchasing", nameTh: "จัดซื้อ", sortOrder: 2 },
+  { code: "sales", name: "Sales", nameTh: "ฝ่ายขาย", sortOrder: 3 },
+  { code: "warehouse", name: "Warehouse", nameTh: "คลังสินค้า", sortOrder: 4 },
+  { code: "management", name: "Management", nameTh: "ผู้บริหาร", sortOrder: 5 },
+  { code: "none", name: "No department", nameTh: "ยังไม่กำหนด", sortOrder: 9 },
+];
+
+const ROLES = [
+  {
+    code: "owner",
+    name: "Owner",
+    nameTh: "เจ้าของระบบ",
+    description: "Full access; the account matching OWNER_EMAIL.",
+    sortOrder: 1,
+  },
+  {
+    code: "member",
+    name: "Team member",
+    nameTh: "ผู้ใช้งาน",
+    description: "Access follows the department and the assigned channels.",
+    sortOrder: 2,
+  },
 ];
 
 const SUPPLIERS = [
@@ -72,10 +107,12 @@ const SUPPLIERS = [
 ];
 
 const CUSTOMERS = [
+  // Food Service
   {
     code: "C001",
     name: "Mandarin Oriental Bangkok",
     nameTh: "แมนดาริน โอเรียนเต็ล กรุงเทพ",
+    channel: "FS",
     deliveryLocation: "Bangkok — Charoen Krung",
     salesOwner: "Ploy",
   },
@@ -83,6 +120,7 @@ const CUSTOMERS = [
     code: "C002",
     name: "Blue Elephant Restaurant",
     nameTh: "บลูเอเลเฟ่นท์",
+    channel: "FS",
     deliveryLocation: "Bangkok — Sathorn",
     salesOwner: "Ploy",
   },
@@ -90,15 +128,52 @@ const CUSTOMERS = [
     code: "C003",
     name: "Sirocco Sky Dining",
     nameTh: "สิรอคโค",
+    channel: "FS",
     deliveryLocation: "Bangkok — Silom",
+    salesOwner: "Ploy",
+  },
+  // Retail
+  {
+    code: "C010",
+    name: "Gourmet Market Paragon",
+    nameTh: "กูร์เมต์ มาร์เก็ต พารากอน",
+    channel: "RTL",
+    deliveryLocation: "Bangkok — Siam",
     salesOwner: "Nattapong",
   },
   {
-    code: "C004",
-    name: "Phuket Beach Club",
-    nameTh: "ภูเก็ต บีชคลับ",
-    deliveryLocation: "Phuket — Bang Tao",
+    code: "C011",
+    name: "Villa Market Thonglor",
+    nameTh: "วิลล่า มาร์เก็ต ทองหล่อ",
+    channel: "RTL",
+    deliveryLocation: "Bangkok — Thonglor",
     salesOwner: "Nattapong",
+  },
+  // Store
+  {
+    code: "S001",
+    name: "Kaviari Store Bangkok",
+    nameTh: "ร้านคาเวียรี กรุงเทพ",
+    channel: "STR",
+    deliveryLocation: "Bangkok — Sukhumvit 39",
+    salesOwner: "Mai",
+  },
+  {
+    code: "S002",
+    name: "Kaviari Store Phuket",
+    nameTh: "ร้านคาเวียรี ภูเก็ต",
+    channel: "STR",
+    deliveryLocation: "Phuket — Bang Tao",
+    salesOwner: "Mai",
+  },
+  // Central Kitchen
+  {
+    code: "CK001",
+    name: "Central Kitchen Bangna",
+    nameTh: "ครัวกลาง บางนา",
+    channel: "CK",
+    deliveryLocation: "Samut Prakan — Bangna KM.19",
+    salesOwner: "Korn",
   },
 ];
 
@@ -165,6 +240,10 @@ function round(value: number): number {
 export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   console.log("Clearing supply-chain data…");
   // Children first — SQLite enforces the foreign keys.
+  await prisma.scmWarehouseStockTransaction.deleteMany();
+  await prisma.scmWarehouseStock.deleteMany();
+  await prisma.scmShortageAllocation.deleteMany();
+  await prisma.scmShortageCase.deleteMany();
   await prisma.scmShipmentLine.deleteMany();
   await prisma.scmShipment.deleteMany();
   await prisma.scmReceivingItem.deleteMany();
@@ -176,7 +255,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   await prisma.scmPoInvoiceRecon.deleteMany();
   await prisma.scmInvoiceLine.deleteMany();
   await prisma.scmInvoice.deleteMany();
-  await prisma.scmPoLineDemand.deleteMany();
+  await prisma.scmSoPoMapping.deleteMany();
   await prisma.scmPurchaseOrderLine.deleteMany();
   await prisma.scmPurchaseOrder.deleteMany();
   await prisma.scmPurchaseRequestLine.deleteMany();
@@ -190,8 +269,26 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   await prisma.scmImportBatch.deleteMany();
   await prisma.scmUnitConversion.deleteMany();
   await prisma.scmUnit.deleteMany();
+  await prisma.scmTolerance.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.supplier.deleteMany();
+  await prisma.scmUserChannel.deleteMany();
+  await prisma.businessChannel.deleteMany();
+  await prisma.scmDepartment.deleteMany();
+  await prisma.scmRole.deleteMany();
+
+  console.log("Seeding business channels, departments and roles…");
+  const channelByCode = new Map<string, string>();
+  for (const channel of CHANNELS) {
+    const created = await prisma.businessChannel.create({ data: channel });
+    channelByCode.set(channel.code, created.id);
+  }
+  for (const department of DEPARTMENTS) {
+    await prisma.scmDepartment.create({ data: department });
+  }
+  for (const role of ROLES) {
+    await prisma.scmRole.create({ data: role });
+  }
 
   console.log("Seeding units and conversions…");
   for (const unit of UNITS) {
@@ -216,9 +313,46 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   }
   const customerByCode = new Map<string, string>();
   for (const customer of CUSTOMERS) {
-    const created = await prisma.customer.create({ data: customer });
+    const { channel, ...data } = customer;
+    const created = await prisma.customer.create({
+      data: { ...data, channelId: channelByCode.get(channel) ?? null },
+    });
     customerByCode.set(customer.code, created.id);
   }
+
+  console.log("Seeding tolerance rules…");
+  // Global default: every difference needs a human. Two exceptions show how
+  // the master narrows that down per supplier and per channel (§28).
+  await prisma.scmTolerance.createMany({
+    data: [
+      {
+        key: "global:*",
+        scope: "global",
+        qtyTolerancePct: 0,
+        priceTolerancePct: 0,
+        weightTolerancePct: 0,
+        note: "Every difference is reviewed unless a narrower rule applies.",
+      },
+      {
+        key: `supplier:${supplierByCode.get("NORSEA")}`,
+        scope: "supplier",
+        supplierId: supplierByCode.get("NORSEA")!,
+        qtyTolerancePct: 2,
+        priceTolerancePct: 0,
+        weightTolerancePct: 5,
+        note: "Fresh seafood is weighed on arrival — 2% on quantity is normal.",
+      },
+      {
+        key: `channel:${channelByCode.get("STR")}`,
+        scope: "channel",
+        channelId: channelByCode.get("STR")!,
+        qtyTolerancePct: 5,
+        priceTolerancePct: 1,
+        weightTolerancePct: 5,
+        note: "Own stores absorb small differences without a review.",
+      },
+    ],
+  });
 
   console.log("Applying supply-chain fields to the product master…");
   const productByCode = new Map<
@@ -294,6 +428,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   const soA = await prisma.scmSalesOrder.create({
     data: {
       soNumber: "SO-2026-0101",
+      channelId: channelByCode.get("FS")!,
       customerId: customerByCode.get("C001")!,
       orderDate: day(-12),
       deliveryDate: day(4),
@@ -378,12 +513,17 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
     include: { lines: true },
   });
 
-  await prisma.scmPoLineDemand.create({
+  await prisma.scmSoPoMapping.create({
     data: {
+      poId: poA.id,
       poLineId: poA.lines[0].id,
       prLineId: prA.lines[0].id,
       soLineId: soA.lines[0].id,
+      soId: soA.id,
+      productId: kristal.id,
       quantity: 24,
+      unit: "BOX",
+      createdByName: "Anna (purchasing)",
     },
   });
 
@@ -500,6 +640,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   const soB = await prisma.scmSalesOrder.create({
     data: {
       soNumber: "SO-2026-0102",
+      channelId: channelByCode.get("FS")!,
       customerId: customerByCode.get("C002")!,
       orderDate: day(-9),
       deliveryDate: day(6),
@@ -558,11 +699,16 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
     include: { lines: true },
   });
 
-  await prisma.scmPoLineDemand.create({
+  await prisma.scmSoPoMapping.create({
     data: {
+      poId: poB.id,
       poLineId: poB.lines[0].id,
       soLineId: soB.lines[0].id,
+      soId: soB.id,
+      productId: oscietra.id,
       quantity: 36,
+      unit: "BOX",
+      createdByName: "Anna (purchasing)",
     },
   });
 
@@ -632,6 +778,9 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
       code: "EXC-2026-0001",
       type: "SUPPLIER_SHORT",
       severity: "high",
+      priority: "high",
+      channelId: channelByCode.get("FS")!,
+      ownerName: "Anna (purchasing)",
       documentType: "po_line",
       documentId: poB.lines[0].id,
       documentNumber: "PO-2026-0002",
@@ -648,6 +797,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   await prisma.scmNotification.create({
     data: {
       department: "purchasing",
+      channelId: channelByCode.get("FS")!,
       type: "po_invoice_mismatch",
       severity: "warning",
       title: "PO-2026-0002: 1 line does not match the invoice",
@@ -678,7 +828,8 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   const soC = await prisma.scmSalesOrder.create({
     data: {
       soNumber: "SO-2026-0103",
-      customerId: customerByCode.get("C003")!,
+      channelId: channelByCode.get("RTL")!,
+      customerId: customerByCode.get("C010")!,
       orderDate: day(-4),
       deliveryDate: day(12),
       requester: "Nattapong",
@@ -739,11 +890,17 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
     include: { lines: true },
   });
 
-  await prisma.scmPoLineDemand.create({
+  await prisma.scmSoPoMapping.create({
     data: {
+      poId: poC.id,
       poLineId: poC.lines[0].id,
       soLineId: soC.lines[0].id,
+      soId: soC.id,
+      productId: kristalSmall.id,
       quantity: 18,
+      unit: "BOX",
+      reason: "Rounded up to a full box — the extra 6 tins need a home.",
+      createdByName: "Anna (purchasing)",
     },
   });
 
@@ -752,6 +909,9 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
       code: "EXC-2026-0002",
       type: "MOQ",
       severity: "low",
+      priority: "low",
+      channelId: channelByCode.get("RTL")!,
+      ownerName: "Nattapong",
       documentType: "po_line",
       documentId: poC.lines[0].id,
       documentNumber: "PO-2026-0003",
@@ -785,6 +945,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   const soD1 = await prisma.scmSalesOrder.create({
     data: {
       soNumber: "SO-2026-0104",
+      channelId: channelByCode.get("FS")!,
       customerId: customerByCode.get("C001")!,
       orderDate: day(-6),
       deliveryDate: day(2),
@@ -816,7 +977,8 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   const soD2 = await prisma.scmSalesOrder.create({
     data: {
       soNumber: "SO-2026-0105",
-      customerId: customerByCode.get("C004")!,
+      channelId: channelByCode.get("STR")!,
+      customerId: customerByCode.get("S001")!,
       orderDate: day(-6),
       deliveryDate: day(2),
       requester: "Nattapong",
@@ -875,10 +1037,28 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
     include: { lines: true },
   });
 
-  await prisma.scmPoLineDemand.createMany({
+  await prisma.scmSoPoMapping.createMany({
     data: [
-      { poLineId: poD.lines[0].id, soLineId: soD1.lines[0].id, quantity: 12 },
-      { poLineId: poD.lines[0].id, soLineId: soD2.lines[0].id, quantity: 8 },
+      {
+        poId: poD.id,
+        poLineId: poD.lines[0].id,
+        soLineId: soD1.lines[0].id,
+        soId: soD1.id,
+        productId: kingCrab.id,
+        quantity: 12,
+        unit: "KG",
+        createdByName: "Anna (purchasing)",
+      },
+      {
+        poId: poD.id,
+        poLineId: poD.lines[0].id,
+        soLineId: soD2.lines[0].id,
+        soId: soD2.id,
+        productId: kingCrab.id,
+        quantity: 8,
+        unit: "KG",
+        createdByName: "Anna (purchasing)",
+      },
     ],
   });
 
@@ -980,6 +1160,9 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
       code: "EXC-2026-0003",
       type: "WEIGHT_BASED_PRODUCT",
       severity: "medium",
+      priority: "medium",
+      channelId: channelByCode.get("FS")!,
+      ownerName: "Warehouse",
       documentType: "po_line",
       documentId: poD.lines[0].id,
       documentNumber: "PO-2026-0004",
@@ -998,6 +1181,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
     data: [
       {
         department: "sales",
+        channelId: channelByCode.get("FS")!,
         type: "allocation_pending",
         severity: "info",
         title: "PO-2026-0004: ready to allocate",
@@ -1009,6 +1193,7 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
       },
       {
         department: "sales",
+        channelId: channelByCode.get("FS")!,
         type: "allocation_pending",
         severity: "info",
         title: "PO-2026-0001: ready to allocate",
@@ -1059,7 +1244,8 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
   await prisma.scmSalesOrder.create({
     data: {
       soNumber: "SO-2026-0107",
-      customerId: customerByCode.get("C004")!,
+      channelId: channelByCode.get("CK")!,
+      customerId: customerByCode.get("CK001")!,
       orderDate: day(-1),
       deliveryDate: day(20),
       requester: "Nattapong",
@@ -1084,17 +1270,467 @@ export async function seedSupplyChain(prisma: PrismaClient): Promise<void> {
     },
   });
 
+  // =====================================================================
+  // Scenario E — the §45 example: 2,000 KG of salmon ordered across all four
+  // channels, 1,700 delivered. The system lays the shortfall out per channel
+  // and STOPS: management ranks the channels, the system never does.
+  // =====================================================================
+  const salmon = productByCode.get("3168");
+  if (salmon) {
+    const salmonDemand = [
+      { so: "SO-2026-0201", channel: "FS", customer: "C001", quantity: 1000, owner: "Ploy" },
+      { so: "SO-2026-0202", channel: "RTL", customer: "C010", quantity: 500, owner: "Nattapong" },
+      { so: "SO-2026-0203", channel: "STR", customer: "S001", quantity: 300, owner: "Mai" },
+      { so: "SO-2026-0204", channel: "CK", customer: "CK001", quantity: 200, owner: "Korn" },
+    ];
+
+    const salmonSoLines: { soId: string; lineId: string; entry: (typeof salmonDemand)[number] }[] = [];
+    for (const entry of salmonDemand) {
+      const so = await prisma.scmSalesOrder.create({
+        data: {
+          soNumber: entry.so,
+          channelId: channelByCode.get(entry.channel)!,
+          customerId: customerByCode.get(entry.customer)!,
+          salesOwner: entry.owner,
+          orderDate: day(-14),
+          deliveryDate: day(3),
+          requester: entry.owner,
+          currency: "THB",
+          lines: {
+            create: [
+              {
+                lineNo: 1,
+                productId: salmon.id,
+                quantity: entry.quantity,
+                unit: "KG",
+                baseQuantity: entry.quantity,
+                unitPrice: 1250,
+                priceUnit: "KG",
+                currency: "THB",
+                deliveryDate: day(3),
+                originalQuantity: entry.quantity,
+                poNumberRef: "PO-2026-0005",
+                // FS and RTL are the two channels the shortage case disputes;
+                // STR and CK are covered by the second PO and move on.
+                status:
+                  entry.channel === "FS" || entry.channel === "RTL"
+                    ? "EXCEPTION"
+                    : "PENDING_ALLOCATION",
+              },
+            ],
+          },
+        },
+        include: { lines: true },
+      });
+      salmonSoLines.push({ soId: so.id, lineId: so.lines[0].id, entry });
+    }
+
+    // Two POs cover the 2,000 KG — one SO is served by several POs and one PO
+    // serves several SOs, which is exactly why the mapping is its own table.
+    const poE1 = await prisma.scmPurchaseOrder.create({
+      data: {
+        poNumber: "PO-2026-0005",
+        supplierId: supplierByCode.get("NORSEA")!,
+        orderDate: day(-12),
+        expectedDeliveryDate: day(3),
+        currency: "EUR",
+        status: "invoiced",
+        createdByName: "Anna (purchasing)",
+        lines: {
+          create: [
+            {
+              lineNo: 1,
+              productId: salmon.id,
+              quantity: 1200,
+              unit: "KG",
+              baseQuantity: 1200,
+              unitPrice: 26.5,
+              priceUnit: "KG",
+              currency: "EUR",
+              deliveryDate: day(3),
+              requiredQuantity: 1200,
+              moq: 100,
+              status: "EXCEPTION",
+            },
+          ],
+        },
+      },
+      include: { lines: true },
+    });
+
+    const poE2 = await prisma.scmPurchaseOrder.create({
+      data: {
+        poNumber: "PO-2026-0006",
+        supplierId: supplierByCode.get("NORSEA")!,
+        orderDate: day(-12),
+        expectedDeliveryDate: day(3),
+        currency: "EUR",
+        status: "invoiced",
+        notes: "Second lot — the supplier could not ship 2,000 KG in one go.",
+        createdByName: "Anna (purchasing)",
+        lines: {
+          create: [
+            {
+              lineNo: 1,
+              productId: salmon.id,
+              quantity: 900,
+              unit: "KG",
+              baseQuantity: 900,
+              unitPrice: 26.5,
+              priceUnit: "KG",
+              currency: "EUR",
+              deliveryDate: day(3),
+              requiredQuantity: 800,
+              moq: 100,
+              adjustmentReason: "MOQ",
+              adjustmentNote: "Rounded to a full 900 KG pallet.",
+              status: "PENDING_ALLOCATION",
+            },
+          ],
+        },
+      },
+      include: { lines: true },
+    });
+
+    // PO-0005 carries Food Service (1,000) + 200 of Retail;
+    // PO-0006 carries the rest of Retail (300) + Store (300) + CK (200).
+    const mapping = [
+      { po: poE1, soIndex: 0, quantity: 1000 },
+      { po: poE1, soIndex: 1, quantity: 200 },
+      { po: poE2, soIndex: 1, quantity: 300 },
+      { po: poE2, soIndex: 2, quantity: 300 },
+      { po: poE2, soIndex: 3, quantity: 200 },
+    ];
+    for (const entry of mapping) {
+      const target = salmonSoLines[entry.soIndex];
+      await prisma.scmSoPoMapping.create({
+        data: {
+          poId: entry.po.id,
+          poLineId: entry.po.lines[0].id,
+          soLineId: target.lineId,
+          soId: target.soId,
+          productId: salmon.id,
+          quantity: entry.quantity,
+          unit: "KG",
+          reason:
+            entry.soIndex === 1
+              ? "Retail order split across both lots"
+              : null,
+          createdByName: "Anna (purchasing)",
+        },
+      });
+    }
+
+    // Supplier invoiced 1,150 + 550 = 1,700 against 2,100 ordered.
+    const invoiceE = await prisma.scmInvoice.create({
+      data: {
+        invoiceNumber: "INV-NOR-20502",
+        supplierId: supplierByCode.get("NORSEA")!,
+        poId: poE1.id,
+        poNumberRaw: "PO-2026-0005",
+        supplierNameRaw: "Nordic Seafood A/S",
+        invoiceDate: day(-1),
+        deliveryDate: day(3),
+        currency: "EUR",
+        status: "verified",
+        fileName: "INV-NOR-20502.pdf",
+        extractionMode: "ai",
+        uploadedByName: "Anna (purchasing)",
+        verifiedByName: "Anna (purchasing)",
+        verifiedAt: day(-1),
+        lines: {
+          create: [
+            {
+              lineNo: 1,
+              productId: salmon.id,
+              productCodeRaw: "3168",
+              descriptionRaw: "NORWEGIAN SMOKED SALMON IMPERIAL",
+              quantity: 1150,
+              unit: "KG",
+              baseQuantity: 1150,
+              unitPrice: 26.5,
+              priceUnit: "KG",
+              currency: "EUR",
+              deliveryDate: day(3),
+              poLineId: poE1.lines[0].id,
+            },
+          ],
+        },
+      },
+      include: { lines: true },
+    });
+
+    await prisma.scmPoInvoiceRecon.create({
+      data: {
+        poId: poE1.id,
+        poLineId: poE1.lines[0].id,
+        invoiceId: invoiceE.id,
+        invoiceLineId: invoiceE.lines[0].id,
+        productId: salmon.id,
+        poQuantity: 1200,
+        invoiceQuantity: 1150,
+        qtyDiff: -50,
+        qtyDiffPct: -4.17,
+        poUnitPrice: 26.5,
+        invoiceUnitPrice: 26.5,
+        priceDiff: 0,
+        priceDiffPct: 0,
+        qtyStatus: "short",
+        priceStatus: "match",
+        correctedQuantity: 1150,
+        quantityReason: "SUPPLIER_SHORT_SHIPPED",
+        remark: "Supplier confirmed 1,150 KG on the truck.",
+        status: "approved",
+        reviewedByName: "Anna (purchasing)",
+        reviewedAt: day(-1),
+      },
+    });
+    await prisma.scmPurchaseOrderLine.update({
+      where: { id: poE1.lines[0].id },
+      data: {
+        correctedQuantity: 1150,
+        correctedReason: "SUPPLIER_SHORT_SHIPPED",
+        correctedAt: day(-1),
+        correctedByName: "Anna (purchasing)",
+      },
+    });
+
+    // The shortage case: 1,150 available against 1,200 of demand spanning
+    // Food Service and Retail. Quantities are PROPOSED, never applied.
+    const shortageCase = await prisma.scmShortageCase.create({
+      data: {
+        caseNumber: "SHT-2026-0001",
+        productId: salmon.id,
+        poLineId: poE1.lines[0].id,
+        deliveryDate: day(3),
+        actualQuantity: 1150,
+        totalSoQuantity: 1200,
+        shortageQuantity: 50,
+        unit: "KG",
+        status: "pending_approval",
+        createdByName: "System",
+        lines: {
+          create: [
+            {
+              channelId: channelByCode.get("FS")!,
+              customerId: customerByCode.get("C001")!,
+              soLineId: salmonSoLines[0].lineId,
+              requestedQuantity: 1000,
+              approvedQuantity: null,
+              priority: 10,
+            },
+            {
+              channelId: channelByCode.get("RTL")!,
+              customerId: customerByCode.get("C010")!,
+              soLineId: salmonSoLines[1].lineId,
+              requestedQuantity: 200,
+              approvedQuantity: null,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    });
+
+    await prisma.scmException.create({
+      data: {
+        code: "EXC-2026-0004",
+        type: "SUPPLIER_SHORT",
+        severity: "high",
+        priority: "critical",
+        documentType: "shortage_case",
+        documentId: shortageCase.id,
+        documentNumber: "SHT-2026-0001",
+        productId: salmon.id,
+        description:
+          "SHT-2026-0001: 1,150 KG available against demand from Food Service and Retail — management must rank the channels.",
+        responsibleDept: "management",
+        ownerName: "Management",
+        action: "Approve the cross-channel split before allocation can start.",
+        dueDate: day(2),
+        status: "open",
+        createdByName: "System",
+      },
+    });
+
+    await prisma.scmNotification.create({
+      data: {
+        department: "management",
+        type: "cross_channel_shortage",
+        severity: "critical",
+        title: "SHT-2026-0001: cross-channel shortage needs a decision",
+        body: "PO-2026-0005 — 1,150 KG available, demand spans Food Service and Retail.",
+        documentType: "shortage_case",
+        documentId: shortageCase.id,
+        documentNumber: "SHT-2026-0001",
+        link: `/scm/sales/shortage/${shortageCase.id}`,
+      },
+    });
+
+    // PO-0006 arrived complete and is already allocated — it also carries a
+    // 100 KG leftover from the pallet rounding, booked as warehouse stock.
+    const invoiceE2 = await prisma.scmInvoice.create({
+      data: {
+        invoiceNumber: "INV-NOR-20503",
+        supplierId: supplierByCode.get("NORSEA")!,
+        poId: poE2.id,
+        poNumberRaw: "PO-2026-0006",
+        supplierNameRaw: "Nordic Seafood A/S",
+        invoiceDate: day(-1),
+        deliveryDate: day(3),
+        currency: "EUR",
+        status: "verified",
+        fileName: "INV-NOR-20503.pdf",
+        extractionMode: "ai",
+        uploadedByName: "Anna (purchasing)",
+        verifiedByName: "Anna (purchasing)",
+        verifiedAt: day(-1),
+        lines: {
+          create: [
+            {
+              lineNo: 1,
+              productId: salmon.id,
+              productCodeRaw: "3168",
+              descriptionRaw: "NORWEGIAN SMOKED SALMON IMPERIAL",
+              quantity: 900,
+              unit: "KG",
+              baseQuantity: 900,
+              unitPrice: 26.5,
+              priceUnit: "KG",
+              currency: "EUR",
+              deliveryDate: day(3),
+              poLineId: poE2.lines[0].id,
+            },
+          ],
+        },
+      },
+      include: { lines: true },
+    });
+
+    await prisma.scmPoInvoiceRecon.create({
+      data: {
+        poId: poE2.id,
+        poLineId: poE2.lines[0].id,
+        invoiceId: invoiceE2.id,
+        invoiceLineId: invoiceE2.lines[0].id,
+        productId: salmon.id,
+        poQuantity: 900,
+        invoiceQuantity: 900,
+        qtyDiff: 0,
+        qtyDiffPct: 0,
+        poUnitPrice: 26.5,
+        invoiceUnitPrice: 26.5,
+        priceDiff: 0,
+        priceDiffPct: 0,
+        qtyStatus: "match",
+        priceStatus: "match",
+        correctedQuantity: 900,
+        status: "approved",
+        reviewedByName: "System (auto-match)",
+        reviewedAt: day(-1),
+      },
+    });
+    await prisma.scmPurchaseOrderLine.update({
+      where: { id: poE2.lines[0].id },
+      data: {
+        correctedQuantity: 900,
+        correctedReason: "AUTO_MATCH",
+        correctedAt: day(-1),
+        correctedByName: "System (auto-match)",
+      },
+    });
+
+    for (const index of [1, 2, 3]) {
+      const target = salmonSoLines[index];
+      const quantity = index === 1 ? 300 : index === 2 ? 300 : 200;
+      await prisma.scmSoPoRecon.create({
+        data: {
+          soLineId: target.lineId,
+          poLineId: poE2.lines[0].id,
+          productId: salmon.id,
+          soQuantity: target.entry.quantity,
+          confirmedQuantity: quantity,
+          diff: 0,
+          diffPct: 0,
+          diffStatus: "match",
+          status: "completed",
+          decision: "keep_so",
+          reviewedByName: "System (auto-match)",
+          reviewedAt: day(-1),
+        },
+      });
+    }
+
+    // 100 KG left after the three customers were served — into stock, with
+    // the chain that produced it (§24).
+    const stock = await prisma.scmWarehouseStock.create({
+      data: {
+        stockNumber: "STK-2026-0001",
+        productId: salmon.id,
+        quantity: 100,
+        unit: "KG",
+        supplierId: supplierByCode.get("NORSEA")!,
+        poId: poE2.id,
+        invoiceId: invoiceE2.id,
+        originalSoLineId: salmonSoLines[1].lineId,
+        channelId: channelByCode.get("RTL")!,
+        reason: "Pallet rounding on PO-2026-0006 (MOQ)",
+        location: "FRZ-02",
+        lotNumber: "SAL-2026-11",
+        expiryDate: day(45),
+        status: "on_hand",
+        createdByName: "Warehouse",
+      },
+    });
+    await prisma.scmWarehouseStockTransaction.create({
+      data: {
+        stockId: stock.id,
+        type: "in",
+        quantity: 100,
+        balanceAfter: 100,
+        reason: "Leftover after customer allocation",
+        byName: "Warehouse",
+      },
+    });
+
+    await prisma.scmException.create({
+      data: {
+        code: "EXC-2026-0005",
+        type: "EXCESS_STOCK",
+        severity: "low",
+        priority: "low",
+        documentType: "warehouse_stock",
+        documentId: stock.id,
+        documentNumber: "STK-2026-0001",
+        productId: salmon.id,
+        channelId: channelByCode.get("RTL")!,
+        description: "100 KG of smoked salmon in FRZ-02 after the pallet rounding.",
+        reason: "MOQ",
+        responsibleDept: "sales",
+        ownerName: "Nattapong",
+        action: "Plan how the leftover is sold before it expires.",
+        dueDate: day(20),
+        status: "open",
+        createdByName: "System",
+      },
+    });
+  }
+
   console.log("Writing the sample audit trail…");
   for (const entry of audit) {
     await prisma.scmAuditLog.create({ data: entry });
   }
 
   console.log("Supply-chain sample data:", {
+    channels: await prisma.businessChannel.count(),
     suppliers: await prisma.supplier.count(),
     customers: await prisma.customer.count(),
     salesOrders: await prisma.scmSalesOrder.count(),
     purchaseOrders: await prisma.scmPurchaseOrder.count(),
+    soPoMappings: await prisma.scmSoPoMapping.count(),
     invoices: await prisma.scmInvoice.count(),
+    shortageCases: await prisma.scmShortageCase.count(),
+    warehouseStock: await prisma.scmWarehouseStock.count(),
     exceptions: await prisma.scmException.count(),
   });
 }

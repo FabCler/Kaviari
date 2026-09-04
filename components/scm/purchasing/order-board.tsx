@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/scm/status-badge";
+import { ChannelBadge } from "@/components/scm/channel-filter";
 import {
   ORDER_ADJUSTMENT_LABELS,
   ORDER_ADJUSTMENT_REASONS,
@@ -41,6 +42,9 @@ export interface BoardRow {
   kind: "pr" | "so";
   lineId: string;
   documentNumber: string;
+  channelId: string | null;
+  channelCode: string | null;
+  channelName: string | null;
   productId: string;
   productCode: string;
   productName: string;
@@ -125,6 +129,8 @@ export function OrderBoard({
         row.prNumber,
         row.customerName,
         row.requester,
+        row.channelCode,
+        row.channelName,
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle));
@@ -311,6 +317,7 @@ export function OrderBoard({
                     />
                   </TableHead>
                   <TableHead>Document</TableHead>
+                  <TableHead>Channel</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead className="text-right">Required</TableHead>
@@ -342,6 +349,9 @@ export function OrderBoard({
                         {row.kind === "pr" ? "Purchase request" : "Sales order"}
                         {row.requester ? ` · ${row.requester}` : ""}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <ChannelBadge code={row.channelCode} name={row.channelName} />
                     </TableCell>
                     <TableCell className="max-w-[18rem]">
                       <div className="truncate">{row.productName}</div>

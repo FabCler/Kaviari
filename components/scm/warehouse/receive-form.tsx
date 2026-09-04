@@ -38,6 +38,7 @@ interface WeighedItem {
   itemNo: string;
   weight: string;
   allocationLineId: string | null;
+  condition: "good" | "damaged" | "rejected";
 }
 
 interface LineState {
@@ -46,7 +47,10 @@ interface LineState {
   productName: string;
   unit: string;
   weightControlled: boolean;
+  lotRequired: boolean;
+  expiryRequired: boolean;
   expectedQuantity: number;
+  alreadyReceived: number;
   actualQuantity: string;
   lotNumber: string;
   expiryDate: string;
@@ -71,7 +75,10 @@ export function ReceiveForm({
     productName: string;
     unit: string;
     weightControlled: boolean;
+    lotRequired: boolean;
+    expiryRequired: boolean;
     expectedQuantity: number;
+    alreadyReceived: number;
     allocationLines: { id: string; label: string; quantity: number }[];
   }[];
 }) {
@@ -84,7 +91,11 @@ export function ReceiveForm({
   const [lines, setLines] = React.useState<LineState[]>(
     input.map((line) => ({
       ...line,
-      actualQuantity: String(line.expectedQuantity),
+      // A second delivery opens with what is still outstanding, not the whole
+      // line (§23).
+      actualQuantity: String(
+        Math.max(0, round(line.expectedQuantity - line.alreadyReceived))
+      ),
       lotNumber: "",
       expiryDate: "",
       storageLocation: defaultStorageLocation,
@@ -114,6 +125,7 @@ export function ReceiveForm({
             itemNo: `${line.productCode}-${String(number).padStart(2, "0")}`,
             weight: "",
             allocationLineId: line.allocationLines[0]?.id ?? null,
+            condition: "good",
           });
         }
         return { ...line, items };
@@ -163,6 +175,8 @@ export function ReceiveForm({
                   allocationLineId: item.allocationLineId,
                   storageLocation: line.storageLocation || null,
                   lotNumber: line.lotNumber || null,
+                  expiryDate: line.expiryDate || null,
+                  condition: item.condition,
                 }))
               : undefined,
           })),
@@ -225,8 +239,14 @@ export function ReceiveForm({
                   <div>
                     <div className="font-medium">{line.productName}</div>
                     <div className="text-xs text-muted-foreground">
-                      {line.productCode} · expected{" "}
+                      {line.productCode} · confirmed{" "}
                       {formatNumber(line.expectedQuantity)} {line.unit}
+                      {line.alreadyReceived > 0 ? (
+                        <span className="text-warning">
+                          {" "}
+                          · {formatNumber(line.alreadyReceived)} already received
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                   <div
@@ -273,9 +293,14 @@ export function ReceiveForm({
                     ) : null}
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`lot-${line.poLineId}`}>Lot / batch</Label>
+                    <Label htmlFor={`lot-${line.poLineId}`}>
+                      Lot / batch{line.lotRequired ? " (required)" : ""}
+                    </Label>
                     <Input
                       id={`lot-${line.poLineId}`}
+                      className={cn(
+                        line.lotRequired && !line.lotNumber && "border-destructive"
+                      )}
                       value={line.lotNumber}
                       onChange={(event) =>
                         update(line.poLineId, { lotNumber: event.target.value })
@@ -283,10 +308,17 @@ export function ReceiveForm({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`expiry-${line.poLineId}`}>Expiry (DLC)</Label>
+                    <Label htmlFor={`expiry-${line.poLineId}`}>
+                      Expiry (DLC){line.expiryRequired ? " (required)" : ""}
+                    </Label>
                     <Input
                       id={`expiry-${line.poLineId}`}
                       type="date"
+                      className={cn(
+                        line.expiryRequired &&
+                          !line.expiryDate &&
+                          "border-destructive"
+                      )}
                       value={line.expiryDate}
                       onChange={(event) =>
                         update(line.poLineId, { expiryDate: event.target.value })
@@ -341,6 +373,7 @@ export function ReceiveForm({
                             <TableRow>
                               <TableHead className="w-40">Item no.</TableHead>
                               <TableHead className="w-32">Weight (KG)</TableHead>
+                              <TableHead className="w-32">Condition</TableHead>
                               <TableHead>Customer</TableHead>
                               <TableHead className="w-10" />
                             </TableRow>
@@ -372,6 +405,25 @@ export function ReceiveForm({
                                     }
                                     aria-label="Weight"
                                   />
+                                </TableCell>
+                                <TableCell>
+                                  <Select
+                                    value={item.condition}
+                                    onValueChange={(value) =>
+                                      updateItem(line.poLineId, item.key, {
+                                        condition: value as WeighedItem["condition"],
+                                      })
+                                    }
+                                  >
+                                    <SelectTrigger aria-label="Condition on arrival">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="good">Good</SelectItem>
+                                      <SelectItem value="damaged">Damaged</SelectItem>
+                                      <SelectItem value="rejected">Rejected</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </TableCell>
                                 <TableCell>
                                   <Select

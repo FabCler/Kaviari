@@ -8,13 +8,13 @@
 ```mermaid
 flowchart TB
   subgraph client["Browser — Left sidebar navigation"]
-    UI["Server Components (boards, detail pages)<br/>Client Components (editors, dialogs)"]
+    UI["Server Components (boards, detail pages)<br/>Client Components (editors, dialogs)<br/>filtered by business channel"]
   end
 
   subgraph server["Next.js server (App Router)"]
     PAGES["app/(app)/scm/** — pages<br/>read through lib/scm/queries.ts"]
     API["app/api/scm/** — route handlers<br/>zod validation + permission guard"]
-    DOMAIN["lib/scm/** — domain layer<br/>status · permissions · units · reconcile<br/>allocation · gate · workflow · audit"]
+    DOMAIN["lib/scm/** — domain layer<br/>channels · status · permissions · units<br/>reconcile · shortage · allocation · gate<br/>tolerance · sla · warehouse-stock · reports<br/>workflow · audit"]
   end
 
   subgraph data["Data"]
@@ -45,8 +45,16 @@ flowchart TB
 | **Presentation** | หน้าจอ 16 หน้า, sidebar แยกตามแผนก | `app/(app)/scm/**`, `components/scm/**` |
 | **API** | รับคำสั่งเปลี่ยนสถานะ ตรวจสิทธิ์และ validate ด้วย zod | `app/api/scm/**` |
 | **Domain** | กฎธุรกิจทั้งหมด เป็นฟังก์ชันบริสุทธิ์ที่ทดสอบได้ | `lib/scm/*.ts` |
-| **Persistence** | Prisma models 23 ตาราง | `prisma/schema.prisma` |
+| **Persistence** | Prisma models 33 ตาราง | `prisma/schema.prisma` |
 | **Integration** | อ่านไฟล์ Excel/CSV/PDF, เรียก AI สำหรับ Invoice | `lib/scm/import/**`, `lib/import/parse.ts` |
+
+### Channel scoping อยู่ในชั้น Domain เช่นกัน
+
+หน้าจอทุกหน้าที่แสดง demand ของลูกค้าเรียก `currentScope()` แล้วส่ง scope นั้น
+ลงไปใน query — ไม่มีหน้าไหนเขียนเงื่อนไข channel เอง เพราะจุดที่พลาดง่ายที่สุด
+คือ scope ว่างถูกตีความว่า "ไม่ต้องกรอง" และผู้ใช้ที่ยังไม่มี channel
+กลายเป็นเห็นทุกอย่าง `channelWhere()` คืน `{ in: [] }` ในกรณีนั้นเสมอ
+และ `narrowScope()` ทำให้ `?channel=` ใน URL ไม่สามารถขยายสิทธิ์ได้
 
 ### ทำไมกฎธุรกิจต้องอยู่ในชั้น Domain
 
@@ -137,6 +145,76 @@ flowchart LR
   M1 -.-> S2
   M1 -.-> W1
 ```
+
+### BPMN — กระบวนการหลักแบบมี lane และ gateway
+
+```mermaid
+flowchart TB
+  subgraph SA["Sales (per business channel)"]
+    direction TB
+    S1(["Customer order"]) --> S2["Create / import SO<br/>+ Business Channel"]
+    S8{{"Quantity differs<br/>from SO?"}}
+    S9["Decide: reduce SO /<br/>give to customer / to stock"]
+    S10["Allocate to customers<br/>and warehouse stock"]
+  end
+
+  subgraph PU["Purchasing"]
+    direction TB
+    P1["Purchase planning<br/>required / ordered / remaining"]
+    P2{{"Order &gt; demand?"}}
+    P3["Record reason<br/>MOQ / pack size / …"]
+    P4["Issue PO<br/>+ SO-PO mapping"]
+    P5["Upload &amp; verify invoice"]
+    P6{{"PO vs Invoice<br/>within tolerance?"}}
+    P7["Confirm corrected quantity<br/>+ reason"]
+  end
+
+  subgraph MG["Management / Sales manager"]
+    direction TB
+    M1{{"Shortfall spans<br/>&gt; 1 channel?"}}
+    M2["Rank channels<br/>approve the split"]
+  end
+
+  subgraph WH["Warehouse"]
+    direction TB
+    W1{{"Six checks<br/>pass?"}}
+    W2["BLOCKED<br/>show the failing step"]
+    W3["Receive · lot · location"]
+    W4{{"Weighed<br/>product?"}}
+    W5["Weigh each piece<br/>assign to a customer"]
+    W6{{"Fully<br/>received?"}}
+    W7["Pick · pack · ship"]
+    W8(["Completed"])
+  end
+
+  S2 --> P1 --> P2
+  P2 -- yes --> P3 --> P4
+  P2 -- no --> P4
+  P4 --> P5 --> P6
+  P6 -- within --> M1
+  P6 -- outside --> P7 --> M1
+  M1 -- yes --> M2 --> S8
+  M1 -- no --> S8
+  S8 -- yes --> S9 --> S10
+  S8 -- no --> S10
+  S10 --> W1
+  W1 -- no --> W2 -. resolve .-> W1
+  W1 -- yes --> W3 --> W4
+  W4 -- yes --> W5 --> W6
+  W4 -- no --> W6
+  W6 -- no --> W3
+  W6 -- yes --> W7 --> W8
+```
+
+**Gateway ทั้งห้าจุดคือจุดที่ระบบหยุดรอคน** — ไม่มีจุดไหนที่ระบบตัดสินใจแทน:
+
+| Gateway | ใครตัดสิน | บังคับอะไร |
+|---|---|---|
+| Order > demand? | Purchasing | เหตุผล 1 ใน 7 ข้อ |
+| PO vs Invoice ตรงหรือไม่ | Purchasing | Corrected quantity + เหตุผลจำนวน/ราคา |
+| ขาดข้าม channel? | Management / Sales manager | ลำดับ channel + จำนวนที่อนุมัติ |
+| จำนวนต่างจาก SO? | Sales (ของ channel นั้น) | ลูกค้าไหนถูกลด ยอมรับหรือไม่ |
+| ผ่าน 6 ด่านหรือไม่ | ระบบตรวจ — คนแก้ | ทุกด่านต้องเขียว |
 
 ### ลำดับเวลาแบบละเอียด (Sequence — invoice ถึง receiving)
 

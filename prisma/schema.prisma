@@ -52,6 +52,9 @@ model Product {
   // True for products weighed piece by piece (fish, crab, shrimp): each
   // received item carries its own weight and is allocated individually.
   weightControlled   Boolean   @default(false)
+  // Receiving refuses to save without a lot / an expiry date when set.
+  lotRequired        Boolean   @default(false)
+  expiryRequired     Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,6 +75,9 @@ model Product {
   scmAllocations     ScmAllocation[]
   scmShipmentLines   ScmShipmentLine[]
   scmUnitConversions ScmUnitConversion[]
+  scmWarehouseStock  ScmWarehouseStock[]
+  scmShortageCases   ScmShortageCase[]
+  scmSoPoMappings    ScmSoPoMapping[]
 
   @@index([defaultSupplierId])
 }
@@ -86,12 +92,18 @@ model User {
   // Supply-chain department driving the permission matrix:
   // admin | purchasing | sales | warehouse | management | none
   department   String   @default("none")
+  // A sales user normally sees only the business channels assigned in
+  // `channels`. A sales manager gets every channel — including channels
+  // created after the account, which is why this is a flag and not a set
+  // of rows to keep in step.
+  allChannels  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   forecasts Forecast[]
   chats     ChatSession[]
   scmAudit  ScmAuditLog[]
+  channels  ScmUserChannel[]
 }
 
 // One assistant conversation, private to its user.
@@ -263,6 +275,104 @@ model Setting {
 // User is on ScmAuditLog, which is the module's traceability backbone.
 // ===========================================================================
 
+// ------------------------------------------------------- organisation model
+
+// Business channel (§2). Channels are DATA, never an enum or a column name:
+// adding "Wholesale" tomorrow is one row here plus its permission rows — no
+// migration, no code change. Everything that filters by channel joins to this
+// table, and `defaultPriority` seeds the ordering proposed (never applied on
+// its own) when several channels compete for short stock.
+model BusinessChannel {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  nameTh          String?
+  sortOrder       Int      @default(0)
+  // Lower goes first when management ranks channels on a shortage case.
+  defaultPriority Int      @default(100)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customers           Customer[]
+  salesOrders         ScmSalesOrder[]
+  userChannels        ScmUserChannel[]
+  tolerances          ScmTolerance[]
+  warehouseStock      ScmWarehouseStock[]
+  shortageAllocations ScmShortageAllocation[]
+
+  @@map("business_channels")
+}
+
+// Which channels a sales user may see (§39). A sales manager gets
+// `User.allChannels` instead, so a channel added later is covered without
+// touching anyone's assignments.
+model ScmUserChannel {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId String
+  channel   BusinessChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@unique([userId, channelId])
+  @@index([channelId])
+  @@map("user_channels")
+}
+
+// Lookup tables for the labels the UI shows. Deliberately NOT foreign keys:
+// `User.department` must keep resolving even on a database seeded before a
+// department row exists, and an unknown code falls back to its own name.
+model ScmDepartment {
+  code      String   @id
+  name      String
+  nameTh    String?
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("departments")
+}
+
+model ScmRole {
+  code        String   @id
+  name        String
+  nameTh      String?
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("roles")
+}
+
+// Tolerance master (§28). The most specific active row wins:
+// supplier → channel → product type → global. A difference inside the
+// tolerance is treated as a match and proceeds automatically; anything
+// outside it needs a human.
+model ScmTolerance {
+  id                 String           @id @default(cuid())
+  // "global" | "product_type" | "supplier" | "channel"
+  scope              String           @default("global")
+  // "<scope>:<value|*>" — one active rule per scope target.
+  key                String           @unique
+  productType        String?
+  supplierId         String?
+  supplier           Supplier?        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  channelId          String?
+  channel            BusinessChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  qtyTolerancePct    Float            @default(0)
+  priceTolerancePct  Float            @default(0)
+  weightTolerancePct Float            @default(0)
+  note               String?
+  active             Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([scope, active])
+  @@map("tolerances")
+}
+
 // ---------------------------------------------------------------- master data
 
 model Supplier {
@@ -284,27 +394,34 @@ model Supplier {
   purchaseOrders ScmPurchaseOrder[]
   invoices       ScmInvoice[]
   receivings     ScmReceiving[]
+  tolerances     ScmTolerance[]
+  warehouseStock ScmWarehouseStock[]
 
   @@map("suppliers")
 }
 
 model Customer {
-  id               String   @id @default(cuid())
-  code             String   @unique
+  id               String           @id @default(cuid())
+  code             String           @unique
   name             String
   nameTh           String?
+  // Every customer belongs to exactly one business channel (§3).
+  channelId        String?
+  channel          BusinessChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   deliveryLocation String?
   salesOwner       String?
   contactEmail     String?
   contactPhone     String?
-  active           Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  salesOrders     ScmSalesOrder[]
-  allocationLines ScmAllocationLine[]
-  shipments       ScmShipment[]
+  salesOrders         ScmSalesOrder[]
+  allocationLines     ScmAllocationLine[]
+  shipments           ScmShipment[]
+  shortageAllocations ScmShortageAllocation[]
 
+  @@index([channelId])
   @@map("customers")
 }
 
@@ -382,7 +499,7 @@ model ScmPurchaseRequestLine {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  demandLinks ScmPoLineDemand[]
+  demandLinks ScmSoPoMapping[]
 
   @@index([prId])
   @@index([productId, deliveryDate])
@@ -392,24 +509,32 @@ model ScmPurchaseRequestLine {
 }
 
 model ScmSalesOrder {
-  id           String   @id @default(cuid())
-  soNumber     String   @unique
-  customerId   String
-  customer     Customer @relation(fields: [customerId], references: [id])
-  orderDate    DateTime @default(now())
-  deliveryDate DateTime
-  requester    String?
-  currency     String   @default("THB")
+  id               String           @id @default(cuid())
+  soNumber         String           @unique
+  // Denormalised from the customer so every board can filter and group by
+  // channel without a join, and so a customer moved between channels does
+  // not rewrite the history of its past orders.
+  channelId        String?
+  channel          BusinessChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  salesOwner       String?
+  deliveryLocation String?
+  orderDate        DateTime         @default(now())
+  deliveryDate     DateTime
+  requester        String?
+  currency         String           @default("THB")
   // open | partially_shipped | shipped | closed | cancelled
-  status       String   @default("open")
-  notes        String?
-  importId     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status           String           @default("open")
+  notes            String?
+  importId         String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   lines ScmSalesOrderLine[]
 
   @@index([customerId])
+  @@index([channelId, deliveryDate])
   @@map("sales_orders")
 }
 
@@ -441,11 +566,13 @@ model ScmSalesOrderLine {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  prLines         ScmPurchaseRequestLine[]
-  demandLinks     ScmPoLineDemand[]
-  soPoRecons      ScmSoPoRecon[]
-  allocationLines ScmAllocationLine[]
-  shipmentLines   ScmShipmentLine[]
+  prLines             ScmPurchaseRequestLine[]
+  demandLinks         ScmSoPoMapping[]
+  soPoRecons          ScmSoPoRecon[]
+  allocationLines     ScmAllocationLine[]
+  shipmentLines       ScmShipmentLine[]
+  shortageAllocations ScmShortageAllocation[]
+  warehouseStock      ScmWarehouseStock[]
 
   @@index([soId])
   @@index([productId, deliveryDate])
@@ -473,10 +600,12 @@ model ScmPurchaseOrder {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  lines      ScmPurchaseOrderLine[]
-  invoices   ScmInvoice[]
-  recons     ScmPoInvoiceRecon[]
-  receivings ScmReceiving[]
+  lines          ScmPurchaseOrderLine[]
+  invoices       ScmInvoice[]
+  recons         ScmPoInvoiceRecon[]
+  receivings     ScmReceiving[]
+  soPoMapping    ScmSoPoMapping[]
+  warehouseStock ScmWarehouseStock[]
 
   @@index([supplierId])
   @@index([status])
@@ -519,12 +648,14 @@ model ScmPurchaseOrderLine {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  demandLinks    ScmPoLineDemand[]
+  demandLinks    ScmSoPoMapping[]
   invoiceLines   ScmInvoiceLine[]
   recons         ScmPoInvoiceRecon[]
   soPoRecons     ScmSoPoRecon[]
   receivingLines ScmReceivingLine[]
   allocations    ScmAllocation[]
+  shortageCases  ScmShortageCase[]
+  warehouseStock ScmWarehouseStock[]
 
   @@index([poId])
   @@index([productId, deliveryDate])
@@ -532,23 +663,37 @@ model ScmPurchaseOrderLine {
   @@map("purchase_order_lines")
 }
 
-// Aggregation link: one PO line may cover several PR/SO lines, and one
-// demand line may be split across several POs.
-model ScmPoLineDemand {
-  id       String                  @id @default(cuid())
-  poLineId String
-  poLine   ScmPurchaseOrderLine    @relation(fields: [poLineId], references: [id], onDelete: Cascade)
-  prLineId String?
-  prLine   ScmPurchaseRequestLine? @relation(fields: [prLineId], references: [id], onDelete: SetNull)
-  soLineId String?
-  soLine   ScmSalesOrderLine?      @relation(fields: [soLineId], references: [id], onDelete: SetNull)
-  // Share of the PO line covering this demand, inventory unit.
-  quantity Float
+// SO ↔ PO mapping (§6, §7). There is deliberately NO direct SO → PO column
+// anywhere: one PO covers many SO lines and one SO line is split across many
+// POs, so the relationship lives here, at line level, with the quantity it
+// carries and the reason it was split that way.
+model ScmSoPoMapping {
+  id            String                  @id @default(cuid())
+  poId          String
+  po            ScmPurchaseOrder        @relation(fields: [poId], references: [id], onDelete: Cascade)
+  poLineId      String
+  poLine        ScmPurchaseOrderLine    @relation(fields: [poLineId], references: [id], onDelete: Cascade)
+  soId          String?
+  soLineId      String?
+  soLine        ScmSalesOrderLine?      @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  prLineId      String?
+  prLine        ScmPurchaseRequestLine? @relation(fields: [prLineId], references: [id], onDelete: SetNull)
+  productId     String
+  product       Product                 @relation(fields: [productId], references: [id])
+  // Share of the PO line covering this demand, in the inventory unit.
+  quantity      Float
+  unit          String
+  // Why the demand was split this way (partial supplier, split delivery…).
+  reason        String?
+  createdById   String?
+  createdByName String?
+  createdAt     DateTime                @default(now())
 
   @@index([poLineId])
   @@index([prLineId])
   @@index([soLineId])
-  @@map("po_line_demand")
+  @@index([soId])
+  @@map("so_po_mapping")
 }
 
 // ------------------------------------------------------------------ invoice
@@ -752,8 +897,9 @@ model ScmAllocationLine {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
-  items         ScmReceivingItem[]
-  shipmentLines ScmShipmentLine[]
+  items          ScmReceivingItem[]
+  shipmentLines  ScmShipmentLine[]
+  warehouseStock ScmWarehouseStock[]
 
   @@index([allocationId])
   @@index([customerId])
@@ -806,7 +952,8 @@ model ScmReceivingLine {
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 
-  items ScmReceivingItem[]
+  items          ScmReceivingItem[]
+  warehouseStock ScmWarehouseStock[]
 
   @@index([receivingId])
   @@index([poLineId])
@@ -822,7 +969,11 @@ model ScmReceivingItem {
   weight           Float
   unit             String             @default("KG")
   lotNumber        String?
+  expiryDate       DateTime?
   storageLocation  String?
+  // good | damaged | rejected — recorded piece by piece on arrival.
+  condition        String             @default("good")
+  receivedAt       DateTime           @default(now())
   allocationLineId String?
   allocationLine   ScmAllocationLine? @relation(fields: [allocationLineId], references: [id], onDelete: SetNull)
   // on_hand | allocated | shipped | written_off
@@ -896,6 +1047,11 @@ model ScmException {
   description     String
   reason          String?
   responsibleDept String
+  // The person accountable, not just the department (§26, §27).
+  ownerName       String?
+  // low | medium | high | critical — drives the Exception Center ordering.
+  priority        String    @default("medium")
+  channelId       String?
   action          String?
   dueDate         DateTime?
   // open | in_progress | resolved | cancelled
@@ -955,6 +1111,8 @@ model ScmAttachment {
 model ScmNotification {
   id             String    @id @default(cuid())
   department     String
+  // Null = every channel. Set, and only users who can see that channel get it.
+  channelId      String?
   type           String
   severity       String    @default("info")
   title          String
@@ -991,4 +1149,123 @@ model ScmImportBatch {
 
   @@index([kind, createdAt])
   @@map("import_batches")
+}
+
+// --------------------------------------------------- warehouse stock (§24)
+
+// Everything received that did not go straight to a customer. It keeps the
+// whole chain that produced it — supplier, PO, invoice, the SO it was bought
+// for and the channel — so leftover in the freezer can always be traced back
+// to the order it came from.
+model ScmWarehouseStock {
+  id               String             @id @default(cuid())
+  stockNumber      String             @unique
+  productId        String
+  product          Product            @relation(fields: [productId], references: [id])
+  quantity         Float
+  unit             String
+  supplierId       String?
+  supplier         Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  poId             String?
+  po               ScmPurchaseOrder?  @relation(fields: [poId], references: [id], onDelete: SetNull)
+  invoiceId        String?
+  originalSoLineId String?
+  originalSoLine   ScmSalesOrderLine? @relation(fields: [originalSoLineId], references: [id], onDelete: SetNull)
+  channelId        String?
+  channel          BusinessChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  receivingLineId  String?
+  receivingLine    ScmReceivingLine?  @relation(fields: [receivingLineId], references: [id], onDelete: SetNull)
+  allocationLineId String?
+  allocationLine   ScmAllocationLine? @relation(fields: [allocationLineId], references: [id], onDelete: SetNull)
+  reason           String?
+  location         String?
+  lotNumber        String?
+  expiryDate       DateTime?
+  // on_hand | reserved | consumed | written_off
+  status           String             @default("on_hand")
+  createdByName    String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  transactions           ScmWarehouseStockTransaction[]
+  scmPurchaseOrderLine   ScmPurchaseOrderLine?          @relation(fields: [scmPurchaseOrderLineId], references: [id])
+  scmPurchaseOrderLineId String?
+
+  @@index([productId, status])
+  @@index([channelId])
+  @@map("warehouse_stock")
+}
+
+model ScmWarehouseStockTransaction {
+  id            String            @id @default(cuid())
+  stockId       String
+  stock         ScmWarehouseStock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  // in | out | adjust | reserve | release | write_off
+  type          String
+  quantity      Float
+  balanceAfter  Float
+  reason        String?
+  referenceType String?
+  referenceId   String?
+  byName        String?
+  createdAt     DateTime          @default(now())
+
+  @@index([stockId, createdAt])
+  @@map("warehouse_stock_transactions")
+}
+
+// ------------------------------------------------ cross-channel shortage (§20)
+
+// When one delivery cannot cover the demand of several channels, the system
+// stops and hands the decision to a person. It never reduces a customer on
+// its own: it lays out the shortfall per channel, proposes a split from the
+// channel priorities, and waits for an approval.
+model ScmShortageCase {
+  id               String                @id @default(cuid())
+  caseNumber       String                @unique
+  productId        String
+  product          Product               @relation(fields: [productId], references: [id])
+  poLineId         String?
+  poLine           ScmPurchaseOrderLine? @relation(fields: [poLineId], references: [id], onDelete: SetNull)
+  deliveryDate     DateTime?
+  actualQuantity   Float
+  totalSoQuantity  Float
+  shortageQuantity Float
+  unit             String
+  // open | pending_approval | approved | rejected | applied | cancelled
+  status           String                @default("pending_approval")
+  decisionNote     String?
+  approvedByName   String?
+  approvedAt       DateTime?
+  createdByName    String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  lines ScmShortageAllocation[]
+
+  @@index([status])
+  @@map("shortage_cases")
+}
+
+model ScmShortageAllocation {
+  id                String             @id @default(cuid())
+  caseId            String
+  shortageCase      ScmShortageCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  channelId         String?
+  channel           BusinessChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  customerId        String?
+  customer          Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  soLineId          String?
+  soLine            ScmSalesOrderLine? @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  requestedQuantity Float
+  // What the approver decided this channel/customer actually gets.
+  approvedQuantity  Float?
+  // Lower goes first. Seeded from the channel's default priority.
+  priority          Int                @default(100)
+  reason            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([caseId])
+  @@map("shortage_allocations")
 }

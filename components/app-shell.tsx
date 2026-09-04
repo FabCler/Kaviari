@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
   BellRing,
+  Boxes,
+  ChartNoAxesColumn,
   CalendarClock,
   ClipboardList,
   Database,
@@ -19,6 +21,7 @@ import {
   Package,
   PackageCheck,
   ReceiptText,
+  Scale,
   ScrollText,
   Settings,
   ShieldAlert,
@@ -81,13 +84,13 @@ const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/scm/import",
-        label: "Import files",
+        label: "01 Import files",
         icon: FileUp,
         permission: "documents.view",
       },
       {
         href: "/scm/purchasing/orders",
-        label: "Order management",
+        label: "02 Purchase planning",
         icon: ClipboardList,
         permission: "purchasing.view",
       },
@@ -111,13 +114,19 @@ const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/scm/sales/review",
-        label: "Sales review",
+        label: "03 Sales review",
         icon: BellRing,
         permission: "sales.view",
       },
       {
+        href: "/scm/sales/shortage",
+        label: "Channel shortage",
+        icon: Scale,
+        permission: "sales.view",
+      },
+      {
         href: "/scm/sales/allocation",
-        label: "Order allocation",
+        label: "Customer allocation",
         icon: Handshake,
         permission: "sales.view",
       },
@@ -129,9 +138,15 @@ const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/scm/warehouse/receiving",
-        label: "Receiving",
+        label: "04 Receiving",
         icon: PackageCheck,
         permission: "warehouse.view",
+      },
+      {
+        href: "/scm/warehouse/stock",
+        label: "Warehouse stock",
+        icon: Boxes,
+        permission: "warehouse.stock",
       },
       {
         href: "/scm/warehouse/shipments",
@@ -141,9 +156,15 @@ const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/scm/exceptions",
-        label: "Exceptions",
+        label: "05 Exception center",
         icon: ShieldAlert,
         permission: "documents.view",
+      },
+      {
+        href: "/scm/reports",
+        label: "Performance",
+        icon: ChartNoAxesColumn,
+        permission: "reports.view",
       },
       {
         href: "/scm/master-data",
@@ -173,6 +194,9 @@ export interface ShellUser {
   name: string;
   role: string;
   department: string;
+  allChannels: boolean;
+  /** Channel codes a scoped sales user may see — shown under their name. */
+  channelCodes?: string[];
 }
 
 function Wordmark() {
@@ -278,7 +302,15 @@ function UserFooter({ user }: { user: ShellUser }) {
           <div className="text-[0.65rem] tracking-wider text-sidebar-foreground/60 uppercase">
             {user.role === "owner"
               ? "Owner · Admin"
-              : DEPARTMENT_LABELS[departmentOf(user)]}
+              : `${DEPARTMENT_LABELS[departmentOf(user)]}${
+                  departmentOf(user) === "sales"
+                    ? user.allChannels
+                      ? " · all channels"
+                      : user.channelCodes?.length
+                        ? ` · ${user.channelCodes.join(" ")}`
+                        : " · no channel"
+                    : ""
+                }`}
           </div>
         </div>
         <Button

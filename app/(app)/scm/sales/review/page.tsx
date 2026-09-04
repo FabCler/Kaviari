@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/db";
-import { currentActor } from "@/lib/scm/guard";
+import { currentScope } from "@/lib/scm/guard";
+import { narrowScope } from "@/lib/scm/channels";
 import { can } from "@/lib/scm/permissions";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { KpiCard } from "@/components/scm/kpi-card";
 import { NoAccess } from "@/components/scm/no-access";
+import { ChannelFilter } from "@/components/scm/channel-filter";
 import { SalesReviewBoard } from "@/components/scm/sales/review-board";
 
 export const dynamic = "force-dynamic";
@@ -18,17 +20,24 @@ export const metadata = { title: "Sales review — Kaviari Cellar" };
 export default async function SalesReviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ po?: string }>;
+  searchParams: Promise<{ po?: string; channel?: string }>;
 }) {
-  const actor = (await currentActor())!;
+  const context = await currentScope();
+  if (!context) return <NoAccess what="the sales review queue" />;
+  const { actor, scope } = context;
   if (!can(actor, "sales.view")) return <NoAccess what="the sales review queue" />;
 
   const filters = await searchParams;
+  const visible = narrowScope(scope, filters.channel);
+  const channelWhere = visible.all ? null : { channelId: { in: visible.ids } };
 
   const recons = await prisma.scmSoPoRecon.findMany({
-    where: filters.po ? { poLine: { poId: filters.po } } : undefined,
+    where: {
+      ...(filters.po ? { poLine: { poId: filters.po } } : {}),
+      ...(channelWhere ? { soLine: { so: channelWhere } } : {}),
+    },
     include: {
-      soLine: { include: { so: { include: { customer: true } } } },
+      soLine: { include: { so: { include: { customer: true, channel: true } } } },
       poLine: { include: { po: { include: { supplier: true } } } },
       product: true,
     },
@@ -48,6 +57,10 @@ export default async function SalesReviewPage({
         title="Invoice / PO vs Sales order"
         description="What the supplier actually delivered, compared with what the customer ordered."
       />
+
+      <div className="mb-4">
+        <ChannelFilter channels={scope.channels} />
+      </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Lines reviewed" value={recons.length} />
@@ -72,6 +85,8 @@ export default async function SalesReviewPage({
           canDecide={can(actor, "sales.reviewDifference")}
           rows={recons.map((row) => ({
             id: row.id,
+            channelCode: row.soLine.so.channel?.code ?? null,
+            channelName: row.soLine.so.channel?.name ?? null,
             soNumber: row.soLine.so.soNumber,
             soId: row.soLine.soId,
             customerName: row.soLine.so.customer.name,

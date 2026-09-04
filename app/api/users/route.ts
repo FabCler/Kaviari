@@ -15,8 +15,21 @@ export async function GET() {
       role: true,
       status: true,
       department: true,
+      allChannels: true,
       createdAt: true,
+      channels: { select: { channelId: true } },
     },
   });
-  return Response.json({ users });
+  const channels = await prisma.businessChannel.findMany({
+    where: { active: true },
+    orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
+    select: { id: true, code: true, name: true },
+  });
+  return Response.json({
+    users: users.map((user) => ({
+      ...user,
+      channelIds: user.channels.map((row) => row.channelId),
+    })),
+    channels,
+  });
 }

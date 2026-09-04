@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToneBadge, documentTone, humanize } from "@/components/scm/status-badge";
+import { ChannelBadge } from "@/components/scm/channel-filter";
 import { SALES_DECISION_LABELS, SALES_DECISIONS } from "@/lib/scm/domain";
 import { formatNumber } from "@/lib/format";
 
@@ -38,6 +39,8 @@ import { formatNumber } from "@/lib/format";
 
 export interface SalesReviewRow {
   id: string;
+  channelCode: string | null;
+  channelName: string | null;
   soNumber: string;
   soId: string;
   customerName: string;
@@ -77,6 +80,7 @@ export function SalesReviewBoard({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Channel</TableHead>
                 <TableHead>Customer / SO</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">SO qty</TableHead>
@@ -92,6 +96,9 @@ export function SalesReviewBoard({
               {rows.map((row) => (
                 <React.Fragment key={row.id}>
                   <TableRow>
+                    <TableCell>
+                      <ChannelBadge code={row.channelCode} name={row.channelName} />
+                    </TableCell>
                     <TableCell>
                       <Link
                         href={`/scm/trace/so/${row.soId}`}
@@ -177,7 +184,7 @@ export function SalesReviewBoard({
                   </TableRow>
                   {openId === row.id ? (
                     <TableRow className="bg-accent/30 hover:bg-accent/30">
-                      <TableCell colSpan={9} className="p-0">
+                      <TableCell colSpan={10} className="p-0">
                         <DecisionForm row={row} onDone={() => setOpenId(null)} />
                       </TableCell>
                     </TableRow>

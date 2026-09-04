@@ -307,41 +307,60 @@ export async function linkDemandToPo(poNumber: string): Promise<void> {
     const prSoLineIds = new Set(
       prLines.map((line) => line.soLineId).filter(Boolean) as string[]
     );
+    const relatedSoLines = await prisma.scmSalesOrderLine.findMany({
+      where: { id: { in: [...prSoLineIds] } },
+      select: { id: true, soId: true },
+    });
+    const soLineToSoId = new Map(
+      relatedSoLines.map((line) => [line.id, line.soId])
+    );
 
     for (const prLine of prLines) {
-      const existing = await prisma.scmPoLineDemand.findFirst({
+      const existing = await prisma.scmSoPoMapping.findFirst({
         where: { poLineId: poLine.id, prLineId: prLine.id },
       });
       if (existing) continue;
-      await prisma.scmPoLineDemand.create({
+      await prisma.scmSoPoMapping.create({
         data: {
+          poId: po.id,
           poLineId: poLine.id,
           prLineId: prLine.id,
           soLineId: prLine.soLineId,
+          soId: prLine.soLineId ? soLineToSoId.get(prLine.soLineId) : null,
+          productId: poLine.productId,
           quantity: prLine.baseQuantity,
+          unit: poLine.unit,
+          reason: "Linked from the purchasing import (PO number reference)",
         },
       });
     }
 
     for (const soLine of soLines) {
       if (prSoLineIds.has(soLine.id)) continue;
-      const existing = await prisma.scmPoLineDemand.findFirst({
+      const existing = await prisma.scmSoPoMapping.findFirst({
         where: { poLineId: poLine.id, soLineId: soLine.id },
       });
       if (existing) continue;
-      await prisma.scmPoLineDemand.create({
+      await prisma.scmSoPoMapping.create({
         data: {
+          poId: po.id,
           poLineId: poLine.id,
           soLineId: soLine.id,
+          soId: soLine.soId,
+          productId: poLine.productId,
           quantity: soLine.baseQuantity,
+          unit: poLine.unit,
+          reason: "Linked from the purchasing import (PO number reference)",
         },
       });
     }
 
-    const links = await prisma.scmPoLineDemand.findMany({
+    const links = await prisma.scmSoPoMapping.findMany({
       where: { poLineId: poLine.id },
     });
-    const required = round(links.reduce((sum, link) => sum + link.quantity, 0));
+    const required = round(
+      links.reduce((sum: number, link: { quantity: number }) => sum + link.quantity, 0)
+    );
     if (required !== poLine.requiredQuantity) {
       await prisma.scmPurchaseOrderLine.update({
         where: { id: poLine.id },

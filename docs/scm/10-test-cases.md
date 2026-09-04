@@ -2,7 +2,7 @@
 
 ## 1. เทสต์อัตโนมัติที่มีอยู่
 
-`npm test` — 94 เทสต์ ครอบคลุมกฎธุรกิจทั้งหมดในชั้น domain
+`npm test` — 143 เทสต์ ครอบคลุมกฎธุรกิจทั้งหมดในชั้น domain
 
 | ไฟล์ | ครอบคลุม |
 |---|---|
@@ -10,7 +10,10 @@
 | `tests/scm-allocation.test.ts` | สมการการจัดสรร, การบังคับ location/reason/dept, over-allocation, การชั่งรายชิ้น |
 | `tests/scm-gate.test.ts` | ด่านทั้ง 6 แต่ละด่านทั้งกรณีผ่านและไม่ผ่าน + ลำดับการรายงาน |
 | `tests/scm-units.test.ts` | การแปลงหน่วยสองทาง, กฎเฉพาะสินค้าชนะกฎกลาง, การปฏิเสธเมื่อไม่มี conversion |
-| `tests/scm-status.test.ts` | 17 สถานะ, `resolveStatus()`, กติกาการเปลี่ยนสถานะ, การกระจายจำนวน |
+| `tests/scm-status.test.ts` | 22 สถานะ, `resolveStatus()`, partial vs fully received, EXCEPTION/REJECTED, กติกาการเปลี่ยนสถานะ |
+| `tests/scm-channels.test.ts` | channel scoping, `narrowScope()` (กัน URL ขยายสิทธิ์), permission matrix รวม Sales Manager |
+| `tests/scm-shortage.test.ts` | ข้อเสนอการแบ่งข้าม channel ตาม §45, การตรวจการอนุมัติ |
+| `tests/scm-tolerance-sla.test.ts` | ลำดับ tolerance (supplier → channel → product type → global), SLA on track/due soon/overdue |
 
 ## 2. End-to-End test cases
 
@@ -139,7 +142,77 @@
 
 ---
 
-### E2E-08 — Receiving gate ทั้ง 6 ด่าน (§7.1)
+### E2E-09 — Cross-channel shortage (§20, §45)
+
+ใช้ข้อมูล seed สถานการณ์ E (`SHT-2026-0001`)
+
+| # | ผู้ทำ | ขั้นตอน | ผลที่คาด |
+|---|---|---|---|
+| 1 | Sales (FS) | เปิด Customer allocation ของ PO-2026-0005 | ปุ่ม Allocate ถูกปิด พร้อมลิงก์ไป `SHT-2026-0001` |
+| 2 | Sales (FS) | ยิง `POST /api/scm/allocations` ตรง ๆ | **409** `Cross-channel shortage SHT-2026-0001 is waiting for a management decision` |
+| 3 | Sales (FS) | ยิง `POST /api/scm/shortage` | **403** — Sales ของ channel เดียวอนุมัติไม่ได้ |
+| 4 | Management | เปิด `/scm/sales/shortage/<id>` | เห็น demand แยกตาม channel, ช่อง Approved **ว่างเปล่า**, ปุ่ม Approve ถูกปิด |
+| 5 | Management | กด "Fill in the proposal" | เติม FS 1,000 / RTL 150 ตาม priority — ยังแก้ได้ |
+| 6 | Management | ใส่ FS 1,000 + RTL 100 (รวม 1,100) | **422** `50 still unassigned — the approved quantities must add up to the 1150 received` |
+| 7 | Management | ใส่ FS 1,150 + RTL 0 | **422** `1150 is more than the 1000 ordered` |
+| 8 | Management | ใส่ FS 1,000 + RTL 150 + เหตุผล → Approve | 200 `{ status: "applied", approvedTotal: 1150 }` |
+| 9 | ใครก็ได้ | ดู SO-2026-0202 | `quantity` = 150, `originalQuantity` ยังเป็น 500 |
+| 10 | ใครก็ได้ | ดู audit trail ของ `SHT-2026-0001` | มีแถว approve + แถวที่จำนวน SO เปลี่ยน พร้อมชื่อผู้อนุมัติ |
+| 11 | Sales (RTL) | เปิด Customer allocation | ปุ่ม Allocate ใช้งานได้แล้ว |
+| 12 | ใครก็ได้ | Exception Center | `EXC-2026-0004` ถูกปิดอัตโนมัติ |
+
+---
+
+### E2E-10 — Channel permission (§39)
+
+| # | ผู้ทำ | ขั้นตอน | ผลที่คาด |
+|---|---|---|---|
+| 1 | Admin | Settings → Users → ตั้ง department = sales, ติ๊กเฉพาะ `RTL` | บันทึก + audit บันทึก old → new |
+| 2 | Sales (RTL) | เปิด Sales review | เห็นเฉพาะ SO ของ Retail |
+| 3 | Sales (RTL) | ใส่ `?channel=<FS id>` ใน URL | **ไม่เห็นอะไรเลย** — ไม่ใช่เห็นทุก channel |
+| 4 | Sales (RTL) | เปิด Dashboard | ตาราง By business channel มีแถวเดียว: RTL |
+| 5 | Sales (RTL) | เปิด Purchase planning | เห็นเฉพาะ demand ของ Retail |
+| 6 | Admin | เปลี่ยนเป็น **Manager · all** | Sales คนเดิมเห็นทั้ง 4 channel และอนุมัติ shortage ได้ |
+| 7 | Admin | Master data → เพิ่ม channel `WHS` Wholesale | ปรากฏใน filter, permission และ report ทันที **โดยไม่ต้อง deploy** |
+| 8 | ผู้ใช้ที่ยังไม่มี channel | เปิด Sales review | ไม่เห็นรายการใด ๆ (ไม่ใช่เห็นทั้งหมด) |
+
+---
+
+### E2E-11 — Partial receiving (§23)
+
+| # | ขั้นตอน | ผลที่คาด |
+|---|---|---|
+| 1 | รับ 10 จาก 24 ที่ยืนยันไว้ | `RCV-…` ถูกสร้าง, บรรทัด **PARTIALLY_RECEIVED**, PO ยัง `received` |
+| 2 | เปิดหน้า Receive อีกครั้ง | จำนวนตั้งต้นเป็น 14 (ส่วนที่เหลือ) และแสดง "10 already received" |
+| 3 | พยายามรับอีก 20 | **422** `10 already received, 20 more would exceed the confirmed 24` |
+| 4 | รับอีก 14 | บรรทัดเป็น **FULLY_RECEIVED** → **READY_TO_SHIP**, PO `closed` |
+
+---
+
+### E2E-12 — Warehouse stock (§24)
+
+| # | ขั้นตอน | ผลที่คาด |
+|---|---|---|
+| 1 | Allocate 6 ชิ้นเข้าคลัง พร้อม location/reason/dept แล้วรับของ | `STK-…` ถูกสร้างอัตโนมัติ |
+| 2 | เปิด Warehouse stock | เห็น supplier, PO, invoice, **SO ต้นทาง**, channel, lot, expiry |
+| 3 | กด Move → เลือก "Out" โดยไม่ใส่เหตุผล | ถูกปฏิเสธ — reason เป็นค่าบังคับ |
+| 4 | ย้ายออก 200 จากยอด 100 | **422** `Only 100 on hand` |
+| 5 | ย้ายออก 40 พร้อมเหตุผล | ยอดเหลือ 60, มี transaction พร้อม balanceAfter และ audit |
+
+---
+
+### E2E-13 — Tolerance (§28)
+
+| # | ขั้นตอน | ผลที่คาด |
+|---|---|---|
+| 1 | ตั้ง global 0% แล้วอัปโหลด invoice ที่ต่าง 1% | ขึ้นเป็น Pending review |
+| 2 | เพิ่มกฎ supplier = Nordic Seafood 2% | invoice ของ supplier นั้นที่ต่าง 1% ถูก **auto-approve** |
+| 3 | invoice ของ supplier อื่นที่ต่าง 1% | ยังคง Pending review — กฎไม่รั่วข้าม supplier |
+| 4 | เพิ่มกฎ channel = Store 5% และ supplier 2% พร้อมกัน | supplier ชนะ — ใช้ 2% |
+
+---
+
+### E2E-08 — Receiving gate ทั้ง 6 ด่าน (§22)
 
 | ด่านที่ทำให้ไม่ผ่าน | วิธีสร้างสถานการณ์ | ข้อความที่คาด |
 |---|---|---|
@@ -147,6 +220,7 @@
 | 2 Invoice | ยังไม่อัปโหลด Invoice | "No supplier invoice uploaded for this PO." |
 | 3 Qty recon | Invoice verified แต่ยังไม่ confirm ความต่าง | "N line(s) still pending purchasing review." |
 | 4 Sales recon | มี sales review ค้าง | "N sales review(s) still open." |
+| 4 Sales recon | มี cross-channel shortage ค้าง | "Cross-channel shortage SHT-… is waiting for a management decision." |
 | 5 Allocation | ยังไม่ allocate | "N line(s) not allocated yet." |
 | 6 Unallocated | allocate ไม่ครบ | "UNALLOCATED QUANTITY: X." |
 

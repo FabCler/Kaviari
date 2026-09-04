@@ -37,11 +37,20 @@ interface UserRow {
   role: string;
   status: string;
   department: string;
+  allChannels: boolean;
+  channelIds: string[];
   createdAt: string;
+}
+
+interface ChannelRow {
+  id: string;
+  code: string;
+  name: string;
 }
 
 export function UsersCard() {
   const [users, setUsers] = React.useState<UserRow[] | null>(null);
+  const [channels, setChannels] = React.useState<ChannelRow[]>([]);
   const [busy, setBusy] = React.useState<string | null>(null);
 
   const load = React.useCallback(
@@ -51,6 +60,7 @@ export function UsersCard() {
           if (!res.ok) throw new Error();
           const body = await res.json();
           setUsers(body.users);
+          setChannels(body.channels ?? []);
         })
         .catch(() => {
           toast.error("Could not load users.");
@@ -92,6 +102,33 @@ export function UsersCard() {
       });
       if (!res.ok) throw new Error();
       toast.success("Department updated.");
+      await load();
+    } catch {
+      toast.error("The action failed. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /**
+   * §39 — which business channels a sales user may see. "All channels" is a
+   * flag rather than every box ticked, so a channel added next month is
+   * covered without revisiting the account.
+   */
+  async function setChannels_(
+    id: string,
+    channelIds: string[],
+    allChannels: boolean
+  ) {
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_channels", channelIds, allChannels }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Channel access updated.");
       await load();
     } catch {
       toast.error("The action failed. Please try again.");
@@ -150,6 +187,7 @@ export function UsersCard() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Supply-chain department</TableHead>
+                <TableHead>Business channels</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -195,6 +233,61 @@ export function UsersCard() {
                           ))}
                         </SelectContent>
                       </Select>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {user.role === "owner" ? (
+                      <span className="text-sm text-muted-foreground">
+                        All channels
+                      </span>
+                    ) : user.department !== "sales" ? (
+                      <span className="text-sm text-muted-foreground">
+                        {user.department === "none"
+                          ? "—"
+                          : "All channels (by department)"}
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={busy === user.id}
+                          aria-pressed={user.allChannels}
+                          onClick={() => setChannels_(user.id, [], !user.allChannels)}
+                          className={
+                            user.allChannels
+                              ? "rounded border border-gold bg-gold/15 px-1.5 py-0.5 text-[0.68rem] font-medium text-gold-deep"
+                              : "rounded border border-border px-1.5 py-0.5 text-[0.68rem] text-muted-foreground hover:border-gold/50"
+                          }
+                        >
+                          Manager · all
+                        </button>
+                        {channels.map((channel) => {
+                          const on =
+                            user.allChannels || user.channelIds.includes(channel.id);
+                          return (
+                            <button
+                              key={channel.id}
+                              type="button"
+                              disabled={busy === user.id || user.allChannels}
+                              aria-pressed={on}
+                              title={channel.name}
+                              onClick={() => {
+                                const next = user.channelIds.includes(channel.id)
+                                  ? user.channelIds.filter((id) => id !== channel.id)
+                                  : [...user.channelIds, channel.id];
+                                setChannels_(user.id, next, false);
+                              }}
+                              className={
+                                on
+                                  ? "rounded border border-gold bg-gold/15 px-1.5 py-0.5 text-[0.68rem] font-medium text-gold-deep disabled:opacity-60"
+                                  : "rounded border border-border px-1.5 py-0.5 text-[0.68rem] text-muted-foreground hover:border-gold/50"
+                              }
+                            >
+                              {channel.code}
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </TableCell>
                   <TableCell>{statusBadge(user.status)}</TableCell>

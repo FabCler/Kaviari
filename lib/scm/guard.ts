@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { can, departmentOf, type Actor, type Permission } from "@/lib/scm/permissions";
+import { channelScopeFor, type ChannelScope } from "@/lib/scm/channels";
 
 /**
  * Server-side permission guards. Route handlers call `requirePermission`;
@@ -15,6 +16,7 @@ export async function currentActor(): Promise<Actor | null> {
     name: user.name,
     role: user.role,
     department: user.department,
+    allChannels: user.allChannels,
   };
 }
 
@@ -42,4 +44,16 @@ export async function requirePermission(
 
 export function isResponse(value: unknown): value is Response {
   return value instanceof Response;
+}
+
+/**
+ * The actor plus the business channels they may see — the pair almost every
+ * page needs, in one call.
+ */
+export async function currentScope(): Promise<
+  { actor: Actor; scope: ChannelScope } | null
+> {
+  const actor = await currentActor();
+  if (!actor) return null;
+  return { actor, scope: await channelScopeFor(actor) };
 }

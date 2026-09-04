@@ -23,6 +23,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToneBadge, documentTone } from "@/components/scm/status-badge";
+import { ChannelBadge } from "@/components/scm/channel-filter";
+import { PriorityBadge, SlaBadge } from "@/components/scm/sla-badge";
 import {
   DEPARTMENT_LABELS,
   EXCEPTION_LABELS,
@@ -36,6 +38,9 @@ export interface ExceptionRow {
   code: string;
   type: string;
   severity: string;
+  priority: string;
+  ownerName: string | null;
+  channelCode: string | null;
   documentNumber: string | null;
   documentType: string | null;
   description: string;
@@ -48,12 +53,6 @@ export interface ExceptionRow {
   resolvedByName: string | null;
   createdAt: string;
 }
-
-const SEVERITY_TONE = {
-  high: "blocked",
-  medium: "pending",
-  low: "idle",
-} as const;
 
 export function ExceptionBoard({
   rows,
@@ -96,9 +95,10 @@ export function ExceptionBoard({
             <TableHeader>
               <TableRow>
                 <TableHead>Code</TableHead>
+                <TableHead>Channel</TableHead>
                 <TableHead>Exception</TableHead>
                 <TableHead>Document</TableHead>
-                <TableHead>Responsible</TableHead>
+                <TableHead>Owner</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>Status</TableHead>
@@ -115,18 +115,25 @@ export function ExceptionBoard({
                   <TableRow key={row.id}>
                     <TableCell>
                       <div className="font-medium">{row.code}</div>
-                      <ToneBadge
-                        tone={
-                          SEVERITY_TONE[row.severity as keyof typeof SEVERITY_TONE] ??
-                          "idle"
-                        }
-                      >
-                        {row.severity}
-                      </ToneBadge>
+                      <PriorityBadge priority={row.priority} />
+                    </TableCell>
+                    <TableCell>
+                      <ChannelBadge code={row.channelCode} />
                     </TableCell>
                     <TableCell className="max-w-[22rem]">
-                      <div className="text-sm font-medium">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
                         {EXCEPTION_LABELS[row.type as ExceptionType] ?? row.type}
+                        <ToneBadge
+                          tone={
+                            row.severity === "high"
+                              ? "blocked"
+                              : row.severity === "medium"
+                                ? "pending"
+                                : "idle"
+                          }
+                        >
+                          {row.severity}
+                        </ToneBadge>
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {row.description}
@@ -144,6 +151,9 @@ export function ExceptionBoard({
                       </div>
                     </TableCell>
                     <TableCell>
+                      {row.ownerName ? (
+                        <div className="mb-1 text-sm">{row.ownerName}</div>
+                      ) : null}
                       {canManage ? (
                         <Select
                           value={row.responsibleDept}
@@ -201,13 +211,20 @@ export function ExceptionBoard({
                           aria-label={`Due date for ${row.code}`}
                         />
                       ) : (
-                        <span
-                          className={
-                            overdue ? "text-sm text-destructive" : "text-sm"
-                          }
-                        >
-                          {row.dueDate ? formatDate(new Date(row.dueDate)) : "-"}
-                        </span>
+                        <div className="space-y-1">
+                          <span
+                            className={
+                              overdue ? "text-sm text-destructive" : "text-sm"
+                            }
+                          >
+                            {row.dueDate ? formatDate(new Date(row.dueDate)) : "-"}
+                          </span>
+                          <SlaBadge
+                            dueDate={row.dueDate}
+                            done={row.status === "resolved"}
+                            className="block w-fit"
+                          />
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>

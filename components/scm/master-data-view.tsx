@@ -47,8 +47,30 @@ interface CustomerRow {
   id: string;
   code: string;
   name: string;
+  channelId: string | null;
   deliveryLocation: string | null;
   salesOwner: string | null;
+  active: boolean;
+}
+
+interface ChannelRow {
+  id: string;
+  code: string;
+  name: string;
+  nameTh: string | null;
+  sortOrder: number;
+  defaultPriority: number;
+  active: boolean;
+}
+
+interface ToleranceRow {
+  id: string;
+  scope: string;
+  target: string;
+  qtyTolerancePct: number;
+  priceTolerancePct: number;
+  weightTolerancePct: number;
+  note: string | null;
   active: boolean;
 }
 
@@ -102,6 +124,9 @@ export function MasterDataView({
   conversions,
   products,
   settings,
+  channels,
+  tolerances,
+  productTypes,
 }: {
   suppliers: SupplierRow[];
   customers: CustomerRow[];
@@ -109,10 +134,14 @@ export function MasterDataView({
   conversions: ConversionRow[];
   products: ProductRow[];
   settings: ScmSettings;
+  channels: ChannelRow[];
+  tolerances: ToleranceRow[];
+  productTypes: string[];
 }) {
   return (
-    <Tabs defaultValue="suppliers">
+    <Tabs defaultValue="channels">
       <TabsList className="mb-4 flex-wrap">
+        <TabsTrigger value="channels">Business channels</TabsTrigger>
         <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
         <TabsTrigger value="customers">Customers</TabsTrigger>
         <TabsTrigger value="products">Products</TabsTrigger>
@@ -120,11 +149,14 @@ export function MasterDataView({
         <TabsTrigger value="tolerances">Tolerances</TabsTrigger>
       </TabsList>
 
+      <TabsContent value="channels">
+        <ChannelPanel rows={channels} />
+      </TabsContent>
       <TabsContent value="suppliers">
         <SupplierPanel rows={suppliers} />
       </TabsContent>
       <TabsContent value="customers">
-        <CustomerPanel rows={customers} />
+        <CustomerPanel rows={customers} channels={channels} />
       </TabsContent>
       <TabsContent value="products">
         <ProductPanel rows={products} suppliers={suppliers} />
@@ -133,9 +165,134 @@ export function MasterDataView({
         <UnitPanel units={units} conversions={conversions} products={products} />
       </TabsContent>
       <TabsContent value="tolerances">
-        <TolerancePanel settings={settings} />
+        <TolerancePanel
+          settings={settings}
+          rules={tolerances}
+          suppliers={suppliers}
+          channels={channels}
+          productTypes={productTypes}
+        />
       </TabsContent>
     </Tabs>
+  );
+}
+
+/**
+ * §2 — channels are data. Adding one here is all it takes for it to appear in
+ * every filter, permission list and report; nothing in the schema changes.
+ */
+function ChannelPanel({ rows }: { rows: ChannelRow[] }) {
+  const router = useRouter();
+  const [draft, setDraft] = React.useState({
+    code: "",
+    name: "",
+    nameTh: "",
+    sortOrder: "",
+    defaultPriority: "100",
+  });
+  const [busy, setBusy] = React.useState(false);
+
+  async function save() {
+    setBusy(true);
+    const ok = await post("channels", {
+      code: draft.code,
+      name: draft.name,
+      nameTh: draft.nameTh || null,
+      sortOrder: Number(draft.sortOrder) || rows.length + 1,
+      defaultPriority: Number(draft.defaultPriority) || 100,
+      active: true,
+    });
+    setBusy(false);
+    if (ok) {
+      setDraft({ code: "", name: "", nameTh: "", sortOrder: "", defaultPriority: "100" });
+      router.refresh();
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Business channels</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Food Service, Retail, Store and Central Kitchen ship with the system.
+          A new channel is a row here — no migration, no code change. The
+          default priority is the order proposed when several channels compete
+          for short stock; it is never applied without an approval.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <Field label="Code" value={draft.code} onChange={(v) => setDraft({ ...draft, code: v })} />
+          <Field label="Name" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} />
+          <Field label="Thai name" value={draft.nameTh} onChange={(v) => setDraft({ ...draft, nameTh: v })} />
+          <Field label="Sort order" type="number" value={draft.sortOrder} onChange={(v) => setDraft({ ...draft, sortOrder: v })} />
+          <div className="flex items-end gap-2">
+            <Field
+              label="Default priority"
+              type="number"
+              value={draft.defaultPriority}
+              onChange={(v) => setDraft({ ...draft, defaultPriority: v })}
+            />
+            <Button onClick={save} disabled={busy || !draft.code || !draft.name}>
+              {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+              Add
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-md border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Thai name</TableHead>
+                <TableHead className="text-right">Sort</TableHead>
+                <TableHead className="text-right">Default priority</TableHead>
+                <TableHead>Active</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="font-medium">{row.code}</TableCell>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.nameTh ?? "—"}</TableCell>
+                  <TableCell className="tnum text-right">{row.sortOrder}</TableCell>
+                  <TableCell className="tnum text-right">
+                    <Input
+                      type="number"
+                      className="w-24"
+                      defaultValue={row.defaultPriority}
+                      aria-label={`Default priority for ${row.code}`}
+                      onBlur={async (event) => {
+                        const value = Number(event.target.value);
+                        if (value === row.defaultPriority) return;
+                        const ok = await post("channels", {
+                          ...row,
+                          defaultPriority: value,
+                        });
+                        if (ok) router.refresh();
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={row.active}
+                      aria-label={`${row.code} active`}
+                      onCheckedChange={async (checked) => {
+                        const ok = await post("channels", { ...row, active: checked });
+                        if (ok) router.refresh();
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -246,11 +403,18 @@ function SupplierPanel({ rows }: { rows: SupplierRow[] }) {
   );
 }
 
-function CustomerPanel({ rows }: { rows: CustomerRow[] }) {
+function CustomerPanel({
+  rows,
+  channels,
+}: {
+  rows: CustomerRow[];
+  channels: ChannelRow[];
+}) {
   const router = useRouter();
   const [draft, setDraft] = React.useState({
     code: "",
     name: "",
+    channelId: channels[0]?.id ?? "",
     deliveryLocation: "",
     salesOwner: "",
   });
@@ -261,13 +425,20 @@ function CustomerPanel({ rows }: { rows: CustomerRow[] }) {
     const ok = await post("customers", {
       code: draft.code,
       name: draft.name,
+      channelId: draft.channelId || null,
       deliveryLocation: draft.deliveryLocation || null,
       salesOwner: draft.salesOwner || null,
       active: true,
     });
     setBusy(false);
     if (ok) {
-      setDraft({ code: "", name: "", deliveryLocation: "", salesOwner: "" });
+      setDraft({
+        code: "",
+        name: "",
+        channelId: channels[0]?.id ?? "",
+        deliveryLocation: "",
+        salesOwner: "",
+      });
       router.refresh();
     }
   }
@@ -278,9 +449,27 @@ function CustomerPanel({ rows }: { rows: CustomerRow[] }) {
         <CardTitle className="text-base">Customer master</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <Field label="Code" value={draft.code} onChange={(v) => setDraft({ ...draft, code: v })} />
           <Field label="Name" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} />
+          <div className="space-y-1.5">
+            <Label htmlFor="customer-channel">Business channel</Label>
+            <Select
+              value={draft.channelId}
+              onValueChange={(value) => setDraft({ ...draft, channelId: value })}
+            >
+              <SelectTrigger id="customer-channel">
+                <SelectValue placeholder="Choose" />
+              </SelectTrigger>
+              <SelectContent>
+                {channels.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id}>
+                    {channel.code} · {channel.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Field
             label="Delivery location"
             value={draft.deliveryLocation}
@@ -305,6 +494,7 @@ function CustomerPanel({ rows }: { rows: CustomerRow[] }) {
               <TableRow>
                 <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead className="w-44">Channel</TableHead>
                 <TableHead>Delivery location</TableHead>
                 <TableHead>Sales owner</TableHead>
                 <TableHead>Active</TableHead>
@@ -315,6 +505,30 @@ function CustomerPanel({ rows }: { rows: CustomerRow[] }) {
                 <TableRow key={row.id}>
                   <TableCell className="font-medium">{row.code}</TableCell>
                   <TableCell>{row.name}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={row.channelId ?? "none"}
+                      onValueChange={async (value) => {
+                        const ok = await post("customers", {
+                          ...row,
+                          channelId: value === "none" ? null : value,
+                        });
+                        if (ok) router.refresh();
+                      }}
+                    >
+                      <SelectTrigger aria-label={`Channel for ${row.code}`}>
+                        <SelectValue placeholder="—" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No channel</SelectItem>
+                        {channels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell>{row.deliveryLocation ?? "-"}</TableCell>
                   <TableCell>{row.salesOwner ?? "-"}</TableCell>
                   <TableCell>
@@ -704,7 +918,19 @@ function UnitPanel({
   );
 }
 
-function TolerancePanel({ settings }: { settings: ScmSettings }) {
+function TolerancePanel({
+  settings,
+  rules,
+  suppliers,
+  channels,
+  productTypes,
+}: {
+  settings: ScmSettings;
+  rules: ToleranceRow[];
+  suppliers: SupplierRow[];
+  channels: ChannelRow[];
+  productTypes: string[];
+}) {
   const router = useRouter();
   const [state, setState] = React.useState({
     qtyTolerancePct: String(settings.qtyTolerancePct),
@@ -740,13 +966,20 @@ function TolerancePanel({ settings }: { settings: ScmSettings }) {
   }
 
   return (
+    <div className="space-y-4">
+      <ToleranceRules
+        rules={rules}
+        suppliers={suppliers}
+        channels={channels}
+        productTypes={productTypes}
+      />
+
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Reconciliation tolerances</CardTitle>
+        <CardTitle className="text-base">Fallback settings</CardTitle>
         <p className="text-sm text-muted-foreground">
-          A difference inside the tolerance counts as a match and is approved
-          automatically. Set both to 0 to require a human decision on every
-          difference.
+          The fallback quantity and price tolerance when no rule above matches,
+          plus the delivery warning window and the default storage location.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -777,8 +1010,191 @@ function TolerancePanel({ settings }: { settings: ScmSettings }) {
         </div>
         <Button variant="gold" onClick={save} disabled={busy}>
           {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-          Save tolerances
+          Save settings
         </Button>
+      </CardContent>
+    </Card>
+    </div>
+  );
+}
+
+/**
+ * §28 — tolerance rules by product type, supplier and business channel. The
+ * most specific active rule wins: supplier, then channel, then product type,
+ * then the global rule.
+ */
+function ToleranceRules({
+  rules,
+  suppliers,
+  channels,
+  productTypes,
+}: {
+  rules: ToleranceRow[];
+  suppliers: SupplierRow[];
+  channels: ChannelRow[];
+  productTypes: string[];
+}) {
+  const router = useRouter();
+  const [draft, setDraft] = React.useState({
+    scope: "supplier",
+    target: "",
+    qty: "0",
+    price: "0",
+    weight: "0",
+    note: "",
+  });
+  const [busy, setBusy] = React.useState(false);
+
+  async function save() {
+    setBusy(true);
+    const ok = await post("tolerances", {
+      scope: draft.scope,
+      supplierId: draft.scope === "supplier" ? draft.target : null,
+      channelId: draft.scope === "channel" ? draft.target : null,
+      productType: draft.scope === "product_type" ? draft.target : null,
+      qtyTolerancePct: Number(draft.qty) || 0,
+      priceTolerancePct: Number(draft.price) || 0,
+      weightTolerancePct: Number(draft.weight) || 0,
+      note: draft.note || null,
+      active: true,
+    });
+    setBusy(false);
+    if (ok) {
+      setDraft({ scope: "supplier", target: "", qty: "0", price: "0", weight: "0", note: "" });
+      router.refresh();
+    }
+  }
+
+  const targets =
+    draft.scope === "supplier"
+      ? suppliers.map((entry) => ({ id: entry.id, label: entry.name }))
+      : draft.scope === "channel"
+        ? channels.map((entry) => ({ id: entry.id, label: `${entry.code} · ${entry.name}` }))
+        : draft.scope === "product_type"
+          ? productTypes.map((type) => ({ id: type, label: type }))
+          : [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Tolerance rules</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          A difference inside the tolerance is treated as a match and proceeds
+          automatically. The most specific active rule wins:{" "}
+          <span className="font-medium">
+            supplier → channel → product type → global
+          </span>
+          .
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-7">
+          <div className="space-y-1.5">
+            <Label htmlFor="tolerance-scope">Applies to</Label>
+            <Select
+              value={draft.scope}
+              onValueChange={(value) => setDraft({ ...draft, scope: value, target: "" })}
+            >
+              <SelectTrigger id="tolerance-scope">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="global">Everything (global)</SelectItem>
+                <SelectItem value="supplier">A supplier</SelectItem>
+                <SelectItem value="channel">A business channel</SelectItem>
+                <SelectItem value="product_type">A product type</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 lg:col-span-2">
+            <Label htmlFor="tolerance-target">Target</Label>
+            <Select
+              value={draft.target}
+              onValueChange={(value) => setDraft({ ...draft, target: value })}
+              disabled={draft.scope === "global"}
+            >
+              <SelectTrigger id="tolerance-target">
+                <SelectValue placeholder={draft.scope === "global" ? "—" : "Choose"} />
+              </SelectTrigger>
+              <SelectContent>
+                {targets.map((target) => (
+                  <SelectItem key={target.id} value={target.id}>
+                    {target.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Field label="Qty %" type="number" value={draft.qty} onChange={(v) => setDraft({ ...draft, qty: v })} />
+          <Field label="Price %" type="number" value={draft.price} onChange={(v) => setDraft({ ...draft, price: v })} />
+          <Field label="Weight %" type="number" value={draft.weight} onChange={(v) => setDraft({ ...draft, weight: v })} />
+          <div className="flex items-end">
+            <Button
+              onClick={save}
+              disabled={busy || (draft.scope !== "global" && !draft.target)}
+            >
+              {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+              Save rule
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-md border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Applies to</TableHead>
+                <TableHead>Target</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Weight</TableHead>
+                <TableHead>Note</TableHead>
+                <TableHead>Active</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rules.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-sm text-muted-foreground">
+                    No rule yet — every difference is reviewed by a person.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rules.map((rule) => (
+                  <TableRow key={rule.id}>
+                    <TableCell className="capitalize">
+                      {rule.scope.replace("_", " ")}
+                    </TableCell>
+                    <TableCell className="font-medium">{rule.target}</TableCell>
+                    <TableCell className="tnum text-right">
+                      {rule.qtyTolerancePct}%
+                    </TableCell>
+                    <TableCell className="tnum text-right">
+                      {rule.priceTolerancePct}%
+                    </TableCell>
+                    <TableCell className="tnum text-right">
+                      {rule.weightTolerancePct}%
+                    </TableCell>
+                    <TableCell className="max-w-[20rem] text-xs text-muted-foreground">
+                      {rule.note ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={
+                          rule.active
+                            ? "text-xs text-success"
+                            : "text-xs text-muted-foreground"
+                        }
+                      >
+                        {rule.active ? "Active" : "Inactive"}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
