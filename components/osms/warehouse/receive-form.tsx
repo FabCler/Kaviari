@@ -37,7 +37,6 @@ interface WeighedItem {
   key: string;
   itemNo: string;
   weight: string;
-  allocationLineId: string | null;
   condition: "good" | "damaged" | "rejected";
 }
 
@@ -124,7 +123,6 @@ export function ReceiveForm({
             key: `item-${poLineId}-${number}-${Date.now()}`,
             itemNo: `${line.productCode}-${String(number).padStart(2, "0")}`,
             weight: "",
-            allocationLineId: line.allocationLines[0]?.id ?? null,
             condition: "good",
           });
         }
@@ -172,7 +170,6 @@ export function ReceiveForm({
               ? line.items.map((item) => ({
                   itemNo: item.itemNo,
                   weight: Number(item.weight),
-                  allocationLineId: item.allocationLineId,
                   storageLocation: line.storageLocation || null,
                   lotNumber: line.lotNumber || null,
                   expiryDate: line.expiryDate || null,
@@ -374,7 +371,6 @@ export function ReceiveForm({
                               <TableHead className="w-40">Item no.</TableHead>
                               <TableHead className="w-32">Weight (KG)</TableHead>
                               <TableHead className="w-32">Condition</TableHead>
-                              <TableHead>Customer</TableHead>
                               <TableHead className="w-10" />
                             </TableRow>
                           </TableHeader>
@@ -422,32 +418,6 @@ export function ReceiveForm({
                                       <SelectItem value="good">Good</SelectItem>
                                       <SelectItem value="damaged">Damaged</SelectItem>
                                       <SelectItem value="rejected">Rejected</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell>
-                                  <Select
-                                    value={item.allocationLineId ?? "none"}
-                                    onValueChange={(value) =>
-                                      updateItem(line.poLineId, item.key, {
-                                        allocationLineId:
-                                          value === "none" ? null : value,
-                                      })
-                                    }
-                                  >
-                                    <SelectTrigger aria-label="Customer for this item">
-                                      <SelectValue placeholder="Choose" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">Unassigned</SelectItem>
-                                      {line.allocationLines.map((allocation) => (
-                                        <SelectItem
-                                          key={allocation.id}
-                                          value={allocation.id}
-                                        >
-                                          {allocation.label}
-                                        </SelectItem>
-                                      ))}
                                     </SelectContent>
                                   </Select>
                                 </TableCell>
@@ -515,37 +485,27 @@ export function ReceiveForm({
   );
 }
 
+/**
+ * Flow §6.2 — the warehouse's job on a weighed line is to account for the
+ * weight, not to decide who gets which piece. So this reports the pieces and
+ * their total against the line, and says plainly where the line goes next.
+ */
 function AssignmentSummary({ line }: { line: LineState }) {
-  const assigned = new Map<string, number>();
-  for (const item of line.items) {
-    if (!item.allocationLineId) continue;
-    assigned.set(
-      item.allocationLineId,
-      round((assigned.get(item.allocationLineId) ?? 0) + (Number(item.weight) || 0))
-    );
-  }
-  const unassigned = line.items.filter((item) => !item.allocationLineId).length;
+  const weighed = totalWeight(line);
+  const recorded = Number(line.actualQuantity) || 0;
+  const balanced = Math.abs(weighed - recorded) <= 0.05;
 
   return (
     <div className="space-y-1 text-xs">
-      {line.allocationLines.map((allocation) => {
-        const value = assigned.get(allocation.id) ?? 0;
-        const ok = Math.abs(value - allocation.quantity) <= 0.05;
-        return (
-          <div
-            key={allocation.id}
-            className={ok ? "text-success" : "text-warning"}
-          >
-            {allocation.label}: {formatNumber(value)} assigned by weight
-            {ok ? " ✓" : ` (allocated ${formatNumber(allocation.quantity)})`}
-          </div>
-        );
-      })}
-      {unassigned > 0 ? (
-        <div className="text-destructive">
-          {unassigned} item(s) not assigned to a customer.
-        </div>
-      ) : null}
+      <div className={balanced ? "text-success" : "text-warning"}>
+        {line.items.length} piece{line.items.length === 1 ? "" : "s"} weighing{" "}
+        {formatNumber(weighed)} in total
+        {balanced ? " ✓" : ` (the line records ${formatNumber(recorded)})`}
+      </div>
+      <div className="text-muted-foreground">
+        Sales chooses which piece goes to which customer once this receipt is
+        saved.
+      </div>
     </div>
   );
 }

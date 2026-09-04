@@ -128,7 +128,9 @@ export interface ItemAssignment {
 export function validateItemAssignments(
   items: ItemAssignment[],
   lineQuantities: Map<string, number>,
-  tolerance = 0.01
+  tolerance = 0.01,
+  /** Customer names by allocation-line id, so an error reads like a sentence. */
+  labels?: Map<string, string>
 ): { ok: boolean; errors: string[]; assignedByLine: Map<string, number> } {
   const errors: string[] = [];
   const assignedByLine = new Map<string, number>();
@@ -153,7 +155,7 @@ export function validateItemAssignments(
     const assigned = assignedByLine.get(lineId) ?? 0;
     if (Math.abs(assigned - promised) > tolerance) {
       errors.push(
-        `Allocation line ${lineId}: ${assigned} assigned by weight vs ${promised} allocated.`
+        `${labels?.get(lineId) ?? `Allocation line ${lineId}`}: ${assigned} assigned by weight vs ${promised} allocated.`
       );
     }
   }

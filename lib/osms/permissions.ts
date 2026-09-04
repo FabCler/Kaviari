@@ -23,6 +23,10 @@ export const PERMISSIONS = [
   "sales.reviewDifference",
   "sales.adjustSo",
   "sales.allocate",
+  // Placing an individual weighed piece with a customer is a commercial
+  // decision, not a warehouse one (flow §6.2 → §7 → §8): the warehouse weighs
+  // and packs, sales chooses who gets which fish.
+  "sales.pickItems",
   // warehouse
   "warehouse.view",
   "warehouse.receive",
@@ -69,6 +73,7 @@ const SALES: Permission[] = [
   "sales.reviewDifference",
   "sales.adjustSo",
   "sales.allocate",
+  "sales.pickItems",
   "exceptions.manage",
   "documents.view",
   "dashboard.view",
@@ -81,6 +86,9 @@ const WAREHOUSE: Permission[] = [
   "warehouse.recordWeights",
   "warehouse.ship",
   "warehouse.stock",
+  // The warehouse still books an allocation, but `sales.pickItems` is
+  // deliberately absent: it may not decide which weighed piece goes to which
+  // customer. It weighs, sales places, the warehouse packs.
   "sales.allocate",
   "exceptions.manage",
   "documents.view",

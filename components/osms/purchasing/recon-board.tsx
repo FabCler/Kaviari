@@ -32,7 +32,8 @@ import {
   QUANTITY_VARIANCE_LABELS,
   QUANTITY_VARIANCE_REASONS,
 } from "@/lib/osms/domain";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
+import { SlaBadge, PriorityBadge } from "@/components/osms/sla-badge";
 import { cn } from "@/lib/utils";
 
 /**
@@ -67,6 +68,10 @@ export interface ReconRow {
   remark: string | null;
   reviewedByName: string | null;
   currency: string;
+  /** Flow §4 — the difference has to be settled before the goods arrive. */
+  deliveryDate: string | null;
+  dueDate: string | null;
+  priority: string;
 }
 
 export function ReconBoard({
@@ -95,6 +100,7 @@ export function ReconBoard({
                 <TableHead className="text-right">Invoice price</TableHead>
                 <TableHead className="text-right">Price diff</TableHead>
                 <TableHead className="text-right">Price diff %</TableHead>
+                <TableHead>Deadline</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead />
               </TableRow>
@@ -153,6 +159,18 @@ export function ReconBoard({
                         : `${row.priceDiffPct > 0 ? "+" : ""}${formatNumber(row.priceDiffPct, 1)}%`}
                     </TableCell>
                     <TableCell>
+                      <SlaBadge
+                        dueDate={row.dueDate}
+                        done={row.status === "approved"}
+                      />
+                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <PriorityBadge priority={row.priority} />
+                        {row.deliveryDate ? (
+                          <span>arrives {formatDate(row.deliveryDate)}</span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <ToneBadge tone={documentTone(row.status)}>
                         {humanize(row.status)}
                       </ToneBadge>
@@ -184,7 +202,7 @@ export function ReconBoard({
                   </TableRow>
                   {openId === row.id ? (
                     <TableRow className="bg-accent/30 hover:bg-accent/30">
-                      <TableCell colSpan={12} className="p-0">
+                      <TableCell colSpan={13} className="p-0">
                         <ReviewForm row={row} onDone={() => setOpenId(null)} />
                       </TableCell>
                     </TableRow>
@@ -257,6 +275,27 @@ function ReviewForm({ row, onDone }: { row: ReconRow; onDone: () => void }) {
     }
   }
 
+  // Flow §4 — the correction is due before the goods arrive. Past that point
+  // the warehouse is holding a delivery it is not allowed to book in, so the
+  // form says so rather than leaving purchasing to work it out from a date.
+  const arrival = row.deliveryDate ? new Date(row.deliveryDate) : null;
+  const daysToArrival =
+    arrival == null
+      ? null
+      : Math.round(
+          (Date.UTC(
+            arrival.getUTCFullYear(),
+            arrival.getUTCMonth(),
+            arrival.getUTCDate()
+          ) -
+            Date.UTC(
+              new Date().getUTCFullYear(),
+              new Date().getUTCMonth(),
+              new Date().getUTCDate()
+            )) /
+            86_400_000
+        );
+
   return (
     <div className="space-y-3 px-6 py-4">
       <p className="text-sm">
@@ -264,6 +303,24 @@ function ReviewForm({ row, onDone }: { row: ReconRow; onDone: () => void }) {
         quantity — not the ordered quantity — drives the sales review,
         allocation and receiving.
       </p>
+      {daysToArrival != null ? (
+        <p
+          className={cn(
+            "text-sm",
+            daysToArrival < 0
+              ? "font-medium text-destructive"
+              : daysToArrival <= 1
+                ? "font-medium text-warning"
+                : "text-muted-foreground"
+          )}
+        >
+          {daysToArrival < 0
+            ? `The goods were due ${Math.abs(daysToArrival)} day${Math.abs(daysToArrival) === 1 ? "" : "s"} ago — receiving is blocked until this line is settled.`
+            : daysToArrival === 0
+              ? "The goods arrive today. Settle this line before the truck is unloaded."
+              : `${daysToArrival} day${daysToArrival === 1 ? "" : "s"} until the goods arrive on ${formatDate(row.deliveryDate!)}.`}
+        </p>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label htmlFor={`corrected-${row.id}`}>

@@ -654,12 +654,23 @@ model PoInvoiceRecon {
   status            String    @default("pending_review")
   reviewedByName    String?
   reviewedAt        DateTime?
+
+  // Purchasing must settle the difference BEFORE the goods arrive (flow §4):
+  // the warehouse cannot receive against a line whose invoice has not been
+  // reconciled, so a late review stops the truck. The due date is derived
+  // from the PO line's delivery date, never typed by hand.
+  deliveryDate      DateTime?
+  dueDate           DateTime?
+  // low | medium | high | critical — lifts as the delivery date approaches.
+  priority          String    @default("medium")
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@unique([poLineId, invoiceLineId])
   @@index([poId])
   @@index([status])
+  @@index([dueDate])
   @@map("po_invoice_reconciliation")
 }
 
@@ -798,6 +809,14 @@ model ReceivingLine {
   storageLocation  String?
   // pending | received | partial | rejected
   status           String               @default("pending")
+  // Weighed goods only (flow §6.2 → §7 → §8). The warehouse weighs each
+  // piece, then SALES decides which piece goes to which customer, then the
+  // warehouse packs what sales chose. Until sales has picked, no shipment may
+  // touch these items.
+  // not_required | awaiting_sales_pick | picked
+  pickStatus       String               @default("not_required")
+  pickedByName     String?
+  pickedAt         DateTime?
   remark           String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt

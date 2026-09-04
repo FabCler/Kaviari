@@ -2,7 +2,7 @@
 
 ## 1. หลักการออกแบบหน้าจอ (§19)
 
-- **Left sidebar navigation** — เมนูเดิมของ Kaviari Cellar + กลุ่มใหม่
+- **Left sidebar navigation** — เมนูของ OSMS จัดกลุ่มตามลำดับงาน
   "Supply chain" ที่กรองตามแผนกของผู้ใช้
 - **Status cards** — ตัวเลขสำคัญด้านบนทุกหน้า กดแล้วไปที่คิวที่นับมา
 - **Data table** — ตารางหลักพร้อม search + filter, เลื่อนแนวนอนได้เมื่อคอลัมน์เยอะ
@@ -126,7 +126,7 @@ every business channel.
 │ Ordering more than the demand requires a reason — it is stored on the line,   │
 │ the audit trail and the supplier summary.                                     │
 │                                                                               │
-│ Supplier [KAV · Kaviari Paris ▾]   Remark [                              ]    │
+│ Supplier [CHP · Caviar House Paris ▾]   Remark [                              ]    │
 │                                                                               │
 │ Product        │ Required │ Order qty │ Unit │ Price │ Delivery │ Diff │ Reason│
 │ ───────────────┼──────────┼───────────┼──────┼───────┼──────────┼──────┼───────│
@@ -149,9 +149,9 @@ What was ordered against what was asked for, per supplier and product.
 
 Supplier    │ PO        │ Product   │ Required │ Order │ MOQ │ Diff │ Diff % │ Reason │ Delivery │ Status
 ────────────┼───────────┼───────────┼──────────┼───────┼─────┼──────┼────────┼────────┼──────────┼────────
-Kaviari     │ PO-0003   │ Kristal   │  18 Tin  │ 24 Tin│  1  │ +6 🟡│ +33.3% │ MOQ    │ 12 Oct   │ Pending
+Caviar House     │ PO-0003   │ Kristal   │  18 Tin  │ 24 Tin│  1  │ +6 🟡│ +33.3% │ MOQ    │ 12 Oct   │ Pending
 Paris       │           │ 30g       │          │       │     │      │        │        │          │ invoice
-Kaviari     │ PO-0001   │ Kristal   │  24 Tin  │ 24 Tin│  2  │   0  │   0.0% │ –      │  4 Oct   │ Ready
+Caviar House     │ PO-0001   │ Kristal   │  24 Tin  │ 24 Tin│  2  │   0  │   0.0% │ –      │  4 Oct   │ Ready
 Paris       │           │ 125g      │          │       │     │      │        │        │          │ to receive
 ────────────┴───────────┴───────────┼──────────┼───────┼─────┼──────┼────────┴────────┴──────────┴────────
                             Total   │  42      │  48   │     │ +6   │
@@ -168,7 +168,7 @@ Quantity and price compared line by line. Tolerance: 0% on quantity, 0% on price
 PO / Invoice        │ Product   │PO qty│Inv qty│Qty diff│Qty %  │PO price│Inv price│Price diff│Status  │
 ────────────────────┼───────────┼──────┼───────┼────────┼───────┼────────┼─────────┼──────────┼────────┤
 PO-2026-0002        │ Oscietra  │  36  │  30   │  -6 🔴 │-16.7% │ 103.75 │ 107.90  │ +4.15 🟡 │Pending │[Review]
-INV-KAV-88044 · Kav │ 3134      │      │       │        │       │        │         │          │review  │
+INV-CHP-88044 · Kav │ 3134      │      │       │        │       │        │         │          │review  │
 
   ┌─ Review ────────────────────────────────────────────────────────────────────┐
   │ Confirm the quantity that actually arrived. From here on, the corrected      │
@@ -177,7 +177,7 @@ INV-KAV-88044 · Kav │ 3134      │      │       │        │       │  
   │                                                                             │
   │ Corrected qty (Tin) │ Quantity reason (required) │ Price reason (required)  │
   │ [        30       ] │ [Supplier delivered short▾]│ [Price list updated  ▾]  │
-  │ Remark [Agreed with Kaviari on 3 April                               ]      │
+  │ Remark [Agreed with the supplier on 3 April                               ]      │
   │                                                                             │
   │ [Confirm the corrected quantity] [Keep under review] [Reject]               │
   └─────────────────────────────────────────────────────────────────────────────┘
@@ -186,13 +186,13 @@ INV-KAV-88044 · Kav │ 3134      │      │       │        │       │  
 ### 4.4 Supplier invoice verification (§1.3)
 
 ```
-INV-KAV-88044                                    [All invoices] [Open the PO]
-Kaviari Paris · INV-KAV-88044.pdf · read automatically
+INV-CHP-88044                                    [All invoices] [Open the PO]
+Caviar House Paris · INV-CHP-88044.pdf · read automatically
 
 ┌ Invoice header ──────────────────────────────── [Pending verification 🟡] ┐
 │ PO printed on the document: PO-2026-0002                                   │
 │ Invoice number │ Purchase order          │ Invoice date │ Delivery date    │
-│ [INV-KAV-88044]│ [PO-2026-0002 · Kaviari]│ [02/10/2026] │ [06/10/2026]     │
+│ [INV-CHP-88044]│ [PO-2026-0002 · CHP    ]│ [02/10/2026] │ [06/10/2026]     │
 └────────────────────────────────────────────────────────────────────────────┘
 
 ┌ Extracted lines (1) ───────────────────────────────────────────────────────┐
@@ -280,9 +280,9 @@ Only orders that cleared all six checks can be received.
 
 PO        │Supplier      │Expected│Lines│Receipt│Gate                        │
 ──────────┼──────────────┼────────┼─────┼───────┼────────────────────────────┤
-PO-0001   │Kaviari Paris │ 4 Oct  │  1  │RCV-0001│ Completed 🟢              │[Open]
+PO-0001   │Caviar House Paris │ 4 Oct  │  1  │RCV-0001│ Completed 🟢              │[Open]
 PO-0004   │Nordic Seafood│ 2 Oct  │  1  │   –   │ Ready to receive 🟢         │[Receive]
-PO-0002   │Kaviari Paris │ 6 Oct  │  1  │   –   │ Blocked 🔴                 │[Why blocked?]
+PO-0002   │Caviar House Paris │ 6 Oct  │  1  │   –   │ Blocked 🔴                 │[Why blocked?]
           │              │        │     │       │ Quantity passed purchasing │
           │              │        │     │       │ reconciliation — 1 line(s) │
           │              │        │     │       │ still pending review.      │
@@ -341,7 +341,7 @@ Allocated quantities that have been received and are ready to leave.
 
 ```
 SHT-2026-0001                                    [All cases] [Document trace]
-Kaviari Norwegian Smoked Salmon · PO-2026-0005 · Nordic Seafood · delivery 6 Sep
+Norwegian Smoked Salmon         · PO-2026-0005 · Nordic Seafood · delivery 6 Sep
 
 ┌ The shortfall ──────────────────────────────── [Pending approval 🟡] ──────┐
 │ TOTAL ORDERED BY CUSTOMERS    ACTUALLY AVAILABLE       SHORT                │
@@ -409,7 +409,7 @@ Performance reports
 Supplier performance
 Supplier    │PO lines│PO qty│Inv qty│Actual│Short%│Excess%│Price var│Qty acc│On time
 ────────────┼────────┼──────┼───────┼──────┼──────┼───────┼─────────┼───────┼───────
-Kaviari     │   4    │  108 │   102 │   24 │25.0% │  0.0% │    4.15 │ 75.0% │100.0%
+Caviar House     │   4    │  108 │   102 │   24 │25.0% │  0.0% │    4.15 │ 75.0% │100.0%
 Nordic      │   3    │2,120 │ 2,070 │   20 │33.3% │  0.0% │    0.00 │ 66.7% │100.0%
 
 Channel performance
@@ -424,7 +424,7 @@ Channel │Customers│SOs│SO qty│PO qty│Actual│Shipment│Short│Exces
 ### 6.4 Management — Document trace (§37)
 
 ```
-Purchase order PO-2026-0001            Kaviari Paris · 24 Sep 2026 · Mandarin Oriental
+Purchase order PO-2026-0001            Caviar House Paris · 24 Sep 2026 · Mandarin Oriental
 
 ┌ Workflow ───────────────────────────────────────────────────────────────────┐
 │ ✓SO/PR — ✓PO — ✓Invoice — ✓PO vs Invoice — ✓Sales review — ✓Allocation —    │
@@ -463,7 +463,7 @@ The supply-chain fields on the shared product catalog.
 
 Code│Name           │Thai name         │Stock│Purchase│Conv.│MOQ│Default supplier│Weighed
 ────┼───────────────┼──────────────────┼─────┼────────┼─────┼───┼────────────────┼───────
-3193│Kristal 125g   │[คาเวียร์ คริสตัล] │ Tin │ [BOX]  │[12] │[2]│[Kaviari Paris▾]│  ○
+3193│Kristal 125g   │[คาเวียร์ คริสตัล] │ Tin │ [BOX]  │[12] │[2]│[Caviar House Paris▾]│  ○
 3208│Fz King Crab   │[ขาปูคิงแครบ…]     │ KG  │ [KG]   │[1]  │[20]│[Nordic Seafood▾]│ ●
 
 Tolerances

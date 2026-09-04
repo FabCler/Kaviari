@@ -27,7 +27,7 @@
 
 | Code | Name | Currency | Default unit | MOQ | Lead time |
 |---|---|---|---|---:|---:|
-| `KAV` | Kaviari Paris | EUR | TIN | – | 21 d |
+| `KAV` | Caviar House Paris | EUR | TIN | – | 21 d |
 | `NORSEA` | Nordic Seafood A/S | EUR | KG | 100 | 14 d |
 | `OCEANTH` | Ocean Thai Import | THB | KG | 50 | 7 d |
 
@@ -40,8 +40,8 @@
 | `C003` | Sirocco Sky Dining | สิรอคโค | **FS** | Bangkok — Silom | Ploy |
 | `C010` | Gourmet Market Paragon | กูร์เมต์ มาร์เก็ต พารากอน | **RTL** | Bangkok — Siam | Nattapong |
 | `C011` | Villa Market Thonglor | วิลล่า มาร์เก็ต ทองหล่อ | **RTL** | Bangkok — Thonglor | Nattapong |
-| `S001` | Kaviari Store Bangkok | ร้านคาเวียรี กรุงเทพ | **STR** | Bangkok — Sukhumvit 39 | Mai |
-| `S002` | Kaviari Store Phuket | ร้านคาเวียรี ภูเก็ต | **STR** | Phuket — Bang Tao | Mai |
+| `S001` | Flagship Store Bangkok | ร้านคาเวียรี กรุงเทพ | **STR** | Bangkok — Sukhumvit 39 | Mai |
+| `S002` | Flagship Store Phuket | ร้านคาเวียรี ภูเก็ต | **STR** | Phuket — Bang Tao | Mai |
 | `CK001` | Central Kitchen Bangna | ครัวกลาง บางนา | **CK** | Samut Prakan — Bangna | Korn |
 
 ### Units & conversions
@@ -75,7 +75,7 @@ SO-2026-0101  Mandarin Oriental   Kristal 125g   24 Tin
    ↓
 PR-2026-0101  Ploy
    ↓
-PO-2026-0001  Kaviari Paris       2 BOX = 24 Tin  @ 95.62 EUR
+PO-2026-0001  Caviar House Paris       2 BOX = 24 Tin  @ 95.62 EUR
    ↓
 INV-KAV-88012  verified            24 Tin  @ 95.62 EUR
    ↓
@@ -92,9 +92,9 @@ SO reconciliation → match → completed อัตโนมัติ
 ```
 SO-2026-0102  Blue Elephant       Oscietra 125g  36 Tin
    ↓
-PO-2026-0002  Kaviari Paris       3 BOX = 36 Tin  @ 103.75 EUR
+PO-2026-0002  Caviar House Paris       3 BOX = 36 Tin  @ 103.75 EUR
    ↓
-INV-KAV-88044  verified            30 Tin  @ 107.90 EUR   (แก้ด้วยมือ: quantity)
+INV-CHP-88044  verified            30 Tin  @ 107.90 EUR   (แก้ด้วยมือ: quantity)
    ↓
 reconciliation: qty −6 (−16.67%)  🔴 short
                 price +4.15 (+4%) 🟡 higher
@@ -110,7 +110,7 @@ notification   "PO-2026-0002: 1 line does not match the invoice"
 ```
 SO-2026-0103  Sirocco Sky Dining  Kristal 30g   18 Tin
    ↓
-PO-2026-0003  Kaviari Paris       1 BOX = 24 Tin
+PO-2026-0003  Caviar House Paris       1 BOX = 24 Tin
               requiredQuantity 18, adjustmentReason = MOQ
               note: "Minimum one box of 24 tins."
    ↓
@@ -144,7 +144,7 @@ EXC-2026-0003  WEIGHT_BASED_PRODUCT  medium → Warehouse
 ```
 SO-2026-0201  FS   Mandarin Oriental      Salmon  1,000 KG
 SO-2026-0202  RTL  Gourmet Market         Salmon    500 KG
-SO-2026-0203  STR  Kaviari Store Bangkok  Salmon    300 KG
+SO-2026-0203  STR  Flagship Store Bangkok  Salmon    300 KG
 SO-2026-0204  CK   Central Kitchen Bangna Salmon    200 KG
                                           Total SO 2,000 KG
    ↓  SO-PO mapping (many-to-many)

@@ -98,6 +98,29 @@ export const RECEIVING_STATUSES = [
 ] as const;
 export type ReceivingStatus = (typeof RECEIVING_STATUSES)[number];
 
+/**
+ * Who still owes an action on a weighed delivery (flow §6.2 → §7 → §8).
+ *
+ * `not_required` covers everything that divides evenly — the warehouse packs
+ * it straight away. A weight-controlled product cannot: ten fish of different
+ * weights have to be matched to customers one by one, and that is a SALES
+ * decision, not a warehouse one. So the warehouse records the weights, the
+ * line parks at `awaiting_sales_pick`, and only once sales has chosen does it
+ * become `picked` and packable.
+ */
+export const PICK_STATUSES = [
+  "not_required",
+  "awaiting_sales_pick",
+  "picked",
+] as const;
+export type PickStatus = (typeof PICK_STATUSES)[number];
+
+export const PICK_STATUS_LABELS: Record<PickStatus, string> = {
+  not_required: "Divides evenly",
+  awaiting_sales_pick: "Waiting for sales to pick",
+  picked: "Picked by sales",
+};
+
 export const ALLOCATION_STATUSES = ["draft", "completed", "cancelled"] as const;
 export type AllocationStatus = (typeof ALLOCATION_STATUSES)[number];
 
@@ -214,6 +237,7 @@ export const EXCEPTION_TYPES = [
   "PACK_SIZE",
   "WEIGHT_BASED_PRODUCT",
   "MULTI_CUSTOMER_ALLOCATION",
+  "RECON_PAST_DELIVERY",
   "DUPLICATE_DOCUMENT",
   "INVALID_DATE",
   "OTHER",
@@ -238,6 +262,7 @@ export const EXCEPTION_LABELS: Record<ExceptionType, string> = {
   PACK_SIZE: "Pack size",
   WEIGHT_BASED_PRODUCT: "Weight-based product",
   MULTI_CUSTOMER_ALLOCATION: "Multi-customer allocation",
+  RECON_PAST_DELIVERY: "Reconciliation past the delivery date",
   DUPLICATE_DOCUMENT: "Duplicate document",
   INVALID_DATE: "Invalid date",
   OTHER: "Other",

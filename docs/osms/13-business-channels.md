@@ -52,8 +52,8 @@ Retail (RTL)
  ├─ Gourmet Market Paragon       SO-2026-0103, SO-2026-0202
  └─ Villa Market Thonglor
 Store (STR)
- ├─ Kaviari Store Bangkok        SO-2026-0105, SO-2026-0203
- └─ Kaviari Store Phuket
+ ├─ Flagship Store Bangkok        SO-2026-0105, SO-2026-0203
+ └─ Flagship Store Phuket
 Central Kitchen (CK)
  └─ Central Kitchen Bangna       SO-2026-0107, SO-2026-0204
 ```

@@ -155,7 +155,7 @@ const CUSTOMERS = [
   // Store
   {
     code: "S001",
-    name: "Kaviari Store Bangkok",
+    name: "Flagship Store Bangkok",
     nameTh: "ร้านคาเวียรี กรุงเทพ",
     channel: "STR",
     deliveryLocation: "Bangkok — Sukhumvit 39",
@@ -163,7 +163,7 @@ const CUSTOMERS = [
   },
   {
     code: "S002",
-    name: "Kaviari Store Phuket",
+    name: "Flagship Store Phuket",
     nameTh: "ร้านคาเวียรี ภูเก็ต",
     channel: "STR",
     deliveryLocation: "Phuket — Bang Tao",
@@ -571,7 +571,7 @@ export async function seedSupplyChain(osms: PrismaClient): Promise<void> {
       supplierId: supplierByCode.get("CHP")!,
       poId: poA.id,
       poNumberRaw: "PO-2026-0001",
-      supplierNameRaw: "Kaviari Paris",
+      supplierNameRaw: "Caviar House Paris",
       invoiceDate: day(-3),
       deliveryDate: day(4),
       currency: "EUR",
@@ -756,7 +756,7 @@ export async function seedSupplyChain(osms: PrismaClient): Promise<void> {
       supplierId: supplierByCode.get("CHP")!,
       poId: poB.id,
       poNumberRaw: "PO-2026-0002",
-      supplierNameRaw: "Kaviari Paris",
+      supplierNameRaw: "Caviar House Paris",
       invoiceDate: day(-1),
       deliveryDate: day(6),
       currency: "EUR",
@@ -902,7 +902,7 @@ export async function seedSupplyChain(osms: PrismaClient): Promise<void> {
       expectedDeliveryDate: day(12),
       currency: "EUR",
       status: "issued",
-      notes: "Rounded up to a full box — Kaviari does not split boxes.",
+      notes: "Rounded up to a full box — the supplier does not split boxes.",
       createdByName: "Anna (purchasing)",
       lines: {
         create: [
@@ -1192,6 +1192,92 @@ export async function seedSupplyChain(osms: PrismaClient): Promise<void> {
       },
     });
   }
+
+  // Flow §6.2 → §7 — the warehouse has weighed ten crab legs; each one weighs
+  // something different, so the line is parked waiting for SALES to decide
+  // which piece goes to which customer. This is the case the Item picks screen
+  // opens on.
+  const allocD = await osms.allocation.create({
+    data: {
+      allocationNumber: "ALL-2026-0004",
+      productId: kingCrab.id,
+      poLineId: poD.lines[0].id,
+      actualQuantity: 20,
+      unit: "KG",
+      allocatedQuantity: 20,
+      warehouseQuantity: 0,
+      unallocatedQuantity: 0,
+      status: "completed",
+      createdByName: "Ploy (sales)",
+      completedByName: "Ploy (sales)",
+      completedAt: day(-1),
+      lines: {
+        create: [
+          {
+            target: "customer",
+            customerId: customerByCode.get("C001")!,
+            soLineId: soD1.lines[0].id,
+            quantity: 12,
+            unit: "KG",
+            reason: "Confirmed order",
+          },
+          {
+            target: "customer",
+            customerId: customerByCode.get("S001")!,
+            soLineId: soD2.lines[0].id,
+            quantity: 8,
+            unit: "KG",
+            reason: "Confirmed order",
+          },
+        ],
+      },
+    },
+    include: { lines: true },
+  });
+
+  const crabWeights = [2.4, 1.9, 2.2, 1.7, 2.6, 1.8, 2.1, 2.3, 1.6, 1.4];
+  await osms.receiving.create({
+    data: {
+      receiptNumber: "GRN-2026-0004",
+      poId: poD.id,
+      supplierId: supplierByCode.get("OCEANTH")!,
+      receivedDate: day(-1),
+      status: "received",
+      receivedByName: "Chai (warehouse)",
+      notes: "Weighed piece by piece — waiting for sales to place them.",
+      lines: {
+        create: [
+          {
+            poLineId: poD.lines[0].id,
+            productId: kingCrab.id,
+            expectedQuantity: 20,
+            actualQuantity: round(crabWeights.reduce((sum, w) => sum + w, 0)),
+            unit: "KG",
+            lotNumber: "L2608-KC",
+            expiryDate: day(28),
+            storageLocation: "FRZ-B1",
+            status: "received",
+            // The warehouse weighed; sales has not placed the pieces yet.
+            pickStatus: "awaiting_sales_pick",
+            items: {
+              create: crabWeights.map((weight, index) => ({
+                itemNo: `CRAB-${String(index + 1).padStart(2, "0")}`,
+                weight,
+                unit: "KG",
+                lotNumber: "L2608-KC",
+                expiryDate: day(28),
+                storageLocation: "FRZ-B1",
+                condition: "good",
+                receivedAt: day(-1),
+                status: "on_hand",
+              })),
+            },
+          },
+        ],
+      },
+    },
+  });
+  void allocD;
 
   await osms.exception.create({
     data: {
@@ -1750,6 +1836,47 @@ export async function seedSupplyChain(osms: PrismaClient): Promise<void> {
         dueDate: day(20),
         status: "open",
         createdByName: "System",
+      },
+    });
+  }
+
+  // Flow §4 — every reconciliation carries the deadline it inherits from its
+  // PO line. Derived in one pass here for the same reason the workflow derives
+  // it rather than storing a typed date: there is one definition of "due".
+  console.log("Deriving reconciliation deadlines…");
+  const reconRows = await osms.poInvoiceRecon.findMany({
+    include: { poLine: { select: { deliveryDate: true } } },
+  });
+  for (const row of reconRows) {
+    const delivery = row.poLine.deliveryDate;
+    const due = new Date(delivery);
+    due.setUTCDate(due.getUTCDate() - 2); // SLA_LEAD_DAYS.poInvoiceReconciliation
+    const daysOut = Math.round(
+      (Date.UTC(
+        delivery.getUTCFullYear(),
+        delivery.getUTCMonth(),
+        delivery.getUTCDate()
+      ) -
+        Date.UTC(
+          new Date().getUTCFullYear(),
+          new Date().getUTCMonth(),
+          new Date().getUTCDate()
+        )) /
+        86_400_000
+    );
+    await osms.poInvoiceRecon.update({
+      where: { id: row.id },
+      data: {
+        deliveryDate: delivery,
+        dueDate: due,
+        priority:
+          daysOut <= 0
+            ? "critical"
+            : daysOut <= 1
+              ? "high"
+              : daysOut <= 3
+                ? "medium"
+                : "low",
       },
     });
   }

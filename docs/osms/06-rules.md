@@ -332,3 +332,29 @@ supplier, PO, invoice, **SO ต้นทาง**, channel, lot, วันหม�
 
 ถ้าจำนวนมีความต่าง ระบบสร้าง task (exception + notification) ให้แผนกที่รับผิดชอบ
 โดยอัตโนมัติ
+
+## BR-20 — แก้ไข PO/Invoice ให้เสร็จก่อนวันส่งสินค้า (flow §4)
+
+| | |
+|---|---|
+| **กติกา** | ผลต่างระหว่าง PO กับ Invoice ต้องถูกปิดก่อน `deliveryDate` ของ PO line นั้น |
+| **ต่างกัน (§4.1)** | ต้องเลือกเหตุผล (`quantityReason` / `priceReason`) และกรอกจำนวนที่ยืนยัน — API ตอบ `422` ถ้าไม่มีเหตุผล |
+| **เท่ากัน (§4.2)** | ผ่านอัตโนมัติเมื่ออยู่ใน tolerance — `status = approved`, `reviewedByName = "System (auto-match)"` |
+| **Deadline** | `po_invoice_reconciliation.dueDate` = วันส่งสินค้า − `SLA_LEAD_DAYS.poInvoiceReconciliation` (2 วัน) — ระบบคำนวณเอง ไม่มีใครพิมพ์ |
+| **ความเร่งด่วน** | `priority` มาจากระยะถึงวันส่งสินค้า: เหลือ >3 วัน = low, ≤3 = medium, ≤1 = high, ถึงวัน/เลยแล้ว = critical (`priorityFor`) |
+| **เลยกำหนด** | `sweepOverdueReconciliations()` เปิด exception `RECON_PAST_DELIVERY` ให้ฝ่ายจัดซื้อ severity `high` priority `critical` และปิดเองเมื่อบรรทัดนั้นถูกปิด |
+| **ผลถ้าไม่ทำ** | ประตูรับสินค้าด่านที่ 3 ไม่ผ่าน → คลังรับของไม่ได้ทั้ง PO |
+| **โค้ด** | `lib/osms/workflow.ts` (สร้าง dueDate), `lib/osms/sla.ts` (`priorityFor`), `lib/osms/exceptions.ts` (`sweepOverdueReconciliations`), `app/api/osms/reconcile/route.ts` |
+
+## BR-21 — สินค้าชั่งทีละชิ้น: คลังชั่ง เซลเลือก คลังจัด (flow §6.2 → §7 → §8)
+
+| | |
+|---|---|
+| **กติกา** | ปลา 10 ตัวน้ำหนักไม่เท่ากัน แบ่งด้วยเลขคณิตไม่ได้ — **แผนกขาย** เป็นคนเลือกว่าตัวไหนให้ลูกค้าคนไหน |
+| **§6.2 คลัง** | กรอกน้ำหนักทุกชิ้น (`receiving_items.weight`) ผลรวมต้องตรงกับจำนวนที่รับ (±0.05) — คลัง **เลือกลูกค้าไม่ได้** |
+| **สถานะ** | บรรทัดนั้นไปที่ `receiving_lines.pickStatus = "awaiting_sales_pick"` |
+| **§7 เซล** | หน้า `/osms/sales/item-picks` — จับคู่ชิ้น → ลูกค้า ปุ่ม "Suggest a split" เสนอให้เฉย ๆ คนกดยืนยันเอง |
+| **การตรวจ** | ทุกชิ้นต้องมีเจ้าของ และน้ำหนักรวมของลูกค้าแต่ละรายต้องตรงกับที่จัดสรรไว้ (±0.05) — ไม่ผ่านตอบ `422` พร้อมชื่อลูกค้า |
+| **สิทธิ์** | `sales.pickItems` — แผนกคลังและจัดซื้อได้ `403` ที่ endpoint นี้ |
+| **§8 คลัง** | ส่งของได้เมื่อ `pickStatus = "picked"` เท่านั้น — ถ้ายังไม่เลือก `POST /api/osms/shipments` ตอบ `409` |
+| **โค้ด** | `app/api/osms/item-picks/route.ts`, `components/osms/sales/item-pick-board.tsx`, `lib/osms/allocation.ts` (`validateItemAssignments`), `app/api/osms/shipments/route.ts` |

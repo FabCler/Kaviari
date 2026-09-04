@@ -13,6 +13,7 @@ import {
   Database,
   FileSearch,
   FileUp,
+  Fish,
   Handshake,
   LayoutDashboard,
   LogOut,
@@ -128,6 +129,13 @@ const NAV_SECTIONS: NavSection[] = [
         href: "/osms/sales/allocation",
         label: "Customer allocation",
         icon: Handshake,
+        permission: "sales.view",
+      },
+      {
+        // Flow §7 — weighed goods wait here for sales to place each piece.
+        href: "/osms/sales/item-picks",
+        label: "Item picks",
+        icon: Fish,
         permission: "sales.view",
       },
       {

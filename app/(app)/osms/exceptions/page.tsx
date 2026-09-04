@@ -2,6 +2,7 @@ import { osms } from "@/lib/osms/db";
 import { currentScope } from "@/lib/osms/guard";
 import { narrowScope } from "@/lib/osms/channels";
 import { can } from "@/lib/osms/permissions";
+import { sweepOverdueReconciliations } from "@/lib/osms/exceptions";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { KpiCard } from "@/components/osms/kpi-card";
@@ -25,6 +26,11 @@ export default async function ExceptionsPage({
   if (!context) return <NoAccess what="the exception center" />;
   const { actor, scope } = context;
   const filters = await searchParams;
+  // Flow §4 — a PO/Invoice difference left open past the delivery date is a
+  // blocked truck nobody has been told about. Sweeping here means the board is
+  // never quietly out of date; the sweep is idempotent and also clears cases
+  // whose line has since been settled.
+  await sweepOverdueReconciliations();
   const visible = narrowScope(scope, filters.channel);
 
   const exceptions = await osms.exception.findMany({

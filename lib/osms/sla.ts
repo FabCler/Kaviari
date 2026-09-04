@@ -151,3 +151,23 @@ export function dueDateFor(
   // Never hand someone a due date that is already behind them.
   return due < now ? now : due;
 }
+
+/**
+ * How urgent a pending decision is, purely from how close the goods are.
+ *
+ * The pipeline's hard rule (flow §4) is that a difference must be settled
+ * BEFORE the delivery date — after that the warehouse is standing at the dock
+ * with goods it is not allowed to book in. So urgency is not a field anyone
+ * types: it is the distance to the delivery date.
+ */
+export function priorityFor(
+  deliveryDate: Date | null | undefined,
+  now = new Date()
+): Priority {
+  if (!deliveryDate) return "medium";
+  const days = daysBetween(now, deliveryDate);
+  if (days <= 0) return "critical";  // the goods are here, or already late
+  if (days <= 1) return "high";
+  if (days <= 3) return "medium";
+  return "low";
+}

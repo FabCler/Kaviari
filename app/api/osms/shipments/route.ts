@@ -41,7 +41,17 @@ export async function POST(request: Request) {
   const allocationLines = await osms.allocationLine.findMany({
     where: { id: { in: body.allocationLineIds } },
     include: {
-      allocation: { include: { product: true } },
+      allocation: {
+        include: {
+          product: true,
+          // The pick state lives on the receiving line, not on the items: at
+          // the moment nothing has been picked, an allocation line has NO
+          // items, so asking its items would always say "fine".
+          poLine: {
+            include: { receivingLines: { select: { pickStatus: true } } },
+          },
+        },
+      },
       items: true,
       shipmentLines: true,
     },
@@ -70,6 +80,22 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error: `Allocation ${notCompleted.allocation.allocationNumber} is not completed — shipment blocked (§21).`,
+      },
+      { status: 409 }
+    );
+  }
+  // Flow §8 — the warehouse packs what SALES chose. A weighed delivery whose
+  // pieces sales has not placed yet cannot leave the building, however tidy the
+  // totals look: the individual fish still belong to nobody.
+  const notPicked = allocationLines.find((line) =>
+    (line.allocation.poLine?.receivingLines ?? []).some(
+      (receivingLine) => receivingLine.pickStatus === "awaiting_sales_pick"
+    )
+  );
+  if (notPicked) {
+    return Response.json(
+      {
+        error: `${notPicked.allocation.product.name} is weighed piece by piece and sales has not placed the pieces yet — shipment blocked (flow §7).`,
       },
       { status: 409 }
     );

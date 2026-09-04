@@ -7,7 +7,6 @@ import { recordAudit } from "@/lib/osms/audit";
 import { notify } from "@/lib/osms/notify";
 import { round } from "@/lib/osms/units";
 import { confirmedQuantity } from "@/lib/osms/reconcile";
-import { validateItemAssignments } from "@/lib/osms/allocation";
 import { receiveIntoStock } from "@/lib/osms/warehouse-stock";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +23,6 @@ const itemSchema = z.object({
   lotNumber: z.string().max(60).nullable().optional(),
   expiryDate: z.string().nullable().optional(),
   storageLocation: z.string().max(120).nullable().optional(),
-  allocationLineId: z.string().nullable().optional(),
   condition: z.enum(["good", "damaged", "rejected"]).default("good"),
 });
 
@@ -127,7 +125,9 @@ export async function POST(request: Request) {
   }
 
   // §18 / §19 — weight-controlled products: every piece weighed, every piece
-  // assigned, no piece assigned twice, and never to a customer outside the SO.
+  // numbered once. Which customer gets which piece is NOT decided here: ten
+  // fish of different weights are a sales call, so the warehouse records the
+  // weights and the line parks at `awaiting_sales_pick` (flow §6.2 → §7 → §8).
   for (const line of body.lines) {
     const poLine = poLineById.get(line.poLineId)!;
     if (!poLine.product.weightControlled) continue;
@@ -146,46 +146,19 @@ export async function POST(request: Request) {
       .filter((itemNo, index, all) => all.indexOf(itemNo) !== index);
     if (duplicates.length > 0) {
       return Response.json(
-        { error: `Item number ${duplicates[0]} is used twice on this line.` },
+        { error: `Item number ${duplicates[0]} is used twice.` },
         { status: 422 }
       );
     }
 
-    const allocation = poLine.allocations[0];
-    const customerLines = (allocation?.lines ?? []).filter(
-      (allocationLine) => allocationLine.target === "customer"
-    );
-    const allowedLineIds = new Set(customerLines.map((entry) => entry.id));
-    const stray = items.find(
-      (item) => item.allocationLineId && !allowedLineIds.has(item.allocationLineId)
-    );
-    if (stray) {
+    // The weighed total has to land on what was actually received, or the
+    // pieces and the line quantity tell two different stories.
+    const weighed = round(items.reduce((sum, item) => sum + item.weight, 0));
+    if (Math.abs(weighed - line.actualQuantity) > 0.05) {
       return Response.json(
         {
-          error: `${stray.itemNo} is assigned to a customer that is not on this allocation.`,
+          error: `${poLine.product.name}: the ${items.length} weighed pieces total ${weighed} but the line records ${line.actualQuantity}.`,
         },
-        { status: 422 }
-      );
-    }
-
-    const lineQuantities = new Map(
-      customerLines.map((allocationLine) => [
-        allocationLine.id,
-        allocationLine.quantity,
-      ])
-    );
-    const check = validateItemAssignments(
-      items.map((item) => ({
-        itemNo: item.itemNo,
-        weight: item.weight,
-        allocationLineId: item.allocationLineId ?? null,
-      })),
-      lineQuantities,
-      0.05
-    );
-    if (!check.ok) {
-      return Response.json(
-        { error: check.errors[0], errors: check.errors },
         { status: 422 }
       );
     }
@@ -264,7 +237,8 @@ export async function POST(request: Request) {
     include: { lines: true },
   });
 
-  // Individually weighed pieces, with the customer each one goes to.
+  // Individually weighed pieces. `allocationLineId` stays null: sales decides
+  // which piece goes to which customer on the item-pick screen.
   for (const line of body.lines) {
     if (!line.items?.length) continue;
     const receivingLine = receiving.lines.find(
@@ -280,11 +254,15 @@ export async function POST(request: Request) {
         lotNumber: item.lotNumber ?? line.lotNumber ?? null,
         expiryDate: parseDay(item.expiryDate ?? line.expiryDate),
         storageLocation: item.storageLocation ?? line.storageLocation ?? null,
-        allocationLineId: item.allocationLineId ?? null,
         condition: item.condition,
         receivedAt: receivedDate,
-        status: item.allocationLineId ? "allocated" : "on_hand",
+        status: "on_hand",
       })),
+    });
+    // Hand the line to sales — nothing may ship until they have picked.
+    await osms.receivingLine.update({
+      where: { id: receivingLine.id },
+      data: { pickStatus: "awaiting_sales_pick" },
     });
   }
 

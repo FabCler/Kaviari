@@ -40,11 +40,20 @@ export default async function PoInvoicePage({
       invoice: true,
       product: true,
     },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
     take: 300,
   });
 
   const pending = recons.filter((row) => row.status !== "approved").length;
+  // Flow §4: a difference has to be settled BEFORE the goods arrive. Anything
+  // still open past its delivery date is a truck the warehouse cannot unload.
+  const now = new Date();
+  const lateForDelivery = recons.filter(
+    (row) =>
+      row.status !== "approved" &&
+      row.deliveryDate != null &&
+      row.deliveryDate < now
+  ).length;
   const quantityIssues = recons.filter((row) => row.qtyStatus !== "match").length;
   const priceIssues = recons.filter(
     (row) => row.priceStatus === "higher" || row.priceStatus === "lower"
@@ -54,7 +63,7 @@ export default async function PoInvoicePage({
     <div>
       <PageHeader
         title="PO vs Invoice"
-        description={`Quantity and price compared line by line. Tolerance: ${settings.qtyTolerancePct}% on quantity, ${settings.priceTolerancePct}% on price.`}
+        description={`Quantity and price compared line by line, to be settled before the goods arrive. Tolerance: ${settings.qtyTolerancePct}% on quantity, ${settings.priceTolerancePct}% on price.`}
       />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -73,6 +82,12 @@ export default async function PoInvoicePage({
           label="Price differences"
           value={priceIssues}
           tone={priceIssues > 0 ? "warning" : "default"}
+        />
+        <KpiCard
+          label="Past the delivery date"
+          value={lateForDelivery}
+          tone={lateForDelivery > 0 ? "danger" : "success"}
+          hint="Receiving is blocked until these are settled"
         />
       </div>
 
@@ -112,6 +127,9 @@ export default async function PoInvoicePage({
             remark: row.remark,
             reviewedByName: row.reviewedByName,
             currency: row.po.currency,
+            deliveryDate: row.deliveryDate?.toISOString() ?? null,
+            dueDate: row.dueDate?.toISOString() ?? null,
+            priority: row.priority,
           }))}
         />
       )}

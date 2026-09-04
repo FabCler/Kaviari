@@ -12,7 +12,7 @@ import { resolveStatus, type WorkflowStatus } from "@/lib/osms/status";
 import { QTY_EPSILON } from "@/lib/osms/domain";
 import { loadToleranceResolver } from "@/lib/osms/tolerance";
 import { detectCrossChannelShortage } from "@/lib/osms/shortage";
-import { dueDateFor } from "@/lib/osms/sla";
+import { dueDateFor, priorityFor } from "@/lib/osms/sla";
 
 /**
  * Orchestration: the steps that move a demand line through the 17 states.
@@ -161,6 +161,11 @@ export async function runPoInvoiceReconciliation(
       priceDiffPct: comparison.priceDiffPct,
       qtyStatus: comparison.qtyStatus,
       priceStatus: comparison.priceStatus,
+      // Flow §4: the difference has to be settled before the goods arrive.
+      // Both fields are derived from the PO line — nobody types a deadline.
+      deliveryDate: poLine.deliveryDate,
+      dueDate: dueDateFor(poLine.deliveryDate, "poInvoiceReconciliation"),
+      priority: priorityFor(poLine.deliveryDate),
     };
 
     const existing = await osms.poInvoiceRecon.findFirst({

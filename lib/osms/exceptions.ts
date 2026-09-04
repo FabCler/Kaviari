@@ -92,3 +92,74 @@ export async function resolveExceptions(
     },
   });
 }
+
+/**
+ * Flow §4 — sweep for PO/Invoice differences still open past their delivery
+ * date, and raise one exception each.
+ *
+ * Purchasing is supposed to settle a difference before the goods arrive. When
+ * that date passes, nobody is going to notice on their own: the warehouse only
+ * finds out when it tries to receive and the gate refuses. This turns a silent
+ * block into an owned, dated case on the Exception Center.
+ *
+ * Idempotent — `raiseException` returns the existing open case rather than
+ * stacking a new one on every page load — and it also closes cases whose line
+ * has since been settled, so the board never shows stale red.
+ */
+export async function sweepOverdueReconciliations(
+  now: Date = new Date()
+): Promise<{ raised: number; cleared: number }> {
+  const overdue = await osms.poInvoiceRecon.findMany({
+    where: {
+      status: { notIn: ["approved", "rejected"] },
+      deliveryDate: { lt: now },
+    },
+    include: { po: { select: { poNumber: true } }, product: true },
+  });
+
+  let raised = 0;
+  for (const row of overdue) {
+    const days = Math.max(
+      1,
+      Math.round((now.getTime() - row.deliveryDate!.getTime()) / 86_400_000)
+    );
+    await raiseException({
+      type: "RECON_PAST_DELIVERY",
+      severity: "high",
+      documentType: "po_invoice_reconciliation",
+      documentId: row.id,
+      documentNumber: row.po.poNumber,
+      productId: row.productId,
+      description:
+        `${row.product.code} ${row.product.name}: the PO/Invoice difference is still open ` +
+        `${days} day${days === 1 ? "" : "s"} after the delivery date. Receiving cannot book this line in.`,
+      responsibleDept: "purchasing",
+      priority: "critical",
+      action: "Confirm the quantity that actually arrived, with a reason.",
+      dueDate: row.deliveryDate,
+      createdByName: "System (SLA sweep)",
+    });
+    raised += 1;
+  }
+
+  // Anything settled since the last sweep stops being an exception.
+  const settled = await osms.poInvoiceRecon.findMany({
+    where: { status: { in: ["approved", "rejected"] } },
+    select: { id: true },
+  });
+  const { count: cleared } = await osms.exception.updateMany({
+    where: {
+      type: "RECON_PAST_DELIVERY",
+      status: { in: ["open", "in_progress"] },
+      documentId: { in: settled.map((row) => row.id) },
+    },
+    data: {
+      status: "resolved",
+      resolution: "The reconciliation was settled.",
+      resolvedByName: "System (SLA sweep)",
+      resolvedAt: now,
+    },
+  });
+
+  return { raised, cleared };
+}
