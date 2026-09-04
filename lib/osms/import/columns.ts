@@ -50,8 +50,22 @@ export const DEMAND_COLUMNS = {
 
 export const PO_COLUMNS = {
   poNumber: ["po no", "po number", "เลขเอกสาร po", "po"],
-  supplierCode: ["supplier code", "รหัส supplier", "รหัสผู้ขาย", "vendor code"],
-  supplierName: ["supplier name", "ชื่อ supplier", "ชื่อผู้ขาย", "vendor"],
+  supplierCode: [
+    "supplier code",
+    "รหัสซัพ",
+    "รหัสซัพพลายเออร์",
+    "รหัส supplier",
+    "รหัสผู้ขาย",
+    "vendor code",
+  ],
+  supplierName: [
+    "supplier name",
+    "ชื่อซัพ",
+    "ชื่อซัพพลายเออร์",
+    "ชื่อ supplier",
+    "ชื่อผู้ขาย",
+    "vendor",
+  ],
   productCode: ["product code", "รหัสสินค้า", "item code", "code"],
   quantity: ["quantity", "qty", "จำนวน"],
   unit: ["unit", "หน่วยสินค้า", "หน่วย", "uom"],
