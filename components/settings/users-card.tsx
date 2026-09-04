@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEPARTMENTS, DEPARTMENT_LABELS } from "@/lib/scm/domain";
+import { DEPARTMENTS, DEPARTMENT_LABELS } from "@/lib/osms/domain";
 
 interface UserRow {
   id: string;
@@ -91,7 +91,7 @@ export function UsersCard() {
     }
   }
 
-  /** Supply-chain department — this is what the permission matrix reads. */
+  /** OSMS department — this is what the permission matrix reads. */
   async function setDepartment(id: string, department: string) {
     setBusy(id);
     try {
@@ -163,7 +163,7 @@ export function UsersCard() {
       <CardHeader>
         <CardTitle>Users &amp; access requests</CardTitle>
         <CardDescription>
-          Anyone who registers gets access immediately. The supply-chain
+          Anyone who registers gets access immediately. The OSMS
           department decides what they can do in the procurement, sales and
           warehouse screens; block or remove an account here to revoke access.
         </CardDescription>
@@ -186,7 +186,7 @@ export function UsersCard() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Supply-chain department</TableHead>
+                <TableHead>OSMS department</TableHead>
                 <TableHead>Business channels</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>

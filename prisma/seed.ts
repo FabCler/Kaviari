@@ -15,7 +15,6 @@
 import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { seedSupplyChain } from "./seed-scm";
 
 const prisma = new PrismaClient();
 
@@ -91,17 +90,12 @@ async function main() {
     currency: "EUR",
     expiryAlertDays: "14",
     catalogVersion: CATALOG_VERSION,
-    scmQtyTolerancePct: "0",
-    scmPriceTolerancePct: "0",
-    scmDeliveryWarningDays: "3",
-    scmDefaultStorageLocation: "MAIN-COLD",
   };
   for (const [key, value] of Object.entries(settings)) {
     await prisma.setting.create({ data: { key, value } });
   }
 
-  // ---- Supply-chain module ----
-  await seedSupplyChain(prisma);
+  // OSMS is seeded separately against its own database: `npm run osms:seed`.
 
   console.log("Seed complete:", {
     products: await prisma.product.count(),

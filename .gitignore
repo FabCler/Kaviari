@@ -44,6 +44,11 @@ next-env.d.ts
 # SQLite dev database
 prisma/dev.db
 prisma/dev.db-journal
+prisma/osms/osms.db
+prisma/osms/osms.db-journal
 
 # Source workbook stays local (binary; see README to supply your own)
 data/Import_Review_Kaviari.xlsx
+
+# Prisma clients generated into the source tree
+/lib/generated

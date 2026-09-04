@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { resolveOsmsUser } from "@/lib/osms/access";
 
 export default async function AppLayout({
   children,
@@ -12,18 +12,17 @@ export default async function AppLayout({
   if (!user) {
     redirect("/login");
   }
-  const assignments = await prisma.scmUserChannel.findMany({
-    where: { userId: user.id },
-    include: { channel: { select: { code: true } } },
-  });
+  // Department and channel scope live in the OSMS database, matched to this
+  // account by email — the host user table holds no supply-chain columns.
+  const access = await resolveOsmsUser(user.email, user.name);
   return (
     <AppShell
       user={{
         name: user.name,
         role: user.role,
-        department: user.department,
-        allChannels: user.allChannels,
-        channelCodes: assignments.map((row) => row.channel.code),
+        department: access.department,
+        allChannels: access.allChannels,
+        channelCodes: access.channelCodes,
       }}
     >
       {children}

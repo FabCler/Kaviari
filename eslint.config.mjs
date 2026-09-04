@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prisma generates the OSMS client into the source tree so it can be
+    // imported with a path alias; it is build output, not code we write.
+    "lib/generated/**",
   ]),
 ]);
 

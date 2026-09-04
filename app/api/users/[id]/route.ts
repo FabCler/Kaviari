@@ -1,14 +1,21 @@
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { DEPARTMENTS } from "@/lib/scm/domain";
-import { recordAudit } from "@/lib/scm/audit";
+import { DEPARTMENTS } from "@/lib/osms/domain";
+import { recordAudit } from "@/lib/osms/audit";
+import {
+  findOsmsUser,
+  resolveOsmsUser,
+  setChannels,
+  setDepartment,
+} from "@/lib/osms/access";
+import type { Actor } from "@/lib/osms/permissions";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 const patchSchema = z.object({
   action: z.enum(["approve", "reject", "set_department", "set_channels"]),
-  // Supply-chain department driving the permission matrix (lib/scm/permissions).
+  // OSMS department driving the permission matrix (lib/osms/permissions).
   department: z.enum(DEPARTMENTS).optional(),
   // Business channels a sales user may see (§39).
   channelIds: z.array(z.string().min(1)).max(50).optional(),
@@ -42,6 +49,19 @@ export async function PATCH(request: Request, ctx: Ctx) {
       { status: 400 }
     );
   }
+  // OSMS writes its own audit rows, so the actor has to be the OSMS operator
+  // behind this owner — resolved through the same email seam as everything else.
+  const auditActor = async (): Promise<Actor> => {
+    const operator = await resolveOsmsUser(gate.email, gate.name);
+    return {
+      id: operator.id,
+      name: operator.name,
+      role: gate.role,
+      department: operator.department,
+      allChannels: operator.allChannels,
+    };
+  };
+
   if (parsed.data.action === "set_department") {
     if (!parsed.data.department) {
       return Response.json(
@@ -49,60 +69,53 @@ export async function PATCH(request: Request, ctx: Ctx) {
         { status: 400 }
       );
     }
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { department: parsed.data.department },
-      select: { id: true, department: true },
-    });
+    // Departments live in the OSMS database, not on the host account. The two
+    // are matched by email, so granting access here creates the OSMS operator
+    // if this is the first time the address has been seen.
+    const before = await findOsmsUser(user.email);
+    const updated = await setDepartment(
+      user.email,
+      user.name,
+      parsed.data.department
+    );
     await recordAudit(
-      { entity: "user", entityId: id, documentNumber: user.email, actor: gate },
+      { entity: "user", entityId: updated.id, documentNumber: user.email, actor: await auditActor() },
       [
         {
           action: "update",
           field: "department",
-          oldValue: user.department,
+          oldValue: before?.department ?? "none",
           newValue: parsed.data.department,
           reason: "Permission change",
         },
       ]
     );
-    return Response.json({ ok: true, user: updated });
+    return Response.json({
+      ok: true,
+      user: { id, department: updated.department },
+    });
   }
 
   if (parsed.data.action === "set_channels") {
-    const channelIds = parsed.data.channelIds ?? [];
-    const allChannels = parsed.data.allChannels ?? false;
-    const before = await prisma.scmUserChannel.findMany({
-      where: { userId: id },
-      include: { channel: { select: { code: true } } },
-    });
-
-    await prisma.scmUserChannel.deleteMany({ where: { userId: id } });
-    if (!allChannels && channelIds.length > 0) {
-      const known = await prisma.businessChannel.findMany({
-        where: { id: { in: channelIds } },
-        select: { id: true },
-      });
-      await prisma.scmUserChannel.createMany({
-        data: known.map((channel) => ({ userId: id, channelId: channel.id })),
-      });
-    }
-    await prisma.user.update({ where: { id }, data: { allChannels } });
-
-    const after = await prisma.scmUserChannel.findMany({
-      where: { userId: id },
-      include: { channel: { select: { code: true } } },
-    });
+    const before = await findOsmsUser(user.email);
+    const after = await setChannels(
+      user.email,
+      user.name,
+      parsed.data.channelIds ?? [],
+      parsed.data.allChannels ?? false
+    );
     await recordAudit(
-      { entity: "user", entityId: id, documentNumber: user.email, actor: gate },
+      { entity: "user", entityId: after.id, documentNumber: user.email, actor: await auditActor() },
       [
         {
           action: "update",
           field: "channels",
-          oldValue: before.map((row) => row.channel.code).join(", ") || "none",
-          newValue: allChannels
+          oldValue: before?.allChannels
             ? "all channels"
-            : after.map((row) => row.channel.code).join(", ") || "none",
+            : before?.channelCodes.join(", ") || "none",
+          newValue: after.allChannels
+            ? "all channels"
+            : after.channelCodes.join(", ") || "none",
           reason: "Channel permission change",
         },
       ]

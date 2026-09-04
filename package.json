@@ -10,9 +10,12 @@
     "test": "vitest run",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "setup": "prisma db push && prisma db seed",
-    "postinstall": "prisma generate",
-    "start:railway": "node scripts/db-push.mjs && node scripts/ensure-seed.mjs && next start"
+    "setup": "prisma db push && prisma db seed && npm run osms:setup",
+    "postinstall": "prisma generate && prisma generate --schema prisma/osms/schema.prisma",
+    "start:railway": "node scripts/db-push.mjs && node scripts/ensure-seed.mjs && next start",
+    "osms:push": "prisma db push --schema prisma/osms/schema.prisma",
+    "osms:seed": "tsx prisma/osms/seed.ts",
+    "osms:setup": "npm run osms:push && npm run osms:seed"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

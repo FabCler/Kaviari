@@ -10,7 +10,7 @@ Recharts and the Anthropic API.
 ```bash
 npm install
 cp .env.example .env        # then edit if needed
-npm run setup               # prisma db push + seed demo data
+npm run setup               # push + seed BOTH databases (Cellar and OSMS)
 npm run dev                 # http://localhost:3000
 ```
 
@@ -41,7 +41,8 @@ as a reference only. Sales channels are **Food service**, **Event** and
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DATABASE_URL` | `file:./dev.db` | SQLite database file (Prisma) |
+| `DATABASE_URL` | `file:./dev.db` | SQLite database file for the Cellar (Prisma) |
+| `OSMS_DATABASE_URL` | `file:./osms.db` | **Separate** database for OSMS — it shares no table with the Cellar |
 | `APP_URL` | `http://localhost:3000` | Public URL, used in approval-email links |
 | `APP_SECRET` | dev fallback | HMAC key for session cookies and approval links — change in production |
 | `OWNER_EMAIL` | `fabien@thammachartseafood.com` | Registrations with this email become the owner (auto-approved) |
@@ -115,10 +116,23 @@ promo shortcut.
   **line by line** (duplicates are never merged) and pre-fills the
   reference, lines and quantities, which you can edit before saving.
 
-## Supply chain — procurement, receiving, allocation & shipment
+## OSMS — Order & Supply Management System
 
-A second module lives under **Supply chain** in the sidebar, covering the flow
-from a customer order to the delivery:
+**OSMS is its own system**, served from this app but standing on its own
+database. It has its own Prisma schema (`prisma/osms/schema.prisma`), its own
+connection string (`OSMS_DATABASE_URL`), its own generated client
+(`lib/generated/osms`) and its own master data — products, users, settings.
+Nothing in it reads a Cellar table and nothing in the Cellar reads one of its.
+The two meet at exactly one place: the **email address** of the signed-in
+account, which `lib/osms/access.ts` uses to find the matching OSMS operator.
+That single seam is also what an ERP replaces.
+
+It has its own identity too — slate `#384B59` and blush `#E1A59B`, applied by
+the `.osms-theme` token set in `app/globals.css`, so the sidebar changes colour
+and wordmark the moment you enter `/osms`.
+
+It lives under **Order & Supply** in the sidebar and covers the flow from a
+customer order to the delivery:
 
 ```
 Customer order → Sales SO/PR → Purchasing PO → Supplier invoice
@@ -187,7 +201,7 @@ Design documents (architecture and BPMN, ER diagram, data dictionary,
 business-channel structure and SO-PO mapping, permission matrix, status
 diagram, wireframes, validation and business rules, tolerance rules, exception
 handling, dashboards, API structure, sample data, E2E test cases and the UAT
-checklist) are in [`docs/scm/`](docs/scm/README.md).
+checklist) are in [`docs/osms/`](docs/osms/README.md).
 
 ## Assistant & reports
 
@@ -264,9 +278,12 @@ The schema avoids SQLite-only features (enums are validated strings — see
 | `npm run dev` | Dev server |
 | `npm run build` / `start` | Production build / serve |
 | `npm test` | Vitest unit tests (replenishment math, box rounding, FEFO) |
-| `npm run db:push` | Apply schema to the database |
-| `npm run db:seed` | Reseed catalog + demo data (keeps user accounts) |
-| `npm run setup` | push + seed in one go |
+| `npm run db:push` | Apply the Cellar schema to its database |
+| `npm run db:seed` | Reseed the Cellar catalog (keeps user accounts) |
+| `npm run osms:push` | Apply the OSMS schema to **its own** database |
+| `npm run osms:seed` | Reseed the OSMS sample data (channels, master data, six scenarios) |
+| `npm run osms:setup` | OSMS push + seed |
+| `npm run setup` | Both databases, push + seed, in one go |
 
 ## Project layout
 
@@ -280,7 +297,10 @@ components/ui/      shadcn-style primitives (Radix + Tailwind v4)
 lib/                domain logic: replenishment.ts (R,S math in units),
                     fefo.ts, stock.ts, planner.ts, settings.ts, ai.ts,
                     auth.ts (accounts), email.ts (approval emails)
-prisma/             schema + seed
+lib/osms/           OSMS domain layer + its own db client and access seam
+lib/generated/osms  OSMS Prisma client (generated, git-ignored)
+prisma/             Cellar schema + seed
+prisma/osms/        OSMS schema + seed — separate datasource, separate file
 data/               product database + consumption history + extractor
 tests/              vitest unit tests
 ```

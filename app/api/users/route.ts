@@ -1,5 +1,7 @@
 import { requireOwner } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { findOsmsUsers } from "@/lib/osms/access";
+import { osms } from "@/lib/osms/db";
 
 /** Owner only: list all accounts (pending first). */
 export async function GET() {
@@ -14,22 +16,27 @@ export async function GET() {
       email: true,
       role: true,
       status: true,
-      department: true,
-      allChannels: true,
       createdAt: true,
-      channels: { select: { channelId: true } },
     },
   });
-  const channels = await prisma.businessChannel.findMany({
+  // Department and channel scope come from the OSMS database, joined to these
+  // accounts by email. An account that has never opened OSMS simply has none.
+  const access = await findOsmsUsers(users.map((user) => user.email));
+  const channels = await osms.businessChannel.findMany({
     where: { active: true },
     orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
     select: { id: true, code: true, name: true },
   });
   return Response.json({
-    users: users.map((user) => ({
-      ...user,
-      channelIds: user.channels.map((row) => row.channelId),
-    })),
+    users: users.map((user) => {
+      const osmsUser = access.get(user.email);
+      return {
+        ...user,
+        department: osmsUser?.department ?? "none",
+        allChannels: osmsUser?.allChannels ?? false,
+        channelIds: osmsUser?.channelIds ?? [],
+      };
+    }),
     channels,
   });
 }

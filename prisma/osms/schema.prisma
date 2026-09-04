@@ -1,0 +1,1121 @@
+// ===========================================================================
+// Order & Supply Management System (OSMS)
+//
+// Customer Order -> SO/PR -> PO -> Supplier Invoice -> PO/Invoice recon ->
+// Invoice/SO recon -> Warehouse receiving -> Allocation -> Shipment.
+//
+// This schema is DELIBERATELY STANDALONE. It has its own datasource, its own
+// generated client and its own master data (Product, User, Setting) — it
+// shares no table, no migration history and no connection string with any
+// host application it happens to be deployed beside. Point OSMS_DATABASE_URL
+// at a different server and the module moves house on its own.
+//
+// The host app owns authentication; OSMS matches the signed-in account to its
+// own User row BY EMAIL (lib/osms/guard.ts). That single seam is also the one
+// SAP Business One / an ERP replaces: swap the resolver, keep the schema.
+//
+// SQLite has no native enums, so status/type columns are strings validated by
+// the zod schemas in lib/osms/domain.ts — which also keeps the switch to
+// Postgres trivial (change `provider`, repoint the URL, re-run migrations).
+//
+// Actor columns (`...ById` / `...ByName`) are deliberately denormalised
+// snapshots without a foreign key: an audit record must keep showing who did
+// what even after the account is renamed or removed. The one real FK to
+// User is on AuditLog, which is the module's traceability backbone.
+// ===========================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../lib/generated/osms"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("OSMS_DATABASE_URL")
+}
+
+// --------------------------------------------------------------- identity
+
+// An OSMS operator. Authentication is NOT done here — the host application
+// signs the person in and OSMS resolves them by email. Everything OSMS cares
+// about is the department (which drives the permission matrix) and the set of
+// business channels the account may see.
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  // admin | purchasing | sales | warehouse | management | none
+  department  String   @default("none")
+  // A sales user normally sees only the business channels assigned in
+  // `channels`. A sales manager gets every channel — including channels
+  // created after the account, which is why this is a flag and not a set of
+  // rows somebody has to keep in step.
+  allChannels Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  audit    AuditLog[]
+  channels UserChannel[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------ master data
+
+// Product master. Deliberately generic: `code` is whatever the business calls
+// its article number, and `category` is a free string rather than an enum so
+// a new range never needs a migration.
+model Product {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  // Thai product name printed on Thai paperwork.
+  nameTh   String?
+  category String  @default("GENERAL")
+  // Stock-keeping unit the product is counted in.
+  unit     String  @default("PC")
+  // Net grams per unit (weight reference only; null for non-weighed items).
+  gramsPerUnit Int?
+  active   Boolean @default(true)
+
+  // Unit the product is *bought* in when it differs from the stock unit.
+  purchaseUnit       String?
+  // Purchase unit -> inventory unit factor (1 BOX = 12 Tin => 12).
+  purchaseConversion Float?
+  // Supplier minimum order quantity, expressed in the purchase unit.
+  moq                Float?
+  defaultSupplierId  String?
+  defaultSupplier    Supplier? @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
+  // True for products weighed piece by piece (fish, crab, shrimp): each
+  // received item carries its own weight and is allocated individually.
+  weightControlled   Boolean   @default(false)
+  // Receiving refuses to save without a lot / an expiry date when set.
+  lotRequired        Boolean   @default(false)
+  expiryRequired     Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prLines         PurchaseRequestLine[]
+  soLines         SalesOrderLine[]
+  poLines         PurchaseOrderLine[]
+  invoiceLines    InvoiceLine[]
+  poInvoiceRecons PoInvoiceRecon[]
+  soPoRecons      SoPoRecon[]
+  receivingLines  ReceivingLine[]
+  allocations     Allocation[]
+  shipmentLines   ShipmentLine[]
+  unitConversions UnitConversion[]
+  warehouseStock  WarehouseStock[]
+  shortageCases   ShortageCase[]
+  soPoMappings    SoPoMapping[]
+
+  @@index([defaultSupplierId])
+  @@map("products")
+}
+
+// Module configuration (tolerances defaults, SLA hours, numbering seeds).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+
+// ------------------------------------------------------- organisation model
+
+// Business channel (§2). Channels are DATA, never an enum or a column name:
+// adding "Wholesale" tomorrow is one row here plus its permission rows — no
+// migration, no code change. Everything that filters by channel joins to this
+// table, and `defaultPriority` seeds the ordering proposed (never applied on
+// its own) when several channels compete for short stock.
+model BusinessChannel {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  nameTh          String?
+  sortOrder       Int      @default(0)
+  // Lower goes first when management ranks channels on a shortage case.
+  defaultPriority Int      @default(100)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customers           Customer[]
+  salesOrders         SalesOrder[]
+  userChannels        UserChannel[]
+  tolerances          Tolerance[]
+  warehouseStock      WarehouseStock[]
+  shortageAllocations ShortageAllocation[]
+
+  @@map("business_channels")
+}
+
+// Which channels a sales user may see (§39). A sales manager gets
+// `User.allChannels` instead, so a channel added later is covered without
+// touching anyone's assignments.
+model UserChannel {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId String
+  channel   BusinessChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@unique([userId, channelId])
+  @@index([channelId])
+  @@map("user_channels")
+}
+
+// Lookup tables for the labels the UI shows. Deliberately NOT foreign keys:
+// `User.department` must keep resolving even on a database seeded before a
+// department row exists, and an unknown code falls back to its own name.
+model Department {
+  code      String   @id
+  name      String
+  nameTh    String?
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("departments")
+}
+
+model Role {
+  code        String   @id
+  name        String
+  nameTh      String?
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("roles")
+}
+
+// Tolerance master (§28). The most specific active row wins:
+// supplier → channel → product type → global. A difference inside the
+// tolerance is treated as a match and proceeds automatically; anything
+// outside it needs a human.
+model Tolerance {
+  id                 String           @id @default(cuid())
+  // "global" | "product_type" | "supplier" | "channel"
+  scope              String           @default("global")
+  // "<scope>:<value|*>" — one active rule per scope target.
+  key                String           @unique
+  productType        String?
+  supplierId         String?
+  supplier           Supplier?        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  channelId          String?
+  channel            BusinessChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  qtyTolerancePct    Float            @default(0)
+  priceTolerancePct  Float            @default(0)
+  weightTolerancePct Float            @default(0)
+  note               String?
+  active             Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([scope, active])
+  @@map("tolerances")
+}
+
+// ---------------------------------------------------------------- master data
+
+model Supplier {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  currency     String   @default("EUR")
+  defaultUnit  String   @default("KG")
+  moq          Float?
+  leadTimeDays Int?
+  contactEmail String?
+  contactPhone String?
+  address      String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+  invoices       Invoice[]
+  receivings     Receiving[]
+  tolerances     Tolerance[]
+  warehouseStock WarehouseStock[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id               String           @id @default(cuid())
+  code             String           @unique
+  name             String
+  nameTh           String?
+  // Every customer belongs to exactly one business channel (§3).
+  channelId        String?
+  channel          BusinessChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  deliveryLocation String?
+  salesOwner       String?
+  contactEmail     String?
+  contactPhone     String?
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  salesOrders         SalesOrder[]
+  allocationLines     AllocationLine[]
+  shipments           Shipment[]
+  shortageAllocations ShortageAllocation[]
+
+  @@index([channelId])
+  @@map("customers")
+}
+
+model Unit {
+  code      String   @id
+  name      String
+  // weight | count | volume — units of different dimensions never convert.
+  dimension String   @default("count")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("units")
+}
+
+model UnitConversion {
+  id        String   @id @default(cuid())
+  // "<productId|*>:<FROM>:<TO>" — SQLite treats NULLs as distinct in a
+  // composite unique, so the scope is folded into one explicit key.
+  key       String   @unique
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  fromUnit  String
+  toUnit    String
+  // quantity(toUnit) = quantity(fromUnit) * factor
+  factor    Float
+  createdAt DateTime @default(now())
+
+  @@index([fromUnit, toUnit])
+  @@map("unit_conversions")
+}
+
+// ------------------------------------------------------------------- demand
+
+model PurchaseRequest {
+  id          String   @id @default(cuid())
+  prNumber    String   @unique
+  requester   String
+  department  String   @default("sales")
+  requestDate DateTime @default(now())
+  // open | partially_ordered | ordered | cancelled
+  status      String   @default("open")
+  note        String?
+  importId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lines PurchaseRequestLine[]
+
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestLine {
+  id            String             @id @default(cuid())
+  prId          String
+  pr            PurchaseRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+  lineNo        Int                @default(1)
+  productId     String
+  product       Product            @relation(fields: [productId], references: [id])
+  // Requested quantity, expressed in `unit` (a stock or purchase unit).
+  quantity      Float
+  unit          String
+  // Same quantity normalised to the product's inventory unit — the only
+  // figure any cross-document comparison is allowed to use.
+  baseQuantity  Float
+  deliveryDate  DateTime
+  // Sales line this demand comes from (a PR line may stand alone).
+  soLineId      String?
+  soLine        SalesOrderLine? @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  // PO number quoted by the purchasing import before that PO itself is
+  // imported. The link is made when the PO file arrives (deferred join).
+  poNumberRef   String?
+  // Central 17-state workflow status (lib/scm/status.ts).
+  status        String             @default("IMPORTED")
+  blockedReason String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  demandLinks SoPoMapping[]
+
+  @@index([prId])
+  @@index([productId, deliveryDate])
+  @@index([status])
+  @@index([poNumberRef])
+  @@map("purchase_request_lines")
+}
+
+model SalesOrder {
+  id               String           @id @default(cuid())
+  soNumber         String           @unique
+  // Denormalised from the customer so every board can filter and group by
+  // channel without a join, and so a customer moved between channels does
+  // not rewrite the history of its past orders.
+  channelId        String?
+  channel          BusinessChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  salesOwner       String?
+  deliveryLocation String?
+  orderDate        DateTime         @default(now())
+  deliveryDate     DateTime
+  requester        String?
+  currency         String           @default("THB")
+  // open | partially_shipped | shipped | closed | cancelled
+  status           String           @default("open")
+  notes            String?
+  importId         String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  lines SalesOrderLine[]
+
+  @@index([customerId])
+  @@index([channelId, deliveryDate])
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id                String        @id @default(cuid())
+  soId              String
+  so                SalesOrder @relation(fields: [soId], references: [id], onDelete: Cascade)
+  lineNo            Int           @default(1)
+  productId         String
+  product           Product       @relation(fields: [productId], references: [id])
+  quantity          Float
+  unit              String
+  baseQuantity      Float
+  unitPrice         Float         @default(0)
+  // Unit the price is quoted per (e.g. price per KG while selling BOX).
+  priceUnit         String?
+  currency          String        @default("THB")
+  deliveryDate      DateTime
+  // Quantity on the original customer order — never overwritten, so a
+  // reduction agreed with the customer stays visible.
+  originalQuantity  Float
+  // Quantity confirmed after the Invoice/SO review (source of truth for
+  // allocation). Null until Sales has reviewed.
+  confirmedQuantity Float?
+  // See PurchaseRequestLine.poNumberRef.
+  poNumberRef       String?
+  status            String        @default("IMPORTED")
+  blockedReason     String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  prLines             PurchaseRequestLine[]
+  demandLinks         SoPoMapping[]
+  soPoRecons          SoPoRecon[]
+  allocationLines     AllocationLine[]
+  shipmentLines       ShipmentLine[]
+  shortageAllocations ShortageAllocation[]
+  warehouseStock      WarehouseStock[]
+
+  @@index([soId])
+  @@index([productId, deliveryDate])
+  @@index([status])
+  @@index([poNumberRef])
+  @@map("sales_order_lines")
+}
+
+// ----------------------------------------------------------------- purchase
+
+model PurchaseOrder {
+  id                   String   @id @default(cuid())
+  poNumber             String   @unique
+  supplierId           String
+  supplier             Supplier @relation(fields: [supplierId], references: [id])
+  orderDate            DateTime @default(now())
+  expectedDeliveryDate DateTime
+  currency             String   @default("EUR")
+  // draft | issued | confirmed | invoiced | received | closed | cancelled
+  status               String   @default("draft")
+  notes                String?
+  importId             String?
+  createdById          String?
+  createdByName        String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  lines          PurchaseOrderLine[]
+  invoices       Invoice[]
+  recons         PoInvoiceRecon[]
+  receivings     Receiving[]
+  soPoMapping    SoPoMapping[]
+  warehouseStock WarehouseStock[]
+
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id                String           @id @default(cuid())
+  poId              String
+  po                PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  lineNo            Int              @default(1)
+  productId         String
+  product           Product          @relation(fields: [productId], references: [id])
+  // Ordered quantity in the purchase unit.
+  quantity          Float
+  unit              String
+  // Ordered quantity normalised to the inventory unit.
+  baseQuantity      Float
+  unitPrice         Float            @default(0)
+  priceUnit         String?
+  currency          String           @default("EUR")
+  deliveryDate      DateTime
+  // Demand this line covers (sum of the linked PR/SO lines), inventory unit.
+  requiredQuantity  Float            @default(0)
+  moq               Float?
+  // Mandatory when quantity > requiredQuantity:
+  // MOQ | PACK_SIZE | CARTON_SIZE | MIN_ORDER_VALUE | SUPPLIER_REQUIREMENT |
+  // SAFETY_STOCK | OTHER
+  adjustmentReason  String?
+  adjustmentNote    String?
+  // Quantity agreed with the supplier after the invoice reconciliation.
+  // Once set this — not `quantity` — drives every downstream step.
+  correctedQuantity Float?
+  correctedReason   String?
+  correctedAt       DateTime?
+  correctedByName   String?
+  remark            String?
+  status            String           @default("PO_CREATED")
+  blockedReason     String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  demandLinks    SoPoMapping[]
+  invoiceLines   InvoiceLine[]
+  recons         PoInvoiceRecon[]
+  soPoRecons     SoPoRecon[]
+  receivingLines ReceivingLine[]
+  allocations    Allocation[]
+  shortageCases  ShortageCase[]
+  warehouseStock WarehouseStock[]
+
+  @@index([poId])
+  @@index([productId, deliveryDate])
+  @@index([status])
+  @@map("purchase_order_lines")
+}
+
+// SO ↔ PO mapping (§6, §7). There is deliberately NO direct SO → PO column
+// anywhere: one PO covers many SO lines and one SO line is split across many
+// POs, so the relationship lives here, at line level, with the quantity it
+// carries and the reason it was split that way.
+model SoPoMapping {
+  id            String                  @id @default(cuid())
+  poId          String
+  po            PurchaseOrder        @relation(fields: [poId], references: [id], onDelete: Cascade)
+  poLineId      String
+  poLine        PurchaseOrderLine    @relation(fields: [poLineId], references: [id], onDelete: Cascade)
+  soId          String?
+  soLineId      String?
+  soLine        SalesOrderLine?      @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  prLineId      String?
+  prLine        PurchaseRequestLine? @relation(fields: [prLineId], references: [id], onDelete: SetNull)
+  productId     String
+  product       Product                 @relation(fields: [productId], references: [id])
+  // Share of the PO line covering this demand, in the inventory unit.
+  quantity      Float
+  unit          String
+  // Why the demand was split this way (partial supplier, split delivery…).
+  reason        String?
+  createdById   String?
+  createdByName String?
+  createdAt     DateTime                @default(now())
+
+  @@index([poLineId])
+  @@index([prLineId])
+  @@index([soLineId])
+  @@index([soId])
+  @@map("so_po_mapping")
+}
+
+// ------------------------------------------------------------------ invoice
+
+model Invoice {
+  id              String            @id @default(cuid())
+  invoiceNumber   String
+  supplierId      String?
+  supplier        Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  poId            String?
+  po              PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: SetNull)
+  // Raw values exactly as extracted, kept even when they match nothing.
+  supplierCodeRaw String?
+  supplierNameRaw String?
+  poNumberRaw     String?
+  invoiceDate     DateTime?
+  deliveryDate    DateTime?
+  currency        String            @default("EUR")
+  // uploaded | processing | extracted | pending_verification | verified | rejected
+  status          String            @default("uploaded")
+  fileName        String?
+  fileSize        Int?
+  // Whole extraction payload as returned by the reader, for audit.
+  extractionRaw   String?
+  extractionError String?
+  // "ai" | "manual"
+  extractionMode  String            @default("ai")
+  uploadedById    String?
+  uploadedByName  String?
+  verifiedByName  String?
+  verifiedAt      DateTime?
+  rejectReason    String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  lines  InvoiceLine[]
+  recons PoInvoiceRecon[]
+
+  @@unique([invoiceNumber, supplierId])
+  @@index([poId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id             String                @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice            @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  lineNo         Int                   @default(1)
+  productId      String?
+  product        Product?              @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productCodeRaw String?
+  descriptionRaw String?
+  quantity       Float
+  unit           String
+  baseQuantity   Float
+  unitPrice      Float                 @default(0)
+  priceUnit      String?
+  currency       String                @default("EUR")
+  deliveryDate   DateTime?
+  poLineId       String?
+  poLine         PurchaseOrderLine? @relation(fields: [poLineId], references: [id], onDelete: SetNull)
+  // Comma-separated field names a human corrected after extraction.
+  editedFields   String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  recons PoInvoiceRecon[]
+
+  @@index([invoiceId])
+  @@index([poLineId])
+  @@map("invoice_lines")
+}
+
+// ----------------------------------------------------------- reconciliation
+
+model PoInvoiceRecon {
+  id            String               @id @default(cuid())
+  poId          String
+  po            PurchaseOrder     @relation(fields: [poId], references: [id], onDelete: Cascade)
+  poLineId      String
+  poLine        PurchaseOrderLine @relation(fields: [poLineId], references: [id], onDelete: Cascade)
+  invoiceId     String?
+  invoice       Invoice?          @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  invoiceLineId String?
+  invoiceLine   InvoiceLine?      @relation(fields: [invoiceLineId], references: [id], onDelete: SetNull)
+  productId     String
+  product       Product              @relation(fields: [productId], references: [id])
+
+  poQuantity       Float
+  invoiceQuantity  Float?
+  qtyDiff          Float?
+  qtyDiffPct       Float?
+  poUnitPrice      Float
+  invoiceUnitPrice Float?
+  priceDiff        Float?
+  priceDiffPct     Float?
+  // match | over | short | missing_on_invoice | not_on_po
+  qtyStatus        String @default("match")
+  // match | higher | lower | missing
+  priceStatus      String @default("match")
+
+  correctedQuantity Float?
+  quantityReason    String?
+  priceReason       String?
+  remark            String?
+  // pending_review | purchasing_review | approved | rejected
+  status            String    @default("pending_review")
+  reviewedByName    String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([poLineId, invoiceLineId])
+  @@index([poId])
+  @@index([status])
+  @@map("po_invoice_reconciliation")
+}
+
+model SoPoRecon {
+  id        String                @id @default(cuid())
+  soLineId  String
+  soLine    SalesOrderLine     @relation(fields: [soLineId], references: [id], onDelete: Cascade)
+  poLineId  String?
+  poLine    PurchaseOrderLine? @relation(fields: [poLineId], references: [id], onDelete: SetNull)
+  productId String
+  product   Product               @relation(fields: [productId], references: [id])
+
+  soQuantity        Float
+  // Corrected PO / invoice quantity available for this SO line.
+  confirmedQuantity Float
+  diff              Float
+  diffPct           Float
+  // match | short | over
+  diffStatus        String @default("match")
+
+  // reduce_so | keep_so | increase_customer | warehouse_stock | split
+  decision         String?
+  reason           String?
+  customerAccepted Boolean?
+  newSoQuantity    Float?
+  remark           String?
+  // pending_sales_review | completed | cancelled
+  status           String    @default("pending_sales_review")
+  reviewedByName   String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([soLineId])
+  @@index([status])
+  @@map("so_po_reconciliation")
+}
+
+// --------------------------------------------------------------- allocation
+
+model Allocation {
+  id                  String                @id @default(cuid())
+  allocationNumber    String                @unique
+  productId           String
+  product             Product               @relation(fields: [productId], references: [id])
+  poLineId            String?
+  poLine              PurchaseOrderLine? @relation(fields: [poLineId], references: [id], onDelete: SetNull)
+  // Quantity actually available (corrected PO/invoice quantity, or the
+  // weighed total once the warehouse has counted).
+  actualQuantity      Float
+  unit                String
+  allocatedQuantity   Float                 @default(0)
+  warehouseQuantity   Float                 @default(0)
+  unallocatedQuantity Float                 @default(0)
+  // draft | completed | cancelled
+  status              String                @default("draft")
+  createdByName       String?
+  completedByName     String?
+  completedAt         DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  lines AllocationLine[]
+
+  @@index([productId])
+  @@index([status])
+  @@map("allocation")
+}
+
+model AllocationLine {
+  id              String             @id @default(cuid())
+  allocationId    String
+  allocation      Allocation      @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  // customer | warehouse
+  target          String             @default("customer")
+  customerId      String?
+  customer        Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  soLineId        String?
+  soLine          SalesOrderLine? @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  quantity        Float
+  unit            String
+  storageLocation String?
+  reason          String?
+  responsibleDept String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  items          ReceivingItem[]
+  shipmentLines  ShipmentLine[]
+  warehouseStock WarehouseStock[]
+
+  @@index([allocationId])
+  @@index([customerId])
+  @@map("allocation_lines")
+}
+
+// ---------------------------------------------------------------- receiving
+
+model Receiving {
+  id             String           @id @default(cuid())
+  receiptNumber  String           @unique
+  poId           String
+  po             PurchaseOrder @relation(fields: [poId], references: [id])
+  invoiceId      String?
+  supplierId     String
+  supplier       Supplier         @relation(fields: [supplierId], references: [id])
+  receivedDate   DateTime         @default(now())
+  // draft | received | partial_received | completed | blocked | cancelled
+  status         String           @default("draft")
+  blockedReason  String?
+  receivedByName String?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  lines ReceivingLine[]
+
+  @@index([poId])
+  @@index([status])
+  @@map("receiving")
+}
+
+model ReceivingLine {
+  id               String               @id @default(cuid())
+  receivingId      String
+  receiving        Receiving         @relation(fields: [receivingId], references: [id], onDelete: Cascade)
+  poLineId         String
+  poLine           PurchaseOrderLine @relation(fields: [poLineId], references: [id])
+  productId        String
+  product          Product              @relation(fields: [productId], references: [id])
+  expectedQuantity Float
+  actualQuantity   Float                @default(0)
+  unit             String
+  lotNumber        String?
+  expiryDate       DateTime?
+  storageLocation  String?
+  // pending | received | partial | rejected
+  status           String               @default("pending")
+  remark           String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  items          ReceivingItem[]
+  warehouseStock WarehouseStock[]
+
+  @@index([receivingId])
+  @@index([poLineId])
+  @@map("receiving_lines")
+}
+
+// One physical piece of a weight-controlled product (Fish 01, Fish 02…).
+model ReceivingItem {
+  id               String             @id @default(cuid())
+  receivingLineId  String
+  receivingLine    ReceivingLine   @relation(fields: [receivingLineId], references: [id], onDelete: Cascade)
+  itemNo           String
+  weight           Float
+  unit             String             @default("KG")
+  lotNumber        String?
+  expiryDate       DateTime?
+  storageLocation  String?
+  // good | damaged | rejected — recorded piece by piece on arrival.
+  condition        String             @default("good")
+  receivedAt       DateTime           @default(now())
+  allocationLineId String?
+  allocationLine   AllocationLine? @relation(fields: [allocationLineId], references: [id], onDelete: SetNull)
+  // on_hand | allocated | shipped | written_off
+  status           String             @default("on_hand")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([receivingLineId, itemNo])
+  @@index([allocationLineId])
+  @@map("receiving_items")
+}
+
+// ----------------------------------------------------------------- shipment
+
+model Shipment {
+  id               String   @id @default(cuid())
+  shipmentNumber   String   @unique
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id])
+  shipDate         DateTime @default(now())
+  deliveryLocation String?
+  // draft | picked | shipped | delivered | cancelled
+  status           String   @default("draft")
+  createdByName    String?
+  shippedByName    String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  lines ShipmentLine[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("shipment")
+}
+
+model ShipmentLine {
+  id               String             @id @default(cuid())
+  shipmentId       String
+  shipment         Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  allocationLineId String?
+  allocationLine   AllocationLine? @relation(fields: [allocationLineId], references: [id], onDelete: SetNull)
+  soLineId         String?
+  soLine           SalesOrderLine? @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  productId        String
+  product          Product            @relation(fields: [productId], references: [id])
+  quantity         Float
+  unit             String
+  weight           Float?
+  // Comma-separated ReceivingItem ids for weight-controlled products.
+  itemRefs         String?
+  createdAt        DateTime           @default(now())
+
+  @@index([shipmentId])
+  @@map("shipment_lines")
+}
+
+// ---------------------------------------------------- exceptions & controls
+
+model Exception {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  // See EXCEPTION_TYPES in lib/scm/domain.ts
+  type            String
+  // low | medium | high
+  severity        String    @default("medium")
+  documentType    String?
+  documentId      String?
+  documentNumber  String?
+  productId       String?
+  description     String
+  reason          String?
+  responsibleDept String
+  // The person accountable, not just the department (§26, §27).
+  ownerName       String?
+  // low | medium | high | critical — drives the Exception Center ordering.
+  priority        String    @default("medium")
+  channelId       String?
+  action          String?
+  dueDate         DateTime?
+  // open | in_progress | resolved | cancelled
+  status          String    @default("open")
+  createdByName   String?
+  resolvedByName  String?
+  resolvedAt      DateTime?
+  resolution      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, responsibleDept])
+  @@index([documentType, documentId])
+  @@map("exceptions")
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  entity         String
+  entityId       String
+  documentNumber String?
+  // create | update | delete | status_change | approve | reject | import | override
+  action         String
+  field          String?
+  oldValue       String?
+  newValue       String?
+  reason         String?
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName       String?
+  department     String?
+  createdAt      DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([documentNumber])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Attachment {
+  id             String   @id @default(cuid())
+  entity         String
+  entityId       String
+  fileName       String
+  mimeType       String?
+  size           Int?
+  // Extracted text / small payloads kept inline; large binaries belong in
+  // object storage once this leaves the prototype stage.
+  content        String?
+  uploadedByName String?
+  createdAt      DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@map("attachments")
+}
+
+model Notification {
+  id             String    @id @default(cuid())
+  department     String
+  // Null = every channel. Set, and only users who can see that channel get it.
+  channelId      String?
+  type           String
+  severity       String    @default("info")
+  title          String
+  body           String?
+  documentType   String?
+  documentId     String?
+  documentNumber String?
+  link           String?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([department, readAt])
+  @@map("notifications")
+}
+
+model ImportBatch {
+  id            String   @id @default(cuid())
+  // demand | po | so | invoice
+  kind          String
+  fileName      String
+  rowCount      Int      @default(0)
+  okCount       Int      @default(0)
+  errorCount    Int      @default(0)
+  // validated | committed | failed
+  status        String   @default("validated")
+  // JSON: validation issues kept for the audit trail.
+  issues        String?
+  // JSON: the validated rows, held between the preview and the confirmation
+  // so the user confirms exactly what was checked (no second parse).
+  payload       String?
+  createdById   String?
+  createdByName String?
+  createdAt     DateTime @default(now())
+
+  @@index([kind, createdAt])
+  @@map("import_batches")
+}
+
+// --------------------------------------------------- warehouse stock (§24)
+
+// Everything received that did not go straight to a customer. It keeps the
+// whole chain that produced it — supplier, PO, invoice, the SO it was bought
+// for and the channel — so leftover in the freezer can always be traced back
+// to the order it came from.
+model WarehouseStock {
+  id               String             @id @default(cuid())
+  stockNumber      String             @unique
+  productId        String
+  product          Product            @relation(fields: [productId], references: [id])
+  quantity         Float
+  unit             String
+  supplierId       String?
+  supplier         Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  poId             String?
+  po               PurchaseOrder?  @relation(fields: [poId], references: [id], onDelete: SetNull)
+  invoiceId        String?
+  originalSoLineId String?
+  originalSoLine   SalesOrderLine? @relation(fields: [originalSoLineId], references: [id], onDelete: SetNull)
+  channelId        String?
+  channel          BusinessChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  receivingLineId  String?
+  receivingLine    ReceivingLine?  @relation(fields: [receivingLineId], references: [id], onDelete: SetNull)
+  allocationLineId String?
+  allocationLine   AllocationLine? @relation(fields: [allocationLineId], references: [id], onDelete: SetNull)
+  reason           String?
+  location         String?
+  lotNumber        String?
+  expiryDate       DateTime?
+  // on_hand | reserved | consumed | written_off
+  status           String             @default("on_hand")
+  createdByName    String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  transactions           WarehouseStockTransaction[]
+  purchaseOrderLine   PurchaseOrderLine?          @relation(fields: [purchaseOrderLineId], references: [id])
+  purchaseOrderLineId String?
+
+  @@index([productId, status])
+  @@index([channelId])
+  @@map("warehouse_stock")
+}
+
+model WarehouseStockTransaction {
+  id            String            @id @default(cuid())
+  stockId       String
+  stock         WarehouseStock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  // in | out | adjust | reserve | release | write_off
+  type          String
+  quantity      Float
+  balanceAfter  Float
+  reason        String?
+  referenceType String?
+  referenceId   String?
+  byName        String?
+  createdAt     DateTime          @default(now())
+
+  @@index([stockId, createdAt])
+  @@map("warehouse_stock_transactions")
+}
+
+// ------------------------------------------------ cross-channel shortage (§20)
+
+// When one delivery cannot cover the demand of several channels, the system
+// stops and hands the decision to a person. It never reduces a customer on
+// its own: it lays out the shortfall per channel, proposes a split from the
+// channel priorities, and waits for an approval.
+model ShortageCase {
+  id               String                @id @default(cuid())
+  caseNumber       String                @unique
+  productId        String
+  product          Product               @relation(fields: [productId], references: [id])
+  poLineId         String?
+  poLine           PurchaseOrderLine? @relation(fields: [poLineId], references: [id], onDelete: SetNull)
+  deliveryDate     DateTime?
+  actualQuantity   Float
+  totalSoQuantity  Float
+  shortageQuantity Float
+  unit             String
+  // open | pending_approval | approved | rejected | applied | cancelled
+  status           String                @default("pending_approval")
+  decisionNote     String?
+  approvedByName   String?
+  approvedAt       DateTime?
+  createdByName    String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  lines ShortageAllocation[]
+
+  @@index([status])
+  @@map("shortage_cases")
+}
+
+model ShortageAllocation {
+  id                String             @id @default(cuid())
+  caseId            String
+  shortageCase      ShortageCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  channelId         String?
+  channel           BusinessChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  customerId        String?
+  customer          Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  soLineId          String?
+  soLine            SalesOrderLine? @relation(fields: [soLineId], references: [id], onDelete: SetNull)
+  requestedQuantity Float
+  // What the approver decided this channel/customer actually gets.
+  approvedQuantity  Float?
+  // Lower goes first. Seeded from the channel's default priority.
+  priority          Int                @default(100)
+  reason            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([caseId])
+  @@map("shortage_allocations")
+}

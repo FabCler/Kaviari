@@ -34,8 +34,8 @@ import {
   can,
   departmentOf,
   type Permission,
-} from "@/lib/scm/permissions";
-import { DEPARTMENT_LABELS } from "@/lib/scm/domain";
+} from "@/lib/osms/permissions";
+import { DEPARTMENT_LABELS } from "@/lib/osms/domain";
 import {
   Sheet,
   SheetContent,
@@ -74,106 +74,106 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Supply chain",
+    title: "Order & Supply",
     items: [
       {
-        href: "/scm",
+        href: "/osms",
         label: "Workflow",
         icon: Workflow,
         permission: "dashboard.view",
       },
       {
-        href: "/scm/import",
+        href: "/osms/import",
         label: "01 Import files",
         icon: FileUp,
         permission: "documents.view",
       },
       {
-        href: "/scm/purchasing/orders",
+        href: "/osms/purchasing/orders",
         label: "02 Purchase planning",
         icon: ClipboardList,
         permission: "purchasing.view",
       },
       {
-        href: "/scm/purchasing/summary",
+        href: "/osms/purchasing/summary",
         label: "Supplier summary",
         icon: Handshake,
         permission: "purchasing.view",
       },
       {
-        href: "/scm/purchasing/invoices",
+        href: "/osms/purchasing/invoices",
         label: "Supplier invoices",
         icon: ReceiptText,
         permission: "purchasing.view",
       },
       {
-        href: "/scm/purchasing/po-invoice",
+        href: "/osms/purchasing/po-invoice",
         label: "PO vs Invoice",
         icon: ArrowLeftRight,
         permission: "purchasing.view",
       },
       {
-        href: "/scm/sales/review",
+        href: "/osms/sales/review",
         label: "03 Sales review",
         icon: BellRing,
         permission: "sales.view",
       },
       {
-        href: "/scm/sales/shortage",
+        href: "/osms/sales/shortage",
         label: "Channel shortage",
         icon: Scale,
         permission: "sales.view",
       },
       {
-        href: "/scm/sales/allocation",
+        href: "/osms/sales/allocation",
         label: "Customer allocation",
         icon: Handshake,
         permission: "sales.view",
       },
       {
-        href: "/scm/po-vs-so",
+        href: "/osms/po-vs-so",
         label: "PO vs SO",
         icon: ArrowLeftRight,
         permission: "documents.view",
       },
       {
-        href: "/scm/warehouse/receiving",
+        href: "/osms/warehouse/receiving",
         label: "04 Receiving",
         icon: PackageCheck,
         permission: "warehouse.view",
       },
       {
-        href: "/scm/warehouse/stock",
+        href: "/osms/warehouse/stock",
         label: "Warehouse stock",
         icon: Boxes,
         permission: "warehouse.stock",
       },
       {
-        href: "/scm/warehouse/shipments",
+        href: "/osms/warehouse/shipments",
         label: "Shipments",
         icon: Truck,
         permission: "warehouse.view",
       },
       {
-        href: "/scm/exceptions",
+        href: "/osms/exceptions",
         label: "05 Exception center",
         icon: ShieldAlert,
         permission: "documents.view",
       },
       {
-        href: "/scm/reports",
+        href: "/osms/reports",
         label: "Performance",
         icon: ChartNoAxesColumn,
         permission: "reports.view",
       },
       {
-        href: "/scm/master-data",
+        href: "/osms/master-data",
         label: "Master data",
         icon: Database,
         permission: "master.manage",
       },
       {
-        href: "/scm/audit",
+        href: "/osms/audit",
         label: "Audit trail",
         icon: FileSearch,
         permission: "audit.view",
@@ -199,14 +199,14 @@ export interface ShellUser {
   channelCodes?: string[];
 }
 
-function Wordmark() {
+function Wordmark({ osms }: { osms: boolean }) {
   return (
     <div className="px-6 pt-7 pb-5">
       <div className="font-display text-[1.7rem] leading-none tracking-[0.18em] text-pearl">
-        KAVIARI
+        {osms ? "OSMS" : "KAVIARI"}
       </div>
       <div className="mt-1.5 text-[0.65rem] font-medium tracking-[0.42em] text-gold uppercase">
-        Cellar
+        {osms ? "Order & Supply" : "Cellar"}
       </div>
       <div className="gold-rule mt-4 opacity-70" />
     </div>
@@ -272,7 +272,7 @@ function NavLinks({
 }
 
 /**
- * "/scm" must not light up for "/scm/import", and the Cellar dashboard "/"
+ * "/osms" must not light up for "/osms/import", and the Cellar dashboard "/"
  * must only match itself — so the longest matching href wins.
  */
 function isActive(pathname: string, href: string): boolean {
@@ -336,15 +336,19 @@ export function AppShell({
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const pathname = usePathname();
+  // OSMS is its own system with its own palette; the Cellar keeps hers. One
+  // class on the shell swaps the whole token set (see .osms-theme in
+  // globals.css) — no component knows which system it is being rendered in.
+  const osms = pathname === "/osms" || pathname.startsWith("/osms/");
   const current =
     ALL_ITEMS.find((item) => isActive(pathname, item.href))?.label ??
-    "Kaviari Cellar";
+    (osms ? "Order & Supply Management" : "Kaviari Cellar");
 
   return (
-    <div className="flex min-h-dvh w-full">
+    <div className={cn("flex min-h-dvh w-full", osms && "osms-theme")}>
       {/* Desktop sidebar */}
       <aside className="pearl-dots fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-sidebar lg:flex">
-        <Wordmark />
+        <Wordmark osms={osms} />
         <div className="flex-1 overflow-y-auto pb-6">
           <NavLinks user={user} />
         </div>
@@ -369,14 +373,14 @@ export function AppShell({
             className="pearl-dots w-72 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground"
           >
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <Wordmark />
+            <Wordmark osms={osms} />
             <div className="flex-1 overflow-y-auto pb-6">
               <NavLinks user={user} onNavigate={() => setMobileOpen(false)} />
             </div>
           </SheetContent>
         </Sheet>
         <div className="font-display text-lg tracking-[0.14em] text-pearl">
-          KAVIARI
+          {osms ? "OSMS" : "KAVIARI"}
         </div>
         <span className="text-sidebar-foreground/50">·</span>
         <div className="truncate text-sm text-sidebar-foreground">{current}</div>

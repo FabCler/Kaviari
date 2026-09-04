@@ -156,3 +156,106 @@
     background-size: 14px 14px;
   }
 }
+
+/* ===========================================================================
+   OSMS — Order & Supply Management System
+   ---------------------------------------------------------------------------
+   OSMS is a separate system that happens to be served from the same Next.js
+   app, so it carries its own identity rather than borrowing the Cellar's navy
+   and gold. Two colours anchor it:
+
+     slate  #384B59  structure — chrome, headings, the primary action
+     blush  #E1A59B  warmth   — the accent, and the one colour on the chrome
+
+   Everything else is derived from those two. Neutrals are biased toward the
+   blush hue rather than being neutral grey, so the warm ground and the cool
+   chrome read as one palette. Semantic colours are pulled toward the same
+   family: the alert red is a deepened blush, the success green sits between
+   slate and blush in hue, so nothing on screen looks borrowed.
+
+   Contrast note: blush is a *light* colour. It carries text only on slate
+   (5.4:1); on the warm ground the accent role is taken by clay
+   (--osms-clay, 5.1:1 on --background). Never set blush as text on a light
+   surface.
+
+   Scoped to `.osms-theme` so the Cellar keeps its own palette untouched —
+   the same separation the databases have.
+   =========================================================================== */
+.osms-theme {
+  /* Brand */
+  --osms-slate: #384b59;
+  --osms-slate-800: #2c3c48;
+  --osms-slate-900: #22303a;
+  --osms-slate-600: #4a6172;
+  --osms-slate-400: #7b8f9d;
+  --osms-blush: #e1a59b;
+  --osms-blush-300: #eec7c0;
+  --osms-blush-100: #f7e6e2;
+  --osms-clay: #a75a4c;
+  --osms-sand: #faf5f3;
+
+  /* Semantic surfaces */
+  --background: #faf5f3;
+  --foreground: #1f2a33;
+  --card: #fffdfc;
+  --card-foreground: #1f2a33;
+  --popover: #fffdfc;
+  --popover-foreground: #1f2a33;
+  --primary: #384b59;
+  --primary-foreground: #fdf6f4;
+  --secondary: #f0e6e2;
+  --secondary-foreground: #2c3c48;
+  --muted: #f2eae7;
+  --muted-foreground: #6f7c85;
+  --accent: #f7e6e2;
+  --accent-foreground: #8d4a3d;
+  --destructive: #b04236;
+  --destructive-foreground: #ffffff;
+  --success: #3f7d68;
+  --warning: #b07d2c;
+  --border: #ead9d3;
+  --input: #dcc7c0;
+  --ring: #e1a59b;
+
+  /* Categorical series — slate and clay lead, then three hues far enough
+     apart to survive deuteranopia on the warm ground. Fixed order. */
+  --chart-1: #384b59;
+  --chart-2: #c07264;
+  --chart-3: #3f7d68;
+  --chart-4: #b07d2c;
+  --chart-5: #6b5b8a;
+
+  /* Chrome — slate ground, blush as the one warm signal on it */
+  --sidebar: #384b59;
+  --sidebar-foreground: #cdd7de;
+  --sidebar-accent: rgba(225, 165, 155, 0.16);
+  --sidebar-accent-foreground: #e1a59b;
+  --sidebar-border: rgba(225, 165, 155, 0.18);
+
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* The Cellar's brand utilities are hard-coded to gold and pearl; inside OSMS
+   they follow the OSMS palette instead so nothing bleeds across. */
+.osms-theme .text-gold,
+.osms-theme .text-gold\/70 {
+  color: var(--osms-blush);
+}
+.osms-theme .text-pearl {
+  color: #fdf6f4;
+}
+.osms-theme .gold-rule {
+  background: linear-gradient(
+    90deg,
+    var(--osms-blush) 0%,
+    rgba(225, 165, 155, 0) 100%
+  );
+}
+.osms-theme .pearl-dots {
+  background-image: radial-gradient(
+    rgba(225, 165, 155, 0.09) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
