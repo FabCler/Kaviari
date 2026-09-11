@@ -10,7 +10,10 @@
  * August 2026 onward is recorded through the website. v7 syncs the product
  * catalog from data/products_db.json (upsert by PR code, deactivate removed
  * codes) without touching movements, lots, forecasts or accounts; v8
- * re-syncs it from the September 2026 workbook (14 new products).
+ * re-syncs it from the September 2026 workbook (14 new products). v9 loads
+ * the initial "Top 90% sales" customer pivot (data/customer_sales.json)
+ * into the CustomerSale table — later refreshes come from the website's
+ * upload on the Customers page, so this runs only on the v9 upgrade.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -20,7 +23,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 8;
+const VERSION = 9;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -80,6 +83,32 @@ async function syncCatalog(): Promise<string> {
   return `catalog synced: ${created} created, ${updated} updated, ${deactivated.count} deactivated`;
 }
 
+/**
+ * One-time (v9) load of the initial Top 90% customer sales snapshot. Never
+ * re-run on later version bumps: the table is owned by the website upload
+ * from then on, and re-importing would clobber a fresher upload.
+ */
+async function importCustomerSales(): Promise<string> {
+  const file = join(__dirname, "..", "data", "customer_sales.json");
+  if (!existsSync(file)) return "no customer sales file";
+  const rows = JSON.parse(readFileSync(file, "utf8"));
+  await prisma.customerSale.deleteMany();
+  await prisma.customerSale.createMany({ data: rows });
+  await prisma.setting.upsert({
+    where: { key: "customerSalesMeta" },
+    create: {
+      key: "customerSalesMeta",
+      value: JSON.stringify({
+        fileName: "20260911_Kaviari_QTY_of_Top_90_YTDSep26_vs_25.xlsx",
+        uploadedAt: new Date().toISOString(),
+        rows: rows.length,
+      }),
+    },
+    update: {},
+  });
+  return `customer sales loaded: ${rows.length} rows`;
+}
+
 async function main() {
   const done = await prisma.setting.findUnique({ where: { key: GUARD_KEY } });
   const doneVersion = done ? Number(done.value.split("|")[0]) || 1 : 0;
@@ -90,6 +119,10 @@ async function main() {
 
   const catalogResult = await syncCatalog();
   console.log(`consumption-maintenance: ${catalogResult}`);
+
+  if (doneVersion < 9) {
+    console.log(`consumption-maintenance: ${await importCustomerSales()}`);
+  }
 
   if (doneVersion >= 6) {
     // Only the catalog changed — keep the imported history as is.
@@ -102,7 +135,7 @@ async function main() {
       update: { value: `${VERSION}|${new Date().toISOString()}` },
     });
     console.log(
-      `consumption-maintenance: v${doneVersion} -> v${VERSION} — catalog refresh only.`
+      `consumption-maintenance: v${doneVersion} -> v${VERSION} — consumption history kept.`
     );
     return;
   }

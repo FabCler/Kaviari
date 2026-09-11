@@ -14,6 +14,7 @@ import {
   ScrollText,
   Settings,
   Sparkles,
+  Users,
   UtensilsCrossed,
 } from "lucide-react";
 import {
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/consume", label: "Consumption", icon: UtensilsCrossed },
+  { href: "/customers", label: "Customers", icon: Users },
   { href: "/planner", label: "Order Planner", icon: CalendarClock },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ScrollText },
   { href: "/import", label: "Import & Analyze", icon: FileUp },

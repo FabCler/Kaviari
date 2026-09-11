@@ -210,6 +210,25 @@ model ContentAsset {
   createdAt   DateTime  @default(now())
 }
 
+// One customer × product × month quantity from the "Top 90% sales" export.
+// The whole table is replaced on every upload (the file is a full snapshot,
+// re-exported twice a month).
+model CustomerSale {
+  id           String @id @default(cuid())
+  customerCode String
+  customerName String
+  // PR code as text ("(blank)" rows carry null); matched to Product at read
+  // time — no FK so catalog changes never orphan sales history.
+  prCode       String?
+  productName  String
+  year         Int
+  month        Int // 1-12
+  quantity     Float
+
+  @@index([year, month])
+  @@index([customerCode])
+}
+
 model Setting {
   key   String @id
   value String
