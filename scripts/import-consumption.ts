@@ -9,7 +9,8 @@
  * code, spread as whole numbers across each month's ISO weeks, no lot).
  * August 2026 onward is recorded through the website. v7 syncs the product
  * catalog from data/products_db.json (upsert by PR code, deactivate removed
- * codes) without touching movements, lots, forecasts or accounts.
+ * codes) without touching movements, lots, forecasts or accounts; v8
+ * re-syncs it from the September 2026 workbook (14 new products).
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -19,7 +20,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 7;
+const VERSION = 8;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
