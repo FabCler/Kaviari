@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { CAVIAR_TYPES, PRODUCT_CATEGORIES } from "@/lib/domain";
 import { formatUnits } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,61 @@ import type { InventoryRow } from "@/components/inventory/types";
 
 const ALL = "all";
 
+/**
+ * Sortable columns. Text columns start ascending; numeric columns start
+ * descending (largest first). "forecast0/1/2" are the per-month columns;
+ * cover treats ∞ (no demand) as larger than any finite value.
+ */
+type SortKey =
+  | "prCode"
+  | "name"
+  | "onHand"
+  | "onOrder"
+  | "consumed"
+  | "cover"
+  | "forecast0"
+  | "forecast1"
+  | "forecast2";
+
+type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
+
+const TEXT_SORT_KEYS: SortKey[] = ["prCode", "name"];
+
+function sortValue(row: InventoryRow, key: SortKey): string | number {
+  switch (key) {
+    case "prCode":
+      return row.prCode;
+    case "name":
+      return row.name;
+    case "onHand":
+      return row.onHandUnits;
+    case "onOrder":
+      return row.onOrderUnits;
+    case "consumed":
+      return row.consumed30dUnits;
+    case "cover":
+      return row.weeksOfCover ?? Number.POSITIVE_INFINITY;
+    case "forecast0":
+    case "forecast1":
+    case "forecast2":
+      return row.forecastMonths[Number(key.slice(-1))] ?? 0;
+  }
+}
+
+function sortRows(rows: InventoryRow[], sort: SortState): InventoryRow[] {
+  if (!sort) return rows;
+  const factor = sort.dir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const va = sortValue(a, sort.key);
+    const vb = sortValue(b, sort.key);
+    const cmp =
+      typeof va === "string" || typeof vb === "string"
+        ? String(va).localeCompare(String(vb), undefined, { numeric: true })
+        : va - vb;
+    return cmp !== 0 ? factor * cmp : a.name.localeCompare(b.name);
+  });
+}
+
 function isDormant(row: InventoryRow): boolean {
   return (
     row.onHandUnits <= 0 && row.aduUnitsPerDay <= 0 && row.onOrderUnits <= 0
@@ -43,6 +99,18 @@ export function InventoryTable({
   const [forecastHorizon, setForecastHorizon] = React.useState(3);
   const [caviarType, setCaviarType] = React.useState<string>(ALL);
   const [showDormant, setShowDormant] = React.useState(false);
+  const [sort, setSort] = React.useState<SortState>(null);
+
+  const toggleSort = (key: SortKey) => {
+    setSort((current) => {
+      const first = TEXT_SORT_KEYS.includes(key) ? "asc" : "desc";
+      if (current?.key !== key) return { key, dir: first };
+      // Second click flips; third returns to the default order.
+      return current.dir === first
+        ? { key, dir: first === "asc" ? "desc" : "asc" }
+        : null;
+    });
+  };
 
   // Caviar type only applies when the category filter can contain caviar.
   const typeFilterEnabled = category === ALL || category === "Caviar";
@@ -55,9 +123,11 @@ export function InventoryTable({
   });
   const activeRows = filtered.filter((row) => !isDormant(row));
   const dormantRows = filtered.filter(isDormant);
-  const visibleRows = showDormant
-    ? [...activeRows, ...dormantRows]
-    : activeRows;
+  // Sorting spans the whole visible list (dormant rows included when shown).
+  const visibleRows = sortRows(
+    showDormant ? [...activeRows, ...dormantRows] : activeRows,
+    sort
+  );
 
   return (
     <div>
@@ -151,8 +221,52 @@ export function InventoryTable({
         rows={visibleRows}
         forecastHorizon={forecastHorizon}
         forecastMonthLabels={forecastMonthLabels}
+        sort={sort}
+        onToggleSort={toggleSort}
       />
     </div>
+  );
+}
+
+function SortableHead({
+  label,
+  sortKey,
+  sort,
+  onToggleSort,
+  align = "left",
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: SortState;
+  onToggleSort: (key: SortKey) => void;
+  align?: "left" | "right";
+}) {
+  const active = sort?.key === sortKey;
+  const dir = active ? sort.dir : undefined;
+  return (
+    <TableHead
+      className={align === "right" ? "text-right" : undefined}
+      aria-sort={
+        active ? (dir === "asc" ? "ascending" : "descending") : undefined
+      }
+    >
+      <button
+        type="button"
+        onClick={() => onToggleSort(sortKey)}
+        className={`inline-flex cursor-pointer items-center gap-1 uppercase hover:text-foreground ${
+          align === "right" ? "flex-row-reverse" : ""
+        } ${active ? "text-foreground" : ""}`}
+      >
+        {label}
+        {dir === "asc" ? (
+          <ArrowUp className="size-3.5" />
+        ) : dir === "desc" ? (
+          <ArrowDown className="size-3.5" />
+        ) : (
+          <ChevronsUpDown className="size-3 opacity-50" />
+        )}
+      </button>
+    </TableHead>
   );
 }
 
@@ -160,10 +274,14 @@ function ProductsTable({
   rows,
   forecastHorizon,
   forecastMonthLabels,
+  sort,
+  onToggleSort,
 }: {
   rows: InventoryRow[];
   forecastHorizon: number;
   forecastMonthLabels: string[];
+  sort: SortState;
+  onToggleSort: (key: SortKey) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -178,19 +296,58 @@ function ProductsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Code</TableHead>
-            <TableHead>Product</TableHead>
+            <SortableHead
+              label="Code"
+              sortKey="prCode"
+              sort={sort}
+              onToggleSort={onToggleSort}
+            />
+            <SortableHead
+              label="Product"
+              sortKey="name"
+              sort={sort}
+              onToggleSort={onToggleSort}
+            />
             <TableHead>Type</TableHead>
             <TableHead>Unit</TableHead>
-            <TableHead className="text-right">Stock on hand</TableHead>
-            <TableHead className="text-right">On order</TableHead>
-            <TableHead className="text-right">Consumed (30 d)</TableHead>
-            {forecastMonthLabels.slice(0, forecastHorizon).map((label) => (
-              <TableHead key={label} className="text-right">
-                Forecast {label}
-              </TableHead>
+            <SortableHead
+              label="Stock on hand"
+              sortKey="onHand"
+              sort={sort}
+              onToggleSort={onToggleSort}
+              align="right"
+            />
+            <SortableHead
+              label="On order"
+              sortKey="onOrder"
+              sort={sort}
+              onToggleSort={onToggleSort}
+              align="right"
+            />
+            <SortableHead
+              label="Consumed (30 d)"
+              sortKey="consumed"
+              sort={sort}
+              onToggleSort={onToggleSort}
+              align="right"
+            />
+            {forecastMonthLabels.slice(0, forecastHorizon).map((label, index) => (
+              <SortableHead
+                key={label}
+                label={`Forecast ${label}`}
+                sortKey={`forecast${index}` as SortKey}
+                sort={sort}
+                onToggleSort={onToggleSort}
+                align="right"
+              />
             ))}
-            <TableHead className="text-right">Cover</TableHead>
+            <SortableHead
+              label="Cover"
+              sortKey="cover"
+              sort={sort}
+              onToggleSort={onToggleSort}
+              align="right"
+            />
           </TableRow>
         </TableHeader>
         <TableBody>
