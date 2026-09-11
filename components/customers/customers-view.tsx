@@ -1,8 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { ChevronDown, ChevronRight, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { CAVIAR_TYPES } from "@/lib/domain";
 import { formatNumber } from "@/lib/format";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,44 +26,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  ALL,
+  buildCustomerAnalysis,
+  matchesCaviarTypes,
+  MONTH_LABELS,
+  OTHER_TYPE,
+  productKey,
+  samePeriodLabel,
+  type CustomerFilters,
+  type GroupRow,
+} from "@/components/customers/aggregate";
+import {
   CustomersChart,
   type CustomersChartRow,
 } from "@/components/customers/customers-chart";
+import { MultiSelect } from "@/components/customers/multi-select";
 import type { CustomerSaleEntry } from "@/components/customers/types";
 
-const ALL = "all";
-const OTHER_TYPE = "other";
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-type Grouping = "customer" | "product";
-
-/** Stable identity for a product line ("(blank)" rows have no PR code). */
-function productKey(entry: CustomerSaleEntry): string {
-  return entry.prCode ?? `name:${entry.productName}`;
-}
-
-interface GroupRow {
-  key: string;
-  code: string;
-  name: string;
-  months: number[]; // per-month quantity for the selected year
-  total: number;
-  /** Previous year, same months as the selected year has data for. */
-  prevTotal: number;
-}
+type Grouping = CustomerFilters["grouping"];
 
 function DeltaText({
   current,
@@ -101,136 +84,202 @@ export function CustomersView({
   const latestYear = years[years.length - 1] ?? new Date().getUTCFullYear();
   const [year, setYear] = React.useState(latestYear);
   const [compareN1, setCompareN1] = React.useState(true);
-  const [customer, setCustomer] = React.useState<string>(ALL);
-  const [caviarType, setCaviarType] = React.useState<string>(ALL);
+  const [customers, setCustomers] = React.useState<string[]>([]);
+  const [caviarTypes, setCaviarTypes] = React.useState<string[]>([]);
   const [product, setProduct] = React.useState<string>(ALL);
   const [grouping, setGrouping] = React.useState<Grouping>("customer");
+  const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
+  const [exporting, setExporting] = React.useState(false);
 
   const customerOptions = React.useMemo(() => {
     const byCode = new Map<string, string>();
-    for (const entry of entries) byCode.set(entry.customerCode, entry.customerName);
+    for (const entry of entries)
+      byCode.set(entry.customerCode, entry.customerName);
     return [...byCode.entries()]
-      .map(([code, name]) => ({ code, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .map(([code, name]) => ({ value: code, label: name }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [entries]);
 
   const typeOptions = React.useMemo(() => {
     const present = new Set(
       entries.map((e) => e.caviarType).filter((t): t is string => t != null)
     );
-    return {
-      types: CAVIAR_TYPES.filter((t) => present.has(t)),
-      hasOther: entries.some((e) => e.caviarType == null),
-    };
+    const options: { value: string; label: string }[] = CAVIAR_TYPES.filter(
+      (t) => present.has(t)
+    ).map((t) => ({ value: t, label: t }));
+    if (entries.some((e) => e.caviarType == null)) {
+      options.push({ value: OTHER_TYPE, label: "Other products" });
+    }
+    return options;
   }, [entries]);
 
+  // Product options follow the selected caviar types, so picking a type
+  // narrows the product list to matching tins.
   const productOptions = React.useMemo(() => {
     const byKey = new Map<string, string>();
-    for (const entry of entries) byKey.set(productKey(entry), entry.productName);
+    for (const entry of entries) {
+      if (!matchesCaviarTypes(entry, caviarTypes)) continue;
+      byKey.set(productKey(entry), entry.productName);
+    }
     return [...byKey.entries()]
       .map(([key, name]) => ({ key, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [entries]);
+  }, [entries, caviarTypes]);
 
-  const filtered = React.useMemo(
-    () =>
-      entries.filter((entry) => {
-        if (customer !== ALL && entry.customerCode !== customer) return false;
-        if (caviarType === OTHER_TYPE) {
-          if (entry.caviarType != null) return false;
-        } else if (caviarType !== ALL && entry.caviarType !== caviarType) {
-          return false;
-        }
-        if (product !== ALL && productKey(entry) !== product) return false;
-        return true;
-      }),
-    [entries, customer, caviarType, product]
-  );
+  // A product that fell out of the narrowed list silently means "all".
+  const effectiveProduct =
+    product !== ALL && productOptions.some((o) => o.key === product)
+      ? product
+      : ALL;
 
-  const current = filtered.filter((e) => e.year === year);
-  const previous = filtered.filter((e) => e.year === year - 1);
   const prevYearAvailable = years.includes(year - 1);
   const compare = compareN1 && prevYearAvailable;
 
-  // Compare like with like: the previous year is cut to the months the
-  // selected year has data for (e.g. Jan–Sep while the year is running).
-  const maxDataMonth = current.length
-    ? Math.max(...current.map((e) => e.month))
-    : 12;
-  const previousSame = previous.filter((e) => e.month <= maxDataMonth);
-  const sameperiodLabel =
-    maxDataMonth === 12
-      ? String(year - 1)
-      : `${year - 1} Jan–${MONTH_LABELS[maxDataMonth - 1]}`;
+  const filters: CustomerFilters = React.useMemo(
+    () => ({
+      year,
+      customers,
+      caviarTypes,
+      product: effectiveProduct,
+      grouping,
+      compareN1: compare,
+    }),
+    [year, customers, caviarTypes, effectiveProduct, grouping, compare]
+  );
 
-  const chartData: CustomersChartRow[] = MONTH_LABELS.map((label, index) => ({
-    label,
-    current: current
-      .filter((e) => e.month === index + 1)
-      .reduce((sum, e) => sum + e.quantity, 0),
-    prev: previous
-      .filter((e) => e.month === index + 1)
-      .reduce((sum, e) => sum + e.quantity, 0),
-  }));
+  const analysis = React.useMemo(
+    () => buildCustomerAnalysis(entries, filters),
+    [entries, filters]
+  );
 
-  const currentTotal = current.reduce((sum, e) => sum + e.quantity, 0);
-  const previousSameTotal = previousSame.reduce((sum, e) => sum + e.quantity, 0);
+  const {
+    maxDataMonth,
+    monthTotals,
+    currentTotal,
+    previousSameTotal,
+    groupRows,
+  } = analysis;
+  const sameperiodLabel = samePeriodLabel(year, maxDataMonth);
+  const chartData: CustomersChartRow[] = monthTotals;
 
-  const topBy = (keyOf: (e: CustomerSaleEntry) => string, labelOf: (e: CustomerSaleEntry) => string) => {
-    const totals = new Map<string, { label: string; total: number }>();
-    for (const entry of current) {
-      const key = keyOf(entry);
-      const existing = totals.get(key) ?? { label: labelOf(entry), total: 0 };
-      existing.total += entry.quantity;
-      totals.set(key, existing);
-    }
-    let best: { label: string; total: number } | null = null;
-    for (const value of totals.values()) {
-      if (!best || value.total > best.total) best = value;
-    }
-    return { best, count: totals.size };
+  const toggleExpanded = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
-  const customerStats = topBy((e) => e.customerCode, (e) => e.customerName);
-  const productStats = topBy(productKey, (e) => e.productName);
 
-  const groupRows = React.useMemo<GroupRow[]>(() => {
-    const byKey = new Map<string, GroupRow>();
-    const rowFor = (entry: CustomerSaleEntry): GroupRow => {
-      const key =
-        grouping === "customer" ? entry.customerCode : productKey(entry);
-      let row = byKey.get(key);
-      if (!row) {
-        row = {
-          key,
-          code:
-            grouping === "customer"
-              ? entry.customerCode
-              : (entry.prCode ?? "—"),
-          name:
-            grouping === "customer" ? entry.customerName : entry.productName,
-          months: Array.from({ length: 12 }, () => 0),
-          total: 0,
-          prevTotal: 0,
-        };
-        byKey.set(key, row);
+  async function downloadExcel() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/exports/customer-sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(filters),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.error ?? "The export failed — please try again.");
       }
-      return row;
-    };
-    for (const entry of current) {
-      const row = rowFor(entry);
-      row.months[entry.month - 1] += entry.quantity;
-      row.total += entry.quantity;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `customers_top90_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "The export failed — please try again."
+      );
+    } finally {
+      setExporting(false);
     }
-    for (const entry of previousSame) {
-      rowFor(entry).prevTotal += entry.quantity;
-    }
-    return [...byKey.values()].sort(
-      (a, b) => b.total - a.total || b.prevTotal - a.prevTotal
-    );
-  }, [current, previousSame, grouping]);
+  }
 
   const visibleMonths = MONTH_LABELS.slice(0, maxDataMonth);
-  const columnCount = 2 + visibleMonths.length + 1 + (compare ? 2 : 0);
+
+  const renderQuantityCells = (row: {
+    months: number[];
+    total: number;
+    prevTotal: number;
+  }) => (
+    <>
+      {visibleMonths.map((label, index) => (
+        <TableCell key={label} className="tnum text-right">
+          {row.months[index] > 0 ? (
+            formatNumber(row.months[index])
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </TableCell>
+      ))}
+      <TableCell className="tnum text-right font-medium">
+        {row.total > 0 ? (
+          formatNumber(row.total)
+        ) : (
+          <span className="font-normal text-muted-foreground">-</span>
+        )}
+      </TableCell>
+      {compare ? (
+        <>
+          <TableCell className="tnum text-right text-muted-foreground">
+            {row.prevTotal > 0 ? formatNumber(row.prevTotal) : "-"}
+          </TableCell>
+          <TableCell className="text-right">
+            <DeltaText current={row.total} previous={row.prevTotal} />
+          </TableCell>
+        </>
+      ) : null}
+    </>
+  );
+
+  const renderGroupRow = (row: GroupRow) => {
+    const isExpanded = expanded.has(row.key);
+    return (
+      <React.Fragment key={row.key}>
+        <TableRow
+          className="cursor-pointer"
+          onClick={() => toggleExpanded(row.key)}
+          aria-expanded={isExpanded}
+        >
+          <TableCell className="tnum text-muted-foreground">
+            {row.code}
+          </TableCell>
+          <TableCell className="max-w-72 whitespace-normal font-medium">
+            <span className="inline-flex items-center gap-1.5">
+              {isExpanded ? (
+                <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+              )}
+              {row.name}
+            </span>
+          </TableCell>
+          {renderQuantityCells(row)}
+        </TableRow>
+        {isExpanded
+          ? row.details.map((detail) => (
+              <TableRow key={`${row.key}:${detail.key}`} className="bg-muted/30">
+                <TableCell className="tnum text-xs text-muted-foreground">
+                  {detail.code}
+                </TableCell>
+                <TableCell className="max-w-72 pl-9 whitespace-normal text-sm text-muted-foreground">
+                  {detail.name}
+                </TableCell>
+                {renderQuantityCells(detail)}
+              </TableRow>
+            ))
+          : null}
+      </React.Fragment>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -255,50 +304,27 @@ export function CustomersView({
               ))}
             </SelectContent>
           </Select>
-          <Label htmlFor="sales-customer" className="sr-only">
-            Customer
-          </Label>
-          <Select value={customer} onValueChange={setCustomer}>
-            <SelectTrigger
-              id="sales-customer"
-              size="sm"
-              aria-label="Customer"
-              className="max-w-56"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All customers</SelectItem>
-              {customerOptions.map((option) => (
-                <SelectItem key={option.code} value={option.code}>
-                  {option.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Label htmlFor="sales-type" className="sr-only">
-            Caviar type
-          </Label>
-          <Select value={caviarType} onValueChange={setCaviarType}>
-            <SelectTrigger id="sales-type" size="sm" aria-label="Caviar type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All caviar types</SelectItem>
-              {typeOptions.types.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-              {typeOptions.hasOther ? (
-                <SelectItem value={OTHER_TYPE}>Other products</SelectItem>
-              ) : null}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={customerOptions}
+            selected={customers}
+            onChange={setCustomers}
+            allLabel="All customers"
+            searchPlaceholder="Search customers…"
+            ariaLabel="Customers"
+          />
+          <MultiSelect
+            options={typeOptions}
+            selected={caviarTypes}
+            onChange={setCaviarTypes}
+            allLabel="All caviar types"
+            searchPlaceholder="Search types…"
+            ariaLabel="Caviar types"
+            className="max-w-48"
+          />
           <Label htmlFor="sales-product" className="sr-only">
             Product
           </Label>
-          <Select value={product} onValueChange={setProduct}>
+          <Select value={effectiveProduct} onValueChange={setProduct}>
             <SelectTrigger
               id="sales-product"
               size="sm"
@@ -352,7 +378,10 @@ export function CustomersView({
             </p>
             <p className="font-display tnum mt-1.5 text-2xl font-medium lg:text-3xl">
               {prevYearAvailable ? (
-                <DeltaText current={currentTotal} previous={previousSameTotal} />
+                <DeltaText
+                  current={currentTotal}
+                  previous={previousSameTotal}
+                />
               ) : (
                 <span className="text-muted-foreground">—</span>
               )}
@@ -370,11 +399,11 @@ export function CustomersView({
               Customers
             </p>
             <p className="font-display tnum mt-1.5 text-2xl font-medium lg:text-3xl">
-              {customerStats.count}
+              {analysis.customerCount}
             </p>
             <p className="mt-1 truncate text-xs text-muted-foreground">
-              {customerStats.best
-                ? `top: ${customerStats.best.label} (${formatNumber(customerStats.best.total)})`
+              {analysis.topCustomer
+                ? `top: ${analysis.topCustomer.label} (${formatNumber(analysis.topCustomer.total)})`
                 : "none in this selection"}
             </p>
           </CardContent>
@@ -386,13 +415,13 @@ export function CustomersView({
             </p>
             <p
               className="mt-1.5 truncate font-display text-lg font-medium lg:text-xl"
-              title={productStats.best?.label}
+              title={analysis.topProduct?.label}
             >
-              {productStats.best?.label ?? "—"}
+              {analysis.topProduct?.label ?? "—"}
             </p>
             <p className="tnum mt-1 text-xs text-muted-foreground">
-              {productStats.best
-                ? `${formatNumber(productStats.best.total)} units in ${year}`
+              {analysis.topProduct
+                ? `${formatNumber(analysis.topProduct.total)} units in ${year}`
                 : "none in this selection"}
             </p>
           </CardContent>
@@ -418,18 +447,33 @@ export function CustomersView({
           <h2 className="text-sm font-medium text-foreground">
             Quantities by month — {year}
           </h2>
-          <Select
-            value={grouping}
-            onValueChange={(value) => setGrouping(value as Grouping)}
-          >
-            <SelectTrigger size="sm" aria-label="Group rows by">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="customer">By customer</SelectItem>
-              <SelectItem value="product">By product</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={grouping}
+              onValueChange={(value) => setGrouping(value as Grouping)}
+            >
+              <SelectTrigger size="sm" aria-label="Group rows by">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="customer">By customer</SelectItem>
+                <SelectItem value="product">By product</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadExcel}
+              disabled={exporting || groupRows.length === 0}
+            >
+              {exporting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              Export Excel
+            </Button>
+          </div>
         </div>
         {groupRows.length === 0 ? (
           <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
@@ -461,55 +505,13 @@ export function CustomersView({
                   ) : null}
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {groupRows.map((row) => (
-                  <TableRow key={row.key}>
-                    <TableCell className="tnum text-muted-foreground">
-                      {row.code}
-                    </TableCell>
-                    <TableCell className="max-w-72 whitespace-normal font-medium">
-                      {row.name}
-                    </TableCell>
-                    {visibleMonths.map((label, index) => (
-                      <TableCell key={label} className="tnum text-right">
-                        {row.months[index] > 0 ? (
-                          formatNumber(row.months[index])
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    ))}
-                    <TableCell className="tnum text-right font-medium">
-                      {row.total > 0 ? (
-                        formatNumber(row.total)
-                      ) : (
-                        <span className="font-normal text-muted-foreground">
-                          -
-                        </span>
-                      )}
-                    </TableCell>
-                    {compare ? (
-                      <>
-                        <TableCell className="tnum text-right text-muted-foreground">
-                          {row.prevTotal > 0 ? formatNumber(row.prevTotal) : "-"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DeltaText
-                            current={row.total}
-                            previous={row.prevTotal}
-                          />
-                        </TableCell>
-                      </>
-                    ) : null}
-                  </TableRow>
-                ))}
-              </TableBody>
+              <TableBody>{groupRows.map(renderGroupRow)}</TableBody>
               <TableFooter>
                 <TableRow>
                   <TableCell colSpan={2}>Total</TableCell>
                   {visibleMonths.map((label, index) => (
                     <TableCell key={label} className="tnum text-right">
-                      {formatNumber(chartData[index].current)}
+                      {formatNumber(monthTotals[index].current)}
                     </TableCell>
                   ))}
                   <TableCell className="tnum text-right">
@@ -534,9 +536,9 @@ export function CustomersView({
           </div>
         )}
         <p className="mt-2 px-1 text-xs text-muted-foreground">
-          {columnCount >= 12
-            ? "Scroll sideways to see every month on smaller screens. "
-            : ""}
+          Click a {grouping === "customer" ? "customer" : "product"} row to
+          see its{" "}
+          {grouping === "customer" ? "caviars and products" : "customers"}.
           N-1 totals cover the same months as the selected year (Jan–
           {MONTH_LABELS[maxDataMonth - 1]}).
         </p>
