@@ -16,7 +16,8 @@
  * upload on the Customers page, so this runs only on the v9 upgrade.
  * v10 removes the stock that PO receptions had created (lots + receipt
  * movements): receiving became informational-only, stock comes exclusively
- * from Import & Analyze uploads.
+ * from Import & Analyze uploads. v11 re-syncs the catalog from the
+ * 12 Sep 2026 workbook (2 new products, one grammage fix).
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -26,7 +27,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 10;
+const VERSION = 11;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
