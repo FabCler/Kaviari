@@ -297,6 +297,12 @@ export async function PATCH(request: Request, ctx: Ctx) {
   return Response.json({ ok: true, status: newStatus ?? po.status });
 }
 
+/**
+ * Any order can be deleted (the client asks for confirmation). Deleting is
+ * structurally safe in every status: lines cascade with the order, and the
+ * stock a received order brought in lives in lots/movements that carry no
+ * link to the order — inventory is untouched.
+ */
 export async function DELETE(_request: Request, ctx: Ctx) {
   const denied = await requireAuth();
   if (denied) return denied;
@@ -305,12 +311,6 @@ export async function DELETE(_request: Request, ctx: Ctx) {
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) {
     return Response.json({ error: "Purchase order not found" }, { status: 404 });
-  }
-  if (po.status !== "draft") {
-    return Response.json(
-      { error: "Only draft purchase orders can be deleted." },
-      { status: 409 }
-    );
   }
   await prisma.purchaseOrder.delete({ where: { id } });
   return Response.json({ ok: true });

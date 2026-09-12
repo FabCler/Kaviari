@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DeletePoButton } from "@/components/purchase-orders/delete-po-button";
 import { PoStatusBadge } from "@/components/purchase-orders/po-status-badge";
 import { NewPoButton } from "@/components/purchase-orders/new-po-button";
 import { UploadPoButton } from "@/components/purchase-orders/upload-po-button";
@@ -200,15 +201,24 @@ export default async function PurchaseOrdersPage({
                         {po.lines.length}
                       </TableCell>
                       <TableCell className="text-right">
-                        {po.status === "confirmed" || (receiveMode && isOpen) ? (
-                          <Button variant="gold" size="sm" asChild>
-                            <Link href={`/purchase-orders/${po.id}?receive=1`}>
-                              Receive
-                            </Link>
-                          </Button>
-                        ) : po.status === "draft" ? (
-                          <Badge variant="outline">editable</Badge>
-                        ) : null}
+                        <span className="inline-flex items-center gap-1.5">
+                          {po.status === "confirmed" ||
+                          (receiveMode && isOpen) ? (
+                            <Button variant="gold" size="sm" asChild>
+                              <Link href={`/purchase-orders/${po.id}?receive=1`}>
+                                Receive
+                              </Link>
+                            </Button>
+                          ) : po.status === "draft" ? (
+                            <Badge variant="outline">editable</Badge>
+                          ) : null}
+                          <DeletePoButton
+                            poId={po.id}
+                            reference={po.reference}
+                            status={po.status}
+                            asIcon
+                          />
+                        </span>
                       </TableCell>
                     </TableRow>
                   );

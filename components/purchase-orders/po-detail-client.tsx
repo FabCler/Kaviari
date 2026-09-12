@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeletePoButton } from "@/components/purchase-orders/delete-po-button";
 import {
   Card,
   CardContent,
@@ -255,30 +256,6 @@ export function PoDetailClient({
     await patch({ action }, success);
   }
 
-  async function deleteDraft() {
-    if (!window.confirm(`Delete draft ${po.reference}? This cannot be undone.`)) {
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await fetch(`/api/purchase-orders/${po.id}`, {
-        method: "DELETE",
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        toast.error(data.error ?? "The draft could not be deleted.");
-        return;
-      }
-      toast.success("Draft deleted.");
-      router.push("/purchase-orders");
-      router.refresh();
-    } catch {
-      toast.error("The draft could not be deleted.");
-    } finally {
-      setPending(false);
-    }
-  }
-
   const fieldLabelClass =
     "text-xs font-semibold tracking-wide text-muted-foreground uppercase";
 
@@ -304,13 +281,6 @@ export function PoDetailClient({
               disabled={pending || lines.length === 0}
             >
               <Send aria-hidden /> Mark as sent
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={deleteDraft}
-              disabled={pending}
-            >
-              <Trash2 aria-hidden /> Delete draft
             </Button>
           </>
         ) : null}
@@ -359,6 +329,12 @@ export function PoDetailClient({
             <FileDown aria-hidden /> Download Excel
           </a>
         </Button>
+        <DeletePoButton
+          poId={po.id}
+          reference={po.reference}
+          status={po.status}
+          redirectToList
+        />
         {pending ? (
           <Loader2
             className="size-4 animate-spin text-muted-foreground"
