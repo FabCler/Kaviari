@@ -18,13 +18,10 @@ import {
 
 /** What deleting means for this order right now, shown in the confirmation. */
 function consequence(status: string): string {
-  if (status === "received") {
-    return "The stock received from this order stays in inventory — only the order record disappears.";
-  }
   if (status === "sent" || status === "confirmed") {
     return "Its lines will no longer count as pipeline stock in the planner.";
   }
-  return "Its lines are removed with it.";
+  return "Only the order record disappears — stock is never touched by purchase orders.";
 }
 
 /**

@@ -14,6 +14,9 @@
  * the initial "Top 90% sales" customer pivot (data/customer_sales.json)
  * into the CustomerSale table — later refreshes come from the website's
  * upload on the Customers page, so this runs only on the v9 upgrade.
+ * v10 removes the stock that PO receptions had created (lots + receipt
+ * movements): receiving became informational-only, stock comes exclusively
+ * from Import & Analyze uploads.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -23,7 +26,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 9;
+const VERSION = 10;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -109,6 +112,29 @@ async function importCustomerSales(): Promise<string> {
   return `customer sales loaded: ${rows.length} rows`;
 }
 
+/**
+ * One-time (v10) removal of the stock that PO receptions created before
+ * receiving became informational-only: the lots opened by a receipt and the
+ * receipt movements themselves. Consumption drawn from those lots keeps its
+ * movements (their lot link is cleared automatically on lot delete).
+ */
+async function removePoReceiptStock(): Promise<string> {
+  const receipts = await prisma.stockMovement.findMany({
+    where: { type: "receipt", note: { startsWith: "Received " } },
+    select: { id: true, lotId: true },
+  });
+  const lotIds = [
+    ...new Set(receipts.flatMap((r) => (r.lotId ? [r.lotId] : []))),
+  ];
+  const movements = await prisma.stockMovement.deleteMany({
+    where: { id: { in: receipts.map((r) => r.id) } },
+  });
+  const lots = await prisma.stockLot.deleteMany({
+    where: { id: { in: lotIds } },
+  });
+  return `PO receipt stock removed: ${movements.count} receipt movements, ${lots.count} lots`;
+}
+
 async function main() {
   const done = await prisma.setting.findUnique({ where: { key: GUARD_KEY } });
   const doneVersion = done ? Number(done.value.split("|")[0]) || 1 : 0;
@@ -122,6 +148,10 @@ async function main() {
 
   if (doneVersion < 9) {
     console.log(`consumption-maintenance: ${await importCustomerSales()}`);
+  }
+
+  if (doneVersion < 10) {
+    console.log(`consumption-maintenance: ${await removePoReceiptStock()}`);
   }
 
   if (doneVersion >= 6) {

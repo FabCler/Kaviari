@@ -23,9 +23,11 @@ const bodySchema = z.object({
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * Receive a delivery: one StockLot + one receipt movement per line, then the
- * PO flips to `received` — all in a single transaction. Partial receipts
- * (receivedTins < ordered) are allowed and recorded in the PO notes.
+ * Receive a delivery — informational only. The PO flips to `received` and
+ * the received quantities (with any lot/DLC noted) are appended to its
+ * notes; NO stock lots or movements are created. Actual stock is set by
+ * uploading a count through Import & Analyze. Partial receipts
+ * (receivedTins < ordered) are also recorded in the notes.
  */
 export async function POST(request: Request, ctx: Ctx) {
   const denied = await requireAuth();
@@ -92,6 +94,7 @@ export async function POST(request: Request, ctx: Ctx) {
   }
 
   const now = new Date();
+  const day = now.toISOString().slice(0, 10);
   const shortfalls = receipts
     .filter((r) => r.receivedTins < r.line.quantityTins)
     .map(
@@ -101,49 +104,37 @@ export async function POST(request: Request, ctx: Ctx) {
         )} of ${formatTins(r.line.quantityTins)} ordered`
     );
 
+  // Receiving is INFORMATIONAL ONLY: no stock lots, no movements — real
+  // stock is set by uploading a count through Import & Analyze. The
+  // received details are kept on the order's notes.
+  const receivedLines = receipts
+    .filter((r) => r.receivedTins > 0)
+    .map((r) => {
+      const extras = [
+        r.lotNumber ? `lot ${r.lotNumber}` : null,
+        r.expiryDate ? `DLC ${r.expiryDate.toISOString().slice(0, 10)}` : null,
+      ].filter(Boolean);
+      return `${shortProductName(r.line.product.name)}: ${formatTins(
+        r.receivedTins
+      )}${extras.length > 0 ? ` (${extras.join(", ")})` : ""}`;
+    });
+
   let notes = po.notes ?? "";
+  const receiptNote = `Received (${day}): ${
+    receivedLines.length > 0 ? receivedLines.join("; ") : "nothing"
+  }. Stock unchanged — update it via Import & Analyze.`;
+  notes = notes ? `${notes}\n${receiptNote}` : receiptNote;
   if (shortfalls.length > 0) {
-    const partialNote = `Partial receipt (${now
-      .toISOString()
-      .slice(0, 10)}): ${shortfalls.join("; ")}.`;
-    notes = notes ? `${notes}\n${partialNote}` : partialNote;
+    notes += `\nPartial receipt (${day}): ${shortfalls.join("; ")}.`;
   }
 
-  await prisma.$transaction(async (tx) => {
-    for (const receipt of receipts) {
-      if (receipt.receivedTins <= 0) continue;
-      const lot = await tx.stockLot.create({
-        data: {
-          productId: receipt.line.productId,
-          lotNumber: receipt.lotNumber,
-          quantityTins: receipt.receivedTins,
-          receivedTins: receipt.receivedTins,
-          receivedDate: now,
-          expiryDate: receipt.expiryDate,
-          status: "in_stock",
-        },
-      });
-      await tx.stockMovement.create({
-        data: {
-          productId: receipt.line.productId,
-          lotId: lot.id,
-          type: "receipt",
-          quantityTins: receipt.receivedTins,
-          gramsEquivalent:
-            receipt.receivedTins * (receipt.line.product.gramsPerUnit ?? 0),
-          date: now,
-          note: `Received ${po.reference}`,
-        },
-      });
-    }
-    await tx.purchaseOrder.update({
-      where: { id },
-      data: {
-        status: "received",
-        receivedDate: now,
-        notes: notes || null,
-      },
-    });
+  await prisma.purchaseOrder.update({
+    where: { id },
+    data: {
+      status: "received",
+      receivedDate: now,
+      notes: notes || null,
+    },
   });
 
   return Response.json({ ok: true });

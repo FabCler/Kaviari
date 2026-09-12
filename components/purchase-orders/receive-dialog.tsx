@@ -112,7 +112,9 @@ export function ReceiveDialog({
         toast.error(data.error ?? "The delivery could not be recorded.");
         return;
       }
-      toast.success(`${po.reference} received into stock.`);
+      toast.success(
+        `${po.reference} marked as received — stock unchanged (update it via Import & Analyze).`
+      );
       onOpenChange(false);
       router.refresh();
     } catch {
@@ -128,9 +130,10 @@ export function ReceiveDialog({
         <DialogHeader>
           <DialogTitle>Receive delivery — {po.reference}</DialogTitle>
           <DialogDescription>
-            Each line becomes a stock lot. Adjust quantities for partial
-            deliveries. Lot number and expiry date are optional — clear them
-            if the tins have not been inspected yet.
+            For information only — the received quantities are recorded on
+            the order but stock is NOT changed here. Update stock by
+            uploading a count through Import &amp; Analyze. Lot number and
+            expiry date are optional.
           </DialogDescription>
         </DialogHeader>
 

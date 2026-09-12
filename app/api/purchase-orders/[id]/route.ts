@@ -299,9 +299,9 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
 /**
  * Any order can be deleted (the client asks for confirmation). Deleting is
- * structurally safe in every status: lines cascade with the order, and the
- * stock a received order brought in lives in lots/movements that carry no
- * link to the order — inventory is untouched.
+ * structurally safe in every status: lines cascade with the order, and
+ * purchase orders never touch stock (receiving is informational — stock is
+ * set through Import & Analyze).
  */
 export async function DELETE(_request: Request, ctx: Ctx) {
   const denied = await requireAuth();
