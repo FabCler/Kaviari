@@ -28,7 +28,19 @@ interface UserRow {
   email: string;
   role: string;
   status: string;
+  lastLoginAt: string | null;
   createdAt: string;
+}
+
+function formatLastLogin(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function UsersCard() {
@@ -121,6 +133,7 @@ export function UsersCard() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last sign-in</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -139,6 +152,9 @@ export function UsersCard() {
                     )}
                   </TableCell>
                   <TableCell>{statusBadge(user.status)}</TableCell>
+                  <TableCell className="tnum text-muted-foreground">
+                    {formatLastLogin(user.lastLoginAt)}
+                  </TableCell>
                   <TableCell className="text-right">
                     {user.role !== "owner" && (
                       <div className="flex justify-end gap-1">

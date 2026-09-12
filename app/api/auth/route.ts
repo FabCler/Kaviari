@@ -34,13 +34,15 @@ export async function POST(request: Request) {
     );
   }
   // No approval step: accounts created before this policy change may still
-  // be "pending" — promote them on their first successful sign-in.
-  if (user.status === "pending") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { status: "approved" },
-    });
-  }
+  // be "pending" — promote them on their first successful sign-in. Every
+  // sign-in stamps lastLoginAt (shown in Settings → Users).
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      lastLoginAt: new Date(),
+      ...(user.status === "pending" ? { status: "approved" } : {}),
+    },
+  });
   const store = await cookies();
   store.set(AUTH_COOKIE, sessionTokenFor(user.id), {
     httpOnly: true,

@@ -54,6 +54,8 @@ model User {
   passwordHash String
   role         String   @default("member") // owner | member
   status       String   @default("pending") // pending | approved | rejected
+  // Set on every successful sign-in (shown in Settings → Users).
+  lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
