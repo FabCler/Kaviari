@@ -96,7 +96,7 @@ export function InventoryTable({
   forecastMonthLabels: string[];
 }) {
   const [category, setCategory] = React.useState<string>(ALL);
-  const [forecastHorizon, setForecastHorizon] = React.useState(3);
+  const [forecastHorizon, setForecastHorizon] = React.useState(1);
   const [caviarType, setCaviarType] = React.useState<string>(ALL);
   const [showDormant, setShowDormant] = React.useState(false);
   const [sort, setSort] = React.useState<SortState>(null);

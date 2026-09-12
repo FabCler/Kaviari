@@ -82,7 +82,7 @@ export function PlannerTable({
 }) {
   const [category, setCategory] = useState<string>("Caviar");
   const [showAll, setShowAll] = useState(false);
-  const [forecastHorizon, setForecastHorizon] = useState(3);
+  const [forecastHorizon, setForecastHorizon] = useState(1);
 
   const inCategory = useMemo(
     () =>
