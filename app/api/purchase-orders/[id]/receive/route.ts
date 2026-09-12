@@ -10,8 +10,10 @@ const bodySchema = z.object({
       z.object({
         lineId: z.string().min(1),
         receivedTins: z.number().min(0),
-        lotNumber: z.string().min(1).max(80),
-        expiryDate: z.string().min(1),
+        // Both optional: deliveries can be received before the tins' lot
+        // number or DLC is known.
+        lotNumber: z.string().max(80).nullish(),
+        expiryDate: z.string().nullish(),
       })
     )
     .min(1)
@@ -59,8 +61,8 @@ export async function POST(request: Request, ctx: Ctx) {
   const receipts: {
     line: (typeof po.lines)[number];
     receivedTins: number;
-    lotNumber: string;
-    expiryDate: Date;
+    lotNumber: string | null;
+    expiryDate: Date | null;
   }[] = [];
 
   for (const item of parsed.data.lines) {
@@ -71,17 +73,20 @@ export async function POST(request: Request, ctx: Ctx) {
         { status: 400 }
       );
     }
-    const expiry = new Date(item.expiryDate);
-    if (Number.isNaN(expiry.getTime())) {
-      return Response.json(
-        { error: `Invalid expiry date for lot ${item.lotNumber}.` },
-        { status: 400 }
-      );
+    let expiry: Date | null = null;
+    if (item.expiryDate) {
+      expiry = new Date(item.expiryDate);
+      if (Number.isNaN(expiry.getTime())) {
+        return Response.json(
+          { error: `Invalid expiry date for ${line.product.name}.` },
+          { status: 400 }
+        );
+      }
     }
     receipts.push({
       line,
       receivedTins: item.receivedTins,
-      lotNumber: item.lotNumber.trim(),
+      lotNumber: item.lotNumber?.trim() || null,
       expiryDate: expiry,
     });
   }

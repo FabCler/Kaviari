@@ -138,7 +138,7 @@ export async function getStockOverview(options?: {
 
 export interface ExpiringLotView {
   lotId: string;
-  lotNumber: string;
+  lotNumber: string | null;
   productId: string;
   productName: string;
   unit: string;
@@ -167,15 +167,25 @@ export async function getExpiringLots(options?: {
     orderBy: { expiryDate: "asc" },
   });
 
-  return lots.map((lot) => ({
-    lotId: lot.id,
-    lotNumber: lot.lotNumber,
-    productId: lot.productId,
-    productName: lot.product.name,
-    unit: lot.product.unit,
-    gramsPerUnit: lot.product.gramsPerUnit,
-    quantityTins: lot.quantityTins,
-    expiryDate: lot.expiryDate,
-    daysLeft: Math.ceil((lot.expiryDate.getTime() - now.getTime()) / 86_400_000),
-  }));
+  // The `lte` filter above excludes lots without an expiry date (no DLC =
+  // no alert); the flatMap narrows the nullable column for TypeScript.
+  return lots.flatMap((lot) =>
+    lot.expiryDate
+      ? [
+          {
+            lotId: lot.id,
+            lotNumber: lot.lotNumber,
+            productId: lot.productId,
+            productName: lot.product.name,
+            unit: lot.product.unit,
+            gramsPerUnit: lot.product.gramsPerUnit,
+            quantityTins: lot.quantityTins,
+            expiryDate: lot.expiryDate,
+            daysLeft: Math.ceil(
+              (lot.expiryDate.getTime() - now.getTime()) / 86_400_000
+            ),
+          },
+        ]
+      : []
+  );
 }

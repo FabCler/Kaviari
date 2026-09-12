@@ -74,7 +74,7 @@ export async function buildBusinessSummary(now = new Date()): Promise<string> {
   if (expiring.length === 0) lines.push("None.");
   for (const lot of expiring) {
     lines.push(
-      `${lot.productName} lot ${lot.lotNumber}: ${lot.quantityTins} tins, expires ${formatDate(lot.expiryDate)} (${lot.daysLeft} days)`
+      `${lot.productName} lot ${lot.lotNumber ?? "(no lot number)"}: ${lot.quantityTins} tins, expires ${formatDate(lot.expiryDate)} (${lot.daysLeft} days)`
     );
   }
 

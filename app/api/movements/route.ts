@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     const result = await prisma.$transaction(async (tx) => {
       const lots = await tx.stockLot.findMany({
         where: { productId, status: "in_stock", quantityTins: { gt: 0 } },
-        orderBy: { expiryDate: "asc" },
+        orderBy: { expiryDate: { sort: "asc", nulls: "last" } },
       });
       const { allocations, shortfallTins } = allocateFefo(lots, tinsRequested);
       if (shortfallTins > 0) {
@@ -118,7 +118,10 @@ export async function POST(request: Request) {
           },
         });
         movements.push(movement);
-        allocatedLots.push({ lotNumber: lot.lotNumber, tins: alloc.tins });
+        allocatedLots.push({
+          lotNumber: lot.lotNumber ?? "(no lot number)",
+          tins: alloc.tins,
+        });
       }
       return { movements, allocatedLots };
     });

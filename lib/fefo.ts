@@ -7,7 +7,8 @@
 export interface AllocatableLot {
   id: string;
   quantityTins: number;
-  expiryDate: Date;
+  /** Null = unknown DLC — such lots are drawn from last. */
+  expiryDate: Date | null;
 }
 
 export interface LotAllocation {
@@ -27,13 +28,11 @@ export function allocateFefo(
 ): FefoResult {
   if (tinsNeeded <= 0) return { allocations: [], shortfallTins: 0 };
 
+  const expiry = (lot: AllocatableLot) =>
+    lot.expiryDate ? lot.expiryDate.getTime() : Number.POSITIVE_INFINITY;
   const sorted = [...lots]
     .filter((lot) => lot.quantityTins > 0)
-    .sort(
-      (a, b) =>
-        a.expiryDate.getTime() - b.expiryDate.getTime() ||
-        a.id.localeCompare(b.id)
-    );
+    .sort((a, b) => expiry(a) - expiry(b) || a.id.localeCompare(b.id));
 
   const allocations: LotAllocation[] = [];
   let remaining = tinsNeeded;

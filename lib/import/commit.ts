@@ -130,7 +130,7 @@ export async function commitStockTake(rows: StockTakeRows): Promise<CommitResult
 
       const lots = await tx.stockLot.findMany({
         where: { productId, status: "in_stock", quantityTins: { gt: 0 } },
-        orderBy: { expiryDate: "asc" },
+        orderBy: { expiryDate: { sort: "asc", nulls: "last" } },
       });
       const systemTins = round2(
         lots.reduce((sum, lot) => sum + lot.quantityTins, 0)
@@ -159,7 +159,8 @@ export async function commitStockTake(rows: StockTakeRows): Promise<CommitResult
               quantityTins: delta,
               receivedTins: delta,
               receivedDate: now,
-              expiryDate: new Date(now.getTime() + 120 * 86_400_000),
+              // A stock take says nothing about the tins' DLC.
+              expiryDate: null,
               status: "in_stock",
             },
           });
@@ -275,11 +276,11 @@ export async function commitSalesExport(rows: SalesRows): Promise<CommitResult> 
         status: "in_stock",
         quantityTins: { gt: 0 },
       },
-      orderBy: { expiryDate: "asc" },
+      orderBy: { expiryDate: { sort: "asc", nulls: "last" } },
     });
     const lotState = new Map<
       string,
-      { id: string; quantityTins: number; expiryDate: Date }[]
+      { id: string; quantityTins: number; expiryDate: Date | null }[]
     >();
     for (const lot of lots) {
       const list = lotState.get(lot.productId) ?? [];

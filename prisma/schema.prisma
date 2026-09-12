@@ -106,12 +106,15 @@ model StockLot {
   id           String    @id @default(cuid())
   productId    String
   product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  lotNumber    String
+  // Optional: deliveries can be received before the tins' lot is known.
+  lotNumber    String?
   // Units remaining in the lot (receipts add, consumption subtracts).
   quantityTins Float
   receivedTins Float
   receivedDate DateTime
-  expiryDate   DateTime // DLC
+  // DLC. Optional: lots without a known expiry never raise DLC alerts and
+  // are consumed last by FEFO.
+  expiryDate   DateTime?
   status       String    @default("in_stock") // in_stock | consumed | expired | written_off
   createdAt    DateTime  @default(now())
 

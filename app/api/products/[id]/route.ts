@@ -34,7 +34,7 @@ export async function GET(_request: Request, ctx: Ctx) {
   const [lots, movements] = await Promise.all([
     prisma.stockLot.findMany({
       where: { productId: id, status: "in_stock", quantityTins: { gt: 0 } },
-      orderBy: { expiryDate: "asc" },
+      orderBy: { expiryDate: { sort: "asc", nulls: "last" } },
     }),
     prisma.stockMovement.findMany({
       where: { productId: id },

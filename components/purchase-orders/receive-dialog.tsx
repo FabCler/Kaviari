@@ -75,8 +75,8 @@ export function ReceiveDialog({
     const payload: {
       lineId: string;
       receivedTins: number;
-      lotNumber: string;
-      expiryDate: string;
+      lotNumber: string | null;
+      expiryDate: string | null;
     }[] = [];
     for (const line of lines) {
       const received = Number(line.receivedTins);
@@ -84,19 +84,15 @@ export function ReceiveDialog({
         toast.error(`Invalid received quantity for ${line.productName}.`);
         return;
       }
-      if (received > 0 && !line.lotNumber.trim()) {
-        toast.error(`A lot number is required for ${line.productName}.`);
-        return;
-      }
-      if (received > 0 && !line.expiryDate) {
-        toast.error(`An expiry date is required for ${line.productName}.`);
-        return;
-      }
+      // Lot number and expiry date are optional — they can be filled in
+      // later once the tins are inspected.
       payload.push({
         lineId: line.lineId,
         receivedTins: received,
-        lotNumber: line.lotNumber.trim() || "-",
-        expiryDate: new Date(`${line.expiryDate}T12:00:00`).toISOString(),
+        lotNumber: line.lotNumber.trim() || null,
+        expiryDate: line.expiryDate
+          ? new Date(`${line.expiryDate}T12:00:00`).toISOString()
+          : null,
       });
     }
     if (payload.every((l) => l.receivedTins === 0)) {
@@ -133,7 +129,8 @@ export function ReceiveDialog({
           <DialogTitle>Receive delivery — {po.reference}</DialogTitle>
           <DialogDescription>
             Each line becomes a stock lot. Adjust quantities for partial
-            deliveries; lot numbers and expiry dates come from the tins.
+            deliveries. Lot number and expiry date are optional — clear them
+            if the tins have not been inspected yet.
           </DialogDescription>
         </DialogHeader>
 
@@ -173,7 +170,12 @@ export function ReceiveDialog({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor={`lot-${line.lineId}`}>Lot number</Label>
+                  <Label htmlFor={`lot-${line.lineId}`}>
+                    Lot number{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
+                    </span>
+                  </Label>
                   <Input
                     id={`lot-${line.lineId}`}
                     value={line.lotNumber}
@@ -183,7 +185,12 @@ export function ReceiveDialog({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor={`expiry-${line.lineId}`}>Expiry date</Label>
+                  <Label htmlFor={`expiry-${line.lineId}`}>
+                    Expiry date{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
+                    </span>
+                  </Label>
                   <Input
                     id={`expiry-${line.lineId}`}
                     type="date"

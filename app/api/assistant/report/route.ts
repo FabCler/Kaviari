@@ -56,14 +56,14 @@ async function extraContext(type: ReportType, now: Date): Promise<string> {
     const lots = await prisma.stockLot.findMany({
       where: { quantityTins: { gt: 0 }, status: "in_stock" },
       include: { product: true },
-      orderBy: { expiryDate: "asc" },
+      orderBy: { expiryDate: { sort: "asc", nulls: "last" } },
     });
     lines.push("## All in-stock lots (product | lot | units | received | expiry)");
     if (lots.length === 0) lines.push("None.");
     for (const lot of lots) {
       lines.push(
-        `${lot.product.name} | ${lot.lotNumber} | ${lot.quantityTins} | ` +
-          `${formatDate(lot.receivedDate)} | ${formatDate(lot.expiryDate)}`
+        `${lot.product.name} | ${lot.lotNumber ?? "(no lot number)"} | ${lot.quantityTins} | ` +
+          `${formatDate(lot.receivedDate)} | ${lot.expiryDate ? formatDate(lot.expiryDate) : "(no DLC)"}`
       );
     }
   }

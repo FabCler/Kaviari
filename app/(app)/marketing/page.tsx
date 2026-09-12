@@ -82,19 +82,23 @@ export default async function MarketingPage({
     });
     if (lot) {
       const productShort = shortProductName(lot.product.name);
+      // Promotions start from expiry alerts, so the lot normally has a DLC;
+      // a two-week window covers a lot whose expiry was never recorded.
+      const promoEnd =
+        lot.expiryDate ?? new Date(Date.now() + 14 * 86_400_000);
       prefill = {
         name: `Last-days promotion — ${productShort}`,
         type: "promo",
         status: "planned",
         startDate: new Date().toISOString(),
-        endDate: lot.expiryDate.toISOString(),
+        endDate: promoEnd.toISOString(),
         productIds: [lot.productId],
         notes:
-          `Move lot ${lot.lotNumber} before its DLC: ${lot.quantityTins} tins of ` +
-          `${lot.product.name}${lot.product.gramsPerUnit ? ` (${lot.product.gramsPerUnit} g)` : ""} expiring ${formatDate(lot.expiryDate)}.`,
+          `Move lot ${lot.lotNumber ?? "(no lot number)"}${lot.expiryDate ? " before its DLC" : ""}: ${lot.quantityTins} tins of ` +
+          `${lot.product.name}${lot.product.gramsPerUnit ? ` (${lot.product.gramsPerUnit} g)` : ""}${lot.expiryDate ? ` expiring ${formatDate(lot.expiryDate)}` : ""}.`,
         aiHint:
           `A short, tasteful last-days promotion for ${lot.product.name} — ` +
-          `limited tins available until ${formatDate(lot.expiryDate)}. ` +
+          `limited tins available until ${formatDate(promoEnd)}. ` +
           "Convey rarity and freshness; do not mention expiry dates or lot numbers.",
       };
     }
