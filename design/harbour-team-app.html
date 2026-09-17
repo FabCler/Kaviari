@@ -49,6 +49,7 @@
     --radius: 10px;
     --shadow: 0 1px 2px rgb(7 51 61 / 0.05), 0 10px 26px -18px rgb(7 51 61 / 0.4);
     --row-cols: minmax(280px, 1fr) 124px 140px 144px 104px 120px 70px;
+  --proj-cols: minmax(240px, 1fr) 76px 132px 128px 122px 132px 78px 34px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -832,6 +833,55 @@
   .bar { height: 5px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
   .bar > span { display: block; height: 100%; background: var(--hc); border-radius: 99px; }
 
+  /* ---------- Projects as rows ---------- */
+  .ptable { min-width: 1020px; display: flex; flex-direction: column; gap: 18px; }
+  .pgroup { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+  .pghead { display: flex; align-items: center; gap: 10px; padding: 12px 15px; }
+  .pghead .tag { width: 10px; height: 10px; border-radius: 3px; background: var(--gc); flex: none; }
+  .pghead h3 { font-size: 14.5px; font-weight: 600; color: var(--gc); }
+  .pghead .count { font-size: 11.5px; color: var(--ink-muted); }
+  .pmix { margin-left: auto; display: flex; width: 160px; height: 8px; border-radius: 99px; overflow: hidden; background: var(--line-soft); }
+  .pmix i { display: block; height: 100%; }
+  .pcols, .prow { display: grid; grid-template-columns: var(--proj-cols); align-items: center; column-gap: 12px; }
+  .pcols { padding: 7px 15px; border-top: 1px solid var(--line-soft); background: var(--surface-2); }
+  .prows { border-left: 4px solid var(--gc); }
+  .prow { padding: 8px 15px; border-top: 1px solid var(--line-soft); }
+  .prow:hover { background: var(--surface-2); }
+  .prow.child { background: var(--surface-2); }
+  .prow.child .pname { padding-left: 24px; }
+  .pcell { min-width: 0; }
+  .pname { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .ptitle {
+    border: 0; background: none; padding: 0; font: inherit; font-size: 13.5px; color: inherit; cursor: pointer;
+    text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ptitle:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .prow.child .ptitle { font-size: 13px; color: var(--ink-2); }
+  .pname .caret { border: 0; background: none; cursor: pointer; color: var(--ink-muted); padding: 2px; line-height: 0; flex: none; transition: transform 0.18s ease; }
+  .pname .caret.open { transform: rotate(90deg); }
+  .pname .caret.ghost { width: 17px; height: 17px; display: inline-block; }
+  .subcount { font-size: 10.5px; font-weight: 700; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-muted); border-radius: 99px; padding: 0 6px; flex: none; }
+  .pcard .subcount { margin-left: 4px; }
+  .phealth {
+    border: 0; border-radius: 6px; height: 26px; width: 100%; cursor: pointer;
+    color: var(--st-ink); background: var(--hc); font: inherit; font-size: 11.5px; font-weight: 600;
+  }
+  .phealth.ro { cursor: default; display: inline-flex; align-items: center; justify-content: center; }
+  .pdate { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 4px 7px; font: inherit; font-size: 12px; color: inherit; width: 100%; }
+  .pdate.late { color: var(--danger); border-color: var(--danger); }
+  .pdate.ro { background: none; border-color: transparent; display: inline-block; }
+  .pprog { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-muted); }
+  .pprog .bar { flex: 1; height: 6px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+  .pprog .bar i { display: block; height: 100%; background: var(--tide); }
+  .pfiles {
+    border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); font-size: 11.5px;
+  }
+  .pfiles:hover { border-color: var(--tide); color: var(--tide-600); }
+  .pfilerow { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 2px 25px; }
+  .pitem.pdrop .prow { outline: 2px dashed var(--coral); outline-offset: -2px; background: var(--tide-wash); }
+  .addsub.psub { padding: 8px 15px 10px 39px; max-width: 620px; }
+
   /* ---------- Team load ---------- */
   .loadwrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); margin-top: 18px; overflow: hidden; }
   .loadwrap > header { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); flex-wrap: wrap; }
@@ -986,6 +1036,7 @@
     </header>
     <div class="body">
       <label class="full"><span class="label" data-t="dlg.project"></span><input type="text" id="p-name" required></label>
+      <label class="full"><span class="label" data-t="dlg.parent"></span><select id="p-parent"></select></label>
       <label><span class="label" data-t="dlg.owner"></span><select id="p-owner"></select></label>
       <label><span class="label" data-t="dlg.stream"></span><select id="p-stage"></select></label>
       <label><span class="label" data-t="dlg.health"></span><select id="p-health"></select></label>
@@ -1198,6 +1249,13 @@
       "tr.working": "Translating…", "tr.show": "Show original", "tr.hide": "Show translation",
       "tr.off": "Translation is not available in this view.",
 
+      "proj.table": "Table", "proj.board": "Board", "col.project": "Project", "col.people": "People",
+      "col.timeline": "Timeline", "col.progress": "Progress", "col.files": "Files",
+      "proj.addsub": "+ Add a sub-project", "proj.addproject": "+ Add a project to {g}",
+      "proj.count": "{n} projects", "proj.tasks": "{d} / {n} tasks", "proj.empty": "Nothing here yet.",
+      "proj.move": "Move to {g}", "proj.delete": "Delete", "proj.subsadd": "Add a sub-project, then press Enter",
+      "proj.late": "late", "proj.next": "Next: {ms}",
+      "dlg.parent": "Part of", "dlg.noparent": "A project of its own",
       "empty.filter": "No task matches this filter.", "cal.more": "+ {n} more",
       "foot": "Prototype — sample content. Every entry in the left rail opens a working page. Click a task anywhere to open its panel: description, subtasks, documents and comments. Nothing is saved and no file is uploaded — changes live in this browser tab only."
     },
@@ -1342,6 +1400,13 @@
       "tr.working": "กำลังแปล…", "tr.show": "ดูต้นฉบับ", "tr.hide": "ดูคำแปล",
       "tr.off": "การแปลใช้ไม่ได้ในหน้านี้",
 
+      "proj.table": "ตาราง", "proj.board": "กระดาน", "col.project": "โปรเจกต์", "col.people": "ผู้รับผิดชอบ",
+      "col.timeline": "ไทม์ไลน์", "col.progress": "ความคืบหน้า", "col.files": "ไฟล์",
+      "proj.addsub": "+ เพิ่มโปรเจกต์ย่อย", "proj.addproject": "+ เพิ่มโปรเจกต์ใน{g}",
+      "proj.count": "{n} โปรเจกต์", "proj.tasks": "{d} / {n} งาน", "proj.empty": "ยังไม่มีข้อมูล",
+      "proj.move": "ย้ายไป {g}", "proj.delete": "ลบ", "proj.subsadd": "เพิ่มโปรเจกต์ย่อย แล้วกด Enter",
+      "proj.late": "เลยกำหนด", "proj.next": "ถัดไป: {ms}",
+      "dlg.parent": "อยู่ภายใต้", "dlg.noparent": "เป็นโปรเจกต์อิสระ",
       "empty.filter": "ไม่มีงานที่ตรงกับตัวกรองนี้", "cal.more": "+ อีก {n}",
       "foot": "ต้นแบบ — เนื้อหาตัวอย่าง ทุกเมนูทางซ้ายเปิดหน้าที่ใช้งานได้จริง คลิกที่งานเพื่อเปิดแผงรายละเอียด งานย่อย เอกสาร และความคิดเห็น ไม่มีการบันทึกและไม่มีการอัปโหลดไฟล์ ทุกอย่างอยู่ในแท็บนี้เท่านั้น"
     }
@@ -1549,15 +1614,37 @@
     [{ id: "c1", o: "pim", at: "Monday 15:02", html: '<p>Sections 1 and 2 are clean. <span style="color:#b57d10">Training files are the weak point</span> — five people missing a refresher.</p>' }]);
 
   var PROJECTS = [
-    { name: "Sashimi counter refresh", stage: "In progress", o: "nut", health: "on", ms: "Thonglor relaunch", msd: "2026-09-03", done: 3, total: 9 },
-    { name: "Chiller room upgrade", stage: "In progress", o: "ton", health: "block", ms: "Door seal replaced", msd: "2026-08-26", done: 2, total: 7 },
-    { name: "Cutting-room yield program", stage: "In progress", o: "mint", health: "risk", ms: "Baseline agreed", msd: "2026-09-05", done: 2, total: 8 },
-    { name: "BRC certification 2027", stage: "Scoping", o: "pim", health: "on", ms: "Gap analysis", msd: "2026-09-15", done: 1, total: 12 },
-    { name: "Own-brand smoked salmon", stage: "Scoping", o: "fah", health: "on", ms: "Second tasting panel", msd: "2026-09-18", done: 2, total: 10 },
-    { name: "Next-day delivery zone", stage: "Intake", o: "beam", health: "on", ms: "Scope agreed", msd: "2026-09-12", done: 0, total: 4 },
-    { name: "Hokkaido scallop line", stage: "Intake", o: "fah", health: "on", ms: "Supplier visit", msd: "2026-09-22", done: 0, total: 3 },
-    { name: "Hotel banquet contract", stage: "Review", o: "ploy", health: "risk", ms: "Final pricing", msd: "2026-08-31", done: 5, total: 6 },
-    { name: "Sushi chain standing order", stage: "Live", o: "ploy", health: "on", ms: "Monthly review", msd: "2026-09-30", done: 7, total: 7 }
+    { id: "p1", name: "Sashimi counter refresh", stage: "In progress", o: "nut", health: "on", bu: "retail",
+      ms: "Thonglor relaunch", msd: "2026-09-03", done: 3, total: 9, files: [{ name: "Counter layout.png", size: 620000 }],
+      sub: [
+        { id: "p1a", name: "New display trays", o: "nut", health: "on", msd: "2026-09-01", done: 2, total: 3, files: [] },
+        { id: "p1b", name: "Staff plating training", o: "mint", health: "risk", msd: "2026-09-05", done: 1, total: 4, files: [] }
+      ] },
+    { id: "p2", name: "Chiller room upgrade", stage: "In progress", o: "ton", health: "block", bu: "",
+      ms: "Door seal replaced", msd: "2026-08-26", done: 2, total: 7, files: [], sub: [] },
+    { id: "p3", name: "Cutting-room yield program", stage: "In progress", o: "mint", health: "risk", bu: "fs",
+      ms: "Baseline agreed", msd: "2026-09-05", done: 2, total: 8, files: [], sub: [] },
+    { id: "p4", name: "BRC certification 2027", stage: "Scoping", o: "pim", health: "on", bu: "",
+      ms: "Gap analysis", msd: "2026-09-15", done: 1, total: 12, files: [{ name: "BRC checklist v3.pdf", size: 1240000 }],
+      sub: [
+        { id: "p4a", name: "Traceability gap analysis", o: "pim", health: "on", msd: "2026-09-15", done: 1, total: 4, files: [] },
+        { id: "p4b", name: "Staff training files", o: "mint", health: "risk", msd: "2026-09-22", done: 0, total: 5, files: [] }
+      ] },
+    { id: "p5", name: "Own-brand smoked salmon", stage: "Scoping", o: "fah", health: "on", bu: "retail",
+      ms: "Second tasting panel", msd: "2026-09-18", done: 2, total: 10, files: [],
+      sub: [
+        { id: "p5a", name: "Recipe and brine trials", o: "mint", health: "on", msd: "2026-09-08", done: 2, total: 4, files: [] },
+        { id: "p5b", name: "Packaging and label artwork", o: "beam", health: "risk", msd: "2026-09-16", done: 0, total: 3, files: [] },
+        { id: "p5c", name: "Shelf-life testing", o: "pim", health: "on", msd: "2026-09-24", done: 0, total: 3, files: [] }
+      ] },
+    { id: "p6", name: "Next-day delivery zone", stage: "Intake", o: "beam", health: "on", bu: "retail",
+      ms: "Scope agreed", msd: "2026-09-12", done: 0, total: 4, files: [], sub: [] },
+    { id: "p7", name: "Hokkaido scallop line", stage: "Intake", o: "fah", health: "on", bu: "fnb",
+      ms: "Supplier visit", msd: "2026-09-22", done: 0, total: 3, files: [], sub: [] },
+    { id: "p8", name: "Hotel banquet contract", stage: "Review", o: "ploy", health: "risk", bu: "fs",
+      ms: "Final pricing", msd: "2026-08-31", done: 5, total: 6, files: [], sub: [] },
+    { id: "p9", name: "Sushi chain standing order", stage: "Live", o: "ploy", health: "on", bu: "fs",
+      ms: "Monthly review", msd: "2026-09-30", done: 7, total: 7, files: [], sub: [] }
   ];
 
   var STAGES = [
@@ -1575,7 +1662,7 @@
   };
 
   var state = { page: "home", q: "", people: {}, showDone: false, collapsed: {}, expanded: {}, me: "fab", focus: null, capacity: 20, flash: null, calMore: {}, open: null, draft: {}, subOpen: {}, bu: "", session: null, gate: "in", gateMsg: "",
-    seen: {}, mailCh: "all", lang: "en", autotr: true };
+    seen: {}, mailCh: "all", lang: "en", autotr: true, projView: "table", pOpen: {} };
 
   TASKS.forEach(function (t, i) {
     t.id = "t" + i;
@@ -1593,6 +1680,40 @@
       a.line = a.line || "@" + pp.name.toLowerCase().replace(/[^a-z]/g, "") + ".tms";
       a.channels = a.channels || { email: true, line: true };
     });
+  }
+
+  var projSeq = 100;
+  function normaliseProjects() {
+    PROJECTS.forEach(function (pr, i) {
+      pr.id = pr.id || "p" + (projSeq++);
+      pr.sub = pr.sub || [];
+      pr.files = pr.files || [];
+      pr.bu = pr.bu || "";
+      pr.sub.forEach(function (sp) {
+        sp.id = sp.id || "ps" + (projSeq++);
+        sp.files = sp.files || [];
+      });
+    });
+  }
+  function findProject(id) {
+    for (var i = 0; i < PROJECTS.length; i++) {
+      if (PROJECTS[i].id === id) return { p: PROJECTS[i], sp: null };
+      for (var j = 0; j < PROJECTS[i].sub.length; j++) {
+        if (PROJECTS[i].sub[j].id === id) return { p: PROJECTS[i], sp: PROJECTS[i].sub[j] };
+      }
+    }
+    return null;
+  }
+  function canEditProject(pr) {
+    var a = session();
+    if (!a || a.status !== "active") return false;
+    return can("edit_all") || [a.p].concat(a.assigned || []).indexOf(pr.o) > -1;
+  }
+  // a parent's progress is its own plus everything under it
+  function projTotals(pr) {
+    var d = pr.done, t = pr.total;
+    pr.sub.forEach(function (sp) { d += sp.done; t += sp.total; });
+    return { done: d, total: t };
   }
 
   function normaliseSubs() {
@@ -2384,27 +2505,138 @@
   }
 
   function renderProjects() {
+    var toggle = '<div class="tabs2" style="margin-bottom:14px">' +
+      [["table", T("proj.table")], ["board", T("proj.board")]].map(function (v) {
+        return '<button data-pview="' + v[0] + '"' + (state.projView === v[0] ? ' aria-selected="true"' : "") + ">" + v[1] + "</button>";
+      }).join("") + "</div>";
+    document.getElementById("view").innerHTML = toggle +
+      (state.projView === "board" ? projectBoard() : projectTable());
+  }
+
+  function projectBoard() {
     var html = '<div class="scroller"><div class="kanban">';
     STAGES.forEach(function (st) {
       var cards = PROJECTS.filter(function (p) { return p.stage === st.id; });
       html += '<section class="lane" style="--lc:' + st.color + '"><header><h3 style="color:' + st.color + '">' +
         esc(L(st)) + '</h3><span class="n tnum">' + cards.length + "</span></header>";
       cards.forEach(function (p) {
-        var h = HEALTH[p.health], o = person(p.o), late = days(TODAY, p.msd) < 0;
-        html += '<article class="pcard" style="--hc:' + h.color + '">' +
+        var h = HEALTH[p.health], o = person(p.o), late = days(TODAY, p.msd) < 0, tot = projTotals(p);
+        html += '<article class="pcard" style="--hc:' + h.color + '" data-popen="' + p.id + '">' +
           '<span class="health"><i></i>' + esc(L(h)) + "</span>" +
-          "<h4>" + esc(p.name) + "</h4>" +
-          '<div class="ms">Next: <b>' + esc(p.ms) + '</b><br><span class="tnum" style="color:' +
-            (late ? "var(--danger)" : "var(--ink-muted)") + '">' + fmtDate(p.msd) + (late ? " · late" : "") + "</span></div>" +
-          '<div class="bar"><span style="width:' + Math.round((p.done / p.total) * 100) + '%"></span></div>' +
+          "<h4>" + content(p.name) + "</h4>" +
+          '<div class="ms">' + esc(T("proj.next", { ms: p.ms })) + '<br><span class="tnum" style="color:' +
+            (late ? "var(--danger)" : "var(--ink-muted)") + '">' + fmtDate(p.msd) + (late ? " · " + T("proj.late") : "") + "</span></div>" +
+          '<div class="bar"><span style="width:' + Math.round((tot.done / tot.total) * 100) + '%"></span></div>' +
           "<footer>" + avatar(o) + '<span style="font-size:12px">' + esc(o.name) + "</span>" +
-          '<span class="tasks tnum">' + p.done + "/" + p.total + " tasks</span></footer></article>";
+          (p.sub.length ? '<span class="subcount tnum" title="sub-projects">' + p.sub.length + "</span>" : "") +
+          '<span class="tasks tnum">' + esc(T("proj.tasks", { d: tot.done, n: tot.total })) + "</span></footer></article>";
       });
-      if (!cards.length) html += '<div class="empty" style="padding:22px 8px;font-size:12px">Empty</div>';
+      if (!cards.length) html += '<div class="empty" style="padding:22px 8px;font-size:12px">' + T("proj.empty") + "</div>";
       html += "</section>";
     });
-    html += "</div></div>";
-    document.getElementById("view").innerHTML = html;
+    return html + "</div></div>";
+  }
+
+  function healthPill(id, health) {
+    var h = HEALTH[health] || HEALTH.on;
+    return '<button class="phealth" style="--hc:' + h.color + '" data-phealth="' + id + '">' + esc(L(h)) + "</button>";
+  }
+  function timelinePill(id, date, editable) {
+    var late = days(TODAY, date) < 0;
+    return editable
+      ? '<input type="date" class="pdate' + (late ? " late" : "") + '" data-pdate="' + id + '" value="' + date + '">'
+      : '<span class="pdate ro tnum' + (late ? " late" : "") + '">' + fmtDate(date) + "</span>";
+  }
+  function filesCell(id, files) {
+    return '<button class="pfiles" data-pfiles="' + id + '" title="' + esc(T("col.files")) + '">' + PIN +
+      (files.length ? '<span class="tnum">' + files.length + "</span>" : "") + "</button>";
+  }
+  function progressCell(done, total) {
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    return '<div class="pprog"><span class="bar"><i style="width:' + pct + '%"></i></span>' +
+      '<span class="tnum">' + done + "/" + total + "</span></div>";
+  }
+
+  function projectRow(pr, sp) {
+    var it = sp || pr;
+    var rw = canEditProject(pr);
+    var o = person(it.o);
+    var open = !!state.pOpen[pr.id];
+    var tot = sp ? { done: sp.done, total: sp.total } : projTotals(pr);
+    var b = sp ? null : businessUnit(pr.bu);
+
+    return '<div class="prow' + (sp ? " child" : "") + '" data-prow="' + it.id + '">' +
+      '<div class="pname">' +
+        (!sp && pr.sub.length
+          ? '<button class="caret' + (open ? " open" : "") + '" data-pexp="' + pr.id + '" aria-expanded="' + open + '">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>'
+          : '<span class="caret ghost"></span>') +
+        '<button class="ptitle" data-popen="' + pr.id + '">' + content(it.name) + "</button>" +
+        (!sp && pr.sub.length ? '<span class="subcount tnum">' + pr.sub.length + "</span>" : "") +
+      "</div>" +
+      '<div class="pcell">' + (rw
+        ? '<button class="owner-cell sm" data-powner="' + it.id + '">' + avatar(o) + "</button>"
+        : '<span class="owner-cell sm ro">' + avatar(o) + "</span>") + "</div>" +
+      '<div class="pcell">' + (rw ? healthPill(it.id, it.health)
+        : '<span class="phealth ro" style="--hc:' + (HEALTH[it.health] || HEALTH.on).color + '">' +
+          esc(L(HEALTH[it.health] || HEALTH.on)) + "</span>") + "</div>" +
+      '<div class="pcell">' + timelinePill(it.id, it.msd, rw) + "</div>" +
+      '<div class="pcell">' + (sp ? "" : (rw
+        ? '<button class="buchip' + (b ? "" : " empty") + '" data-pbu="' + pr.id + '"' +
+          (b ? ' style="--bc:' + b.color + '"' : "") + ">" + (b ? "<i></i>" + esc(L(b)) : T("chip.setbu")) + "</button>"
+        : (b ? '<span class="buchip ro" style="--bc:' + b.color + '"><i></i>' + esc(L(b)) + "</span>" : ""))) + "</div>" +
+      '<div class="pcell">' + progressCell(tot.done, tot.total) + "</div>" +
+      '<div class="pcell">' + filesCell(it.id, it.files) + "</div>" +
+      '<div class="pcell">' + (rw ? '<button class="iconbtn-sm" data-pmenu="' + it.id + '" aria-label="More">⋯</button>' : "") + "</div>" +
+      (it.files.length ? '<div class="pfilerow">' + it.files.map(function (f, i) {
+        return rw ? fileChip(f, "P" + it.id + "|" + i) : fileChipRO(f);
+      }).join("") + "</div>" : "") +
+      "</div>";
+  }
+
+  function projectTable() {
+    var html = '<div class="scroller"><div class="ptable">';
+    STAGES.forEach(function (st) {
+      var rows = PROJECTS.filter(function (p) { return p.stage === st.id; });
+      var mix = {};
+      rows.forEach(function (p) { mix[p.health] = (mix[p.health] || 0) + 1; });
+      var total = rows.length || 1;
+
+      html += '<section class="pgroup" style="--gc:' + st.color + '">' +
+        '<header class="pghead"><span class="tag"></span><h3>' + esc(L(st)) + "</h3>" +
+        '<span class="count tnum">' + esc(T("proj.count", { n: rows.length })) + "</span>" +
+        '<div class="pmix">' + ["on", "risk", "block"].map(function (k) {
+          return mix[k] ? '<i style="width:' + ((mix[k] / total) * 100) + '%;background:' + HEALTH[k].color +
+            '" title="' + esc(L(HEALTH[k])) + ": " + mix[k] + '"></i>' : "";
+        }).join("") + "</div></header>" +
+        '<div class="pcols">' +
+          '<span class="label">' + T("col.project") + '</span><span class="label">' + T("col.people") +
+          '</span><span class="label">' + T("col.status") + '</span><span class="label">' + T("col.timeline") +
+          '</span><span class="label">' + T("col.bu") + '</span><span class="label">' + T("col.progress") +
+          '</span><span class="label">' + T("col.files") + "</span><span></span>" +
+        "</div><div class=\"prows\">";
+
+      rows.forEach(function (pr) {
+        html += '<div class="pitem" data-pitem="' + pr.id + '">' + projectRow(pr, null);
+        if (state.pOpen[pr.id]) {
+          pr.sub.forEach(function (sp) { html += projectRow(pr, sp); });
+          if (canEditProject(pr)) {
+            html += '<form class="addsub psub" data-paddsub="' + pr.id + '">' +
+              '<input type="text" placeholder="' + T("proj.subsadd") + '" aria-label="' + T("proj.addsub") + '">' +
+              '<button class="btn" type="submit">' + T("sub.addbtn") + "</button></form>";
+          }
+        }
+        html += "</div>";
+      });
+
+      if (!rows.length) html += '<div class="empty" style="padding:18px;font-size:12.5px">' + T("proj.empty") + "</div>";
+      html += "</div>";
+      if (can("projects")) {
+        html += '<button class="addrow" data-paddproj="' + st.id + '">' + esc(T("proj.addproject", { g: L(st) })) + "</button>";
+      }
+      html += "</section>";
+    });
+    return html + "</div></div>";
   }
 
   function renderPeople() {
@@ -3232,6 +3464,74 @@
     var nav = closestEl(e.target, "[data-page]");
     if (nav) { e.preventDefault(); go(nav.dataset.page); return; }
 
+    var pv = closestEl(e.target, "[data-pview]");
+    if (pv) { state.projView = pv.dataset.pview; renderProjects(); return; }
+
+    var pex = closestEl(e.target, "[data-pexp]");
+    if (pex) { state.pOpen[pex.dataset.pexp] = !state.pOpen[pex.dataset.pexp]; renderProjects(); return; }
+
+    var pop = closestEl(e.target, "[data-popen]");
+    if (pop) { state.pOpen[pop.dataset.popen] = !state.pOpen[pop.dataset.popen]; renderProjects(); return; }
+
+    var pow = closestEl(e.target, "[data-powner]");
+    if (pow) {
+      var fo = findProject(pow.dataset.powner);
+      if (!fo) return;
+      openMenu(pow, assignable().map(function (pp) { return { label: pp.full, id: pp.id, avatar: avatar(pp) }; }),
+        function (it) { (fo.sp || fo.p).o = it.id; renderProjects(); });
+      return;
+    }
+
+    var phe = closestEl(e.target, "[data-phealth]");
+    if (phe) {
+      var fh = findProject(phe.dataset.phealth);
+      if (!fh) return;
+      openMenu(phe, ["on", "risk", "block"].map(function (k) {
+        return { label: L(HEALTH[k]), id: k, color: HEALTH[k].color };
+      }), function (it) { (fh.sp || fh.p).health = it.id; renderProjects(); });
+      return;
+    }
+
+    var pbu = closestEl(e.target, "[data-pbu]");
+    if (pbu) {
+      var fb = findProject(pbu.dataset.pbu);
+      if (!fb) return;
+      openMenu(pbu, BUS.map(function (x) { return { label: L(x), id: x.id, color: x.color }; })
+        .concat([{ label: T("chip.nobu"), id: "" }]),
+        function (it) { fb.p.bu = it.id; renderProjects(); });
+      return;
+    }
+
+    var pmn = closestEl(e.target, "[data-pmenu]");
+    if (pmn) {
+      var fm = findProject(pmn.dataset.pmenu);
+      if (!fm) return;
+      var pitems = [];
+      if (!fm.sp) {
+        STAGES.forEach(function (st) {
+          if (st.id !== fm.p.stage) pitems.push({ label: T("proj.move", { g: L(st) }), id: "stage:" + st.id, color: st.color });
+        });
+        pitems.push({ label: T("proj.addsub"), id: "addsub" });
+      }
+      pitems.push({ label: T("proj.delete"), id: "del" });
+      openMenu(pmn, pitems, function (it) {
+        if (it.id.indexOf("stage:") === 0) fm.p.stage = it.id.slice(6);
+        else if (it.id === "addsub") state.pOpen[fm.p.id] = true;
+        else if (it.id === "del") {
+          if (fm.sp) fm.p.sub = fm.p.sub.filter(function (x) { return x.id !== fm.sp.id; });
+          else PROJECTS = PROJECTS.filter(function (x) { return x.id !== fm.p.id; });
+        }
+        renderProjects();
+      });
+      return;
+    }
+
+    var pfl = closestEl(e.target, "[data-pfiles]");
+    if (pfl) { pickTarget = { project: pfl.dataset.pfiles }; picker.click(); return; }
+
+    var padd = closestEl(e.target, "[data-paddproj]");
+    if (padd) { openProjectDialog(padd.dataset.paddproj); return; }
+
     var show = closestEl(e.target, "[data-showboard]");
     if (show) {
       var st2 = findTask(show.dataset.showboard);
@@ -3337,6 +3637,13 @@
     }
 
     var fdl = closestEl(e.target, "[data-filedel]");
+    if (fdl && fdl.dataset.filedel.charAt(0) === "P") {
+      var pq = fdl.dataset.filedel.slice(1).split("|");
+      var fpd = findProject(pq[0]);
+      if (fpd) (fpd.sp || fpd.p).files.splice(parseInt(pq[1], 10), 1);
+      renderProjects();
+      return;
+    }
     if (fdl) {
       var q5 = fdl.dataset.filedel.split("|");
       var host = q5[1] ? findSub(q5[0], q5[1]) : findTask(q5[0]);
@@ -3362,6 +3669,13 @@
   function laterRefresh() { setTimeout(refresh, 0); }
 
   document.addEventListener("change", function (e) {
+    var pdt = closestEl(e.target, "[data-pdate]");
+    if (pdt) {
+      var fd = findProject(pdt.dataset.pdate);
+      if (fd && pdt.value) (fd.sp || fd.p).msd = pdt.value;
+      setTimeout(renderProjects, 0);
+      return;
+    }
     var dd = closestEl(e.target, "[data-ddue]");
     if (dd) {
       var t1 = findTask(state.open);
@@ -3495,12 +3809,14 @@
 
   // ---------- new project ----------
   var pdlg = document.getElementById("pdlg");
-  function openProjectDialog() {
-    fillSelect(document.getElementById("p-owner"), teamRoster().map(function (pp) { return { id: pp.id, label: pp.full + " — " + pp.role }; }), state.me);
-    fillSelect(document.getElementById("p-stage"), STAGES.map(function (st) { return { id: st.id, label: st.id }; }), "Intake");
-    fillSelect(document.getElementById("p-health"), [
-      { id: "on", label: "On track" }, { id: "risk", label: "At risk" }, { id: "block", label: "Blocked" }
-    ], "on");
+  function openProjectDialog(stage) {
+    fillSelect(document.getElementById("p-parent"),
+      [{ id: "", label: T("dlg.noparent") }].concat(PROJECTS.map(function (pr) { return { id: pr.id, label: pr.name }; })), "");
+    fillSelect(document.getElementById("p-owner"), teamRoster().map(function (pp) { return { id: pp.id, label: pp.full + " — " + personRole(pp) }; }), state.me);
+    fillSelect(document.getElementById("p-stage"), STAGES.map(function (st) { return { id: st.id, label: L(st) }; }), stage || "Intake");
+    fillSelect(document.getElementById("p-health"), ["on", "risk", "block"].map(function (k) {
+      return { id: k, label: L(HEALTH[k]) };
+    }), "on");
     pdlg.showModal();
     document.getElementById("p-name").focus();
   }
@@ -3508,6 +3824,24 @@
   document.getElementById("pdlg-form").addEventListener("submit", function () {
     var name = document.getElementById("p-name").value.trim();
     if (!name) return;
+    var parentId = document.getElementById("p-parent").value;
+    if (parentId) {
+      var par = findProject(parentId);
+      if (par) {
+        par.p.sub.push({
+          id: "ps" + Date.now(), name: name,
+          o: document.getElementById("p-owner").value,
+          health: document.getElementById("p-health").value,
+          msd: document.getElementById("p-msd").value || "2026-09-15",
+          done: 0, total: Math.max(1, parseInt(document.getElementById("p-total").value, 10) || 3), files: []
+        });
+        state.pOpen[par.p.id] = true;
+      }
+      document.getElementById("p-name").value = "";
+      document.getElementById("p-ms").value = "";
+      go("projects");
+      return;
+    }
     PROJECTS.unshift({
       name: name,
       stage: document.getElementById("p-stage").value,
@@ -3516,7 +3850,8 @@
       ms: document.getElementById("p-ms").value.trim() || "Kick-off",
       msd: document.getElementById("p-msd").value || "2026-09-15",
       done: 0,
-      total: Math.max(1, parseInt(document.getElementById("p-total").value, 10) || 6)
+      total: Math.max(1, parseInt(document.getElementById("p-total").value, 10) || 6),
+      id: "p" + Date.now(), bu: "", sub: [], files: []
     });
     document.getElementById("p-name").value = "";
     document.getElementById("p-ms").value = "";
@@ -3783,6 +4118,14 @@
     picker.click();
   }
   picker.addEventListener("change", function () {
+    if (pickTarget && pickTarget.project && picker.files && picker.files.length) {
+      var fpr = findProject(pickTarget.project);
+      if (fpr) addFiles(fpr.sp || fpr.p, picker.files);
+      picker.value = "";
+      pickTarget = null;
+      renderProjects();
+      return;
+    }
     if (pickTarget && picker.files && picker.files.length) {
       addFiles(pickTarget.sub ? findSub(pickTarget.task, pickTarget.sub) : findTask(pickTarget.task), picker.files);
       notify(findTask(pickTarget.task), "files", "n.files",
@@ -3817,6 +4160,24 @@
       renderGate();
       return;
     }
+    var pform = closestEl(e.target, "[data-paddsub]");
+    if (pform) {
+      e.preventDefault();
+      var fp = findProject(pform.dataset.paddsub);
+      var pin = pform.querySelector("input");
+      var pname = pin.value.trim();
+      if (!fp || !pname) return;
+      fp.p.sub.push({
+        id: "ps" + Date.now(), name: pname, o: fp.p.o, health: "on",
+        msd: fp.p.msd, done: 0, total: 3, files: []
+      });
+      state.pOpen[fp.p.id] = true;
+      renderProjects();
+      var again = document.querySelector('[data-paddsub="' + fp.p.id + '"] input');
+      if (again) again.focus();
+      return;
+    }
+
     var form = closestEl(e.target, "[data-addsub]");
     if (!form) return;
     e.preventDefault();
@@ -3861,8 +4222,8 @@
   // reorder: drag from the grip, or move with the arrow keys while it has focus
   var dragId = null;
   function clearMarks() {
-    var marked = document.querySelectorAll(".dropbefore, .dropafter, .filedrop");
-    for (var i = 0; i < marked.length; i++) marked[i].classList.remove("dropbefore", "dropafter", "filedrop");
+    var marked = document.querySelectorAll(".dropbefore, .dropafter, .filedrop, .pdrop");
+    for (var i = 0; i < marked.length; i++) marked[i].classList.remove("dropbefore", "dropafter", "filedrop", "pdrop");
   }
   function clearDraggable() {
     var d = document.querySelectorAll('.titem[draggable="true"]');
@@ -3939,8 +4300,8 @@
     if (hasFiles(e.dataTransfer)) {
       e.preventDefault();
       clearMarks();
-      var zone = sub || box || item;
-      if (zone) { e.dataTransfer.dropEffect = "copy"; zone.classList.add("filedrop"); }
+      var zone = sub || box || item || closestEl(e.target, "[data-pitem]");
+      if (zone) { e.dataTransfer.dropEffect = "copy"; zone.classList.add(zone.dataset.pitem ? "pdrop" : "filedrop"); }
       return;
     }
     if (!dragId) return;
@@ -3963,6 +4324,16 @@
     if (hasFiles(e.dataTransfer)) {
       e.preventDefault();
       clearMarks();
+      var pit = closestEl(e.target, "[data-pitem]");
+      if (pit) {
+        var prw = closestEl(e.target, "[data-prow]");
+        var fpp = findProject(prw ? prw.dataset.prow : pit.dataset.pitem);
+        if (fpp) {
+          addFiles(fpp.sp || fpp.p, e.dataTransfer.files);
+          renderProjects();
+        }
+        return;
+      }
       var box2 = closestEl(e.target, "[data-dropzone]");
       var dropped = T("n.docs", { n: e.dataTransfer.files.length });
       if (sub) {
@@ -4006,6 +4377,7 @@
   });
 
   normaliseSubs();
+  normaliseProjects();
   normaliseAccounts();
   warmTranslations();
   renderRail();
