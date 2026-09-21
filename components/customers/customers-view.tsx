@@ -26,7 +26,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ALL,
   buildCustomerAnalysis,
   matchesCaviarTypes,
   MONTH_LABELS,
@@ -86,7 +85,7 @@ export function CustomersView({
   const [compareN1, setCompareN1] = React.useState(true);
   const [customers, setCustomers] = React.useState<string[]>([]);
   const [caviarTypes, setCaviarTypes] = React.useState<string[]>([]);
-  const [product, setProduct] = React.useState<string>(ALL);
+  const [products, setProducts] = React.useState<string[]>([]);
   const [grouping, setGrouping] = React.useState<Grouping>("customer");
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [exporting, setExporting] = React.useState(false);
@@ -122,15 +121,18 @@ export function CustomersView({
       byKey.set(productKey(entry), entry.productName);
     }
     return [...byKey.entries()]
-      .map(([key, name]) => ({ key, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .map(([key, name]) => ({ value: key, label: name }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [entries, caviarTypes]);
 
-  // A product that fell out of the narrowed list silently means "all".
-  const effectiveProduct =
-    product !== ALL && productOptions.some((o) => o.key === product)
-      ? product
-      : ALL;
+  // Products that fell out of the narrowed list are silently ignored.
+  const effectiveProducts = React.useMemo(
+    () =>
+      products.filter((key) =>
+        productOptions.some((option) => option.value === key)
+      ),
+    [products, productOptions]
+  );
 
   const prevYearAvailable = years.includes(year - 1);
   const compare = compareN1 && prevYearAvailable;
@@ -140,11 +142,11 @@ export function CustomersView({
       year,
       customers,
       caviarTypes,
-      product: effectiveProduct,
+      products: effectiveProducts,
       grouping,
       compareN1: compare,
     }),
-    [year, customers, caviarTypes, effectiveProduct, grouping, compare]
+    [year, customers, caviarTypes, effectiveProducts, grouping, compare]
   );
 
   const analysis = React.useMemo(
@@ -321,27 +323,15 @@ export function CustomersView({
             ariaLabel="Caviar types"
             className="max-w-48"
           />
-          <Label htmlFor="sales-product" className="sr-only">
-            Product
-          </Label>
-          <Select value={effectiveProduct} onValueChange={setProduct}>
-            <SelectTrigger
-              id="sales-product"
-              size="sm"
-              aria-label="Product"
-              className="max-w-64"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All products</SelectItem>
-              {productOptions.map((option) => (
-                <SelectItem key={option.key} value={option.key}>
-                  {option.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={productOptions}
+            selected={effectiveProducts}
+            onChange={setProducts}
+            allLabel="All products"
+            searchPlaceholder="Search products…"
+            ariaLabel="Products"
+            className="max-w-64"
+          />
         </div>
         <div className="flex items-center gap-2">
           <Switch

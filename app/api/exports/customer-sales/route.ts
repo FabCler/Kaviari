@@ -3,7 +3,6 @@ import { formatDate } from "@/lib/format";
 import {
   buildCustomerAnalysis,
   customerFiltersSchema,
-  ALL,
   MONTH_LABELS,
   OTHER_TYPE,
   samePeriodLabel,
@@ -92,10 +91,12 @@ export async function POST(request: Request) {
             .join(", "),
     ],
     [
-      "Product",
-      filters.product === ALL
+      "Products",
+      filters.products.length === 0
         ? "All"
-        : (productNames.get(filters.product) ?? filters.product),
+        : filters.products
+            .map((key) => productNames.get(key) ?? key)
+            .join(", "),
     ],
     ["Rows", filters.grouping === "customer" ? "By customer" : "By product"],
     ["Compare N-1", compare ? `Yes (${prevLabel})` : "No"],

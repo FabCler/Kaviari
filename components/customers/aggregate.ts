@@ -7,7 +7,6 @@ import type { CustomerSaleEntry } from "@/components/customers/types";
  * screen (client rows are never trusted).
  */
 
-export const ALL = "all";
 /** Pseudo caviar-type for rows whose PR code isn't a caviar product. */
 export const OTHER_TYPE = "other";
 export const MONTH_LABELS = [
@@ -31,8 +30,8 @@ export const customerFiltersSchema = z.object({
   customers: z.array(z.string().max(100)).max(500).default([]),
   /** Caviar types (or OTHER_TYPE); empty = all. */
   caviarTypes: z.array(z.string().max(50)).max(50).default([]),
-  /** Product key (PR code or "name:<label>"); ALL = all. */
-  product: z.string().max(300).default(ALL),
+  /** Product keys (PR code or "name:<label>"); empty = all. */
+  products: z.array(z.string().max(300)).max(500).default([]),
   grouping: z.enum(["customer", "product"]).default("customer"),
   compareN1: z.boolean().default(true),
 });
@@ -111,7 +110,10 @@ export function buildCustomerAnalysis(
       return false;
     }
     if (!matchesCaviarTypes(entry, filters.caviarTypes)) return false;
-    if (filters.product !== ALL && productKey(entry) !== filters.product) {
+    if (
+      filters.products.length > 0 &&
+      !filters.products.includes(productKey(entry))
+    ) {
       return false;
     }
     return true;
