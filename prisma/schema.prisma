@@ -215,6 +215,16 @@ model ContentAsset {
   createdAt   DateTime  @default(now())
 }
 
+// Sales rep assigned to a customer of the "Top 90% sales" report, keyed by
+// the customer code from the export. Kept separately from CustomerSale so
+// re-uploading the sales file never wipes the assignments; editable on the
+// Customers page.
+model CustomerRep {
+  customerCode String   @id
+  repName      String
+  updatedAt    DateTime @updatedAt
+}
+
 // One customer × product × month quantity from the "Top 90% sales" export.
 // The whole table is replaced on every upload (the file is a full snapshot,
 // re-exported twice a month).

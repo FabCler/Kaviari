@@ -12,8 +12,10 @@ export async function loadCustomerSalesEntries(): Promise<{
   entries: CustomerSaleEntry[];
   years: number[];
   meta: CustomerSalesMeta;
+  /** customerCode → assigned sales rep. */
+  reps: Record<string, string>;
 }> {
-  const [sales, products, metaRow] = await Promise.all([
+  const [sales, products, metaRow, repRows] = await Promise.all([
     prisma.customerSale.findMany({
       orderBy: [{ year: "asc" }, { month: "asc" }],
     }),
@@ -21,6 +23,7 @@ export async function loadCustomerSalesEntries(): Promise<{
       select: { prCode: true, name: true, caviarType: true, category: true },
     }),
     prisma.setting.findUnique({ where: { key: "customerSalesMeta" } }),
+    prisma.customerRep.findMany(),
   ]);
 
   // Enrich each sale with the catalog product (matched by PR code) so the
@@ -57,5 +60,9 @@ export async function loadCustomerSalesEntries(): Promise<{
     }
   }
 
-  return { entries, years, meta };
+  const reps = Object.fromEntries(
+    repRows.map((row) => [row.customerCode, row.repName])
+  );
+
+  return { entries, years, meta, reps };
 }

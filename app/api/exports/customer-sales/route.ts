@@ -51,7 +51,8 @@ export async function POST(request: Request) {
   }
   const filters = parsed.data;
 
-  const { entries, years } = await loadCustomerSalesEntries();
+  const { entries, years, reps } = await loadCustomerSalesEntries();
+  const byCustomer = filters.grouping === "customer";
   const compare = filters.compareN1 && years.includes(filters.year - 1);
   const analysis = buildCustomerAnalysis(entries, {
     ...filters,
@@ -124,9 +125,17 @@ export async function POST(request: Request) {
       ),
     },
     {
-      header: filters.grouping === "customer" ? "Customer" : "Product",
+      header: byCustomer ? "Customer" : "Product",
       width: fitWidth("Customer", allNames),
     },
+    ...(byCustomer
+      ? [
+          {
+            header: "Sales rep",
+            width: fitWidth("Sales rep", Object.values(reps)),
+          },
+        ]
+      : []),
     ...visibleMonths.map((label) => numCol(label)),
     numCol(`Total ${filters.year}`),
     ...(compare
@@ -172,11 +181,17 @@ export async function POST(request: Request) {
   const headerRow = addHeaderRow(ws, columns);
   const detailRowNumbers = new Set<number>();
   for (const group of groupRows) {
-    ws.addRow([group.code, group.name, ...quantityCells(group)]);
+    ws.addRow([
+      group.code,
+      group.name,
+      ...(byCustomer ? [reps[group.key] ?? ""] : []),
+      ...quantityCells(group),
+    ]);
     for (const detail of group.details) {
       const row = ws.addRow([
         detail.code,
         detail.name,
+        ...(byCustomer ? [""] : []),
         ...quantityCells(detail),
       ]);
       detailRowNumbers.add(row.number);
@@ -205,6 +220,7 @@ export async function POST(request: Request) {
   const totalsRow = ws.addRow([
     "Total",
     "",
+    ...(byCustomer ? [""] : []),
     ...visibleMonths.map((_, i) => monthTotals[i].current),
     analysis.currentTotal,
     ...(compare

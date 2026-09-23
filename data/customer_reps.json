@@ -1,0 +1,867 @@
+[
+ {
+  "customerCode": "CL00163",
+  "customerName": "Grand Hyatt Erawan",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL00210",
+  "customerName": "Anantara Siam",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL00395",
+  "customerName": "The Nai Harn Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL00882",
+  "customerName": "Penninsula",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL01140",
+  "customerName": "Conrad",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL01357",
+  "customerName": "Rose Wood Hotel",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL01397",
+  "customerName": "Acqua restaurant Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL01885",
+  "customerName": "Pullman",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL01980",
+  "customerName": "Cagette",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02016",
+  "customerName": "Okura",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02026",
+  "customerName": "Le Cabanon",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02114",
+  "customerName": "Intercontinental Bangkok & Holiday Inn Bangkok",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02127",
+  "customerName": "MIA",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02147",
+  "customerName": "Antonio",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02232",
+  "customerName": "Above Eleven",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02268",
+  "customerName": "Zuma Restaurant",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02276",
+  "customerName": "Dark MS",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02277",
+  "customerName": "Lenzi Asia Co., Ltd. (HEO)",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02290",
+  "customerName": "Hansar Hotel Co., Ltd. (HEO)",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02328",
+  "customerName": "Victoria By Cocotte",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02337",
+  "customerName": "CLARA Restaurant",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02494",
+  "customerName": "Theraphong Chansiri",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02516",
+  "customerName": "Khun Disapol",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02531",
+  "customerName": "St.regis Bangkok",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL02536",
+  "customerName": "Copper Buffet",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02559",
+  "customerName": "L'executif Chef\u201d Private Dining",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02561",
+  "customerName": "V Villa Hua Hin",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL02580",
+  "customerName": "Giglio Trattoria Fiorentina",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02582",
+  "customerName": "MAZE DINING",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02598",
+  "customerName": "Photogenic Ltd",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL02599",
+  "customerName": "APPIA Restaurant",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02608",
+  "customerName": "MAXENCE LE BARTZ",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL02687",
+  "customerName": "The Siam Hotel",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02705",
+  "customerName": "Kimpton Maa-Lai Bangkok",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL02712",
+  "customerName": "Kempinski Hotel",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02724",
+  "customerName": "ArnoThai by Arno's",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL02840",
+  "customerName": "Monlada Pongpanij",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL02847",
+  "customerName": "ROYAL ORCHID HOTEL",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL02857",
+  "customerName": "W Bangkok",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02860",
+  "customerName": "Siramon  Khongthanakit (1)",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL02992",
+  "customerName": "oyster bar x samui",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03038",
+  "customerName": "Ler Bisto Limited Partnership",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL03077",
+  "customerName": "Ariane Schneider",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03123",
+  "customerName": "Petit plats",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03139",
+  "customerName": "Andaz Pattaya Jomtien Beach Hotel",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03165",
+  "customerName": "Chatrium Hotel Riverside Bangkok",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03174",
+  "customerName": "Maison Dunand Restaurant",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03176",
+  "customerName": "Coda",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03214",
+  "customerName": "Acqua Restaurant Bangkok",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03217",
+  "customerName": "the oyster bar x escape bangkok",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03228",
+  "customerName": "Capucine",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03261",
+  "customerName": "Chai jia chai",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03264",
+  "customerName": "Mare Seafood",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03284",
+  "customerName": "LAVA Asian Bistro & Bar - Thonglor",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03317",
+  "customerName": "Futago",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03335",
+  "customerName": "Anantara Phuket Layan Resort & Spa",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03339",
+  "customerName": "Cloud i BKK",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03350",
+  "customerName": "Buddybkk",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03354",
+  "customerName": "Quarter conceptual dining",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03360",
+  "customerName": "Kensho Omakase",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03362",
+  "customerName": "CASTELLO DE BELLAGIO (PATTAYA)",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03367",
+  "customerName": "Ainu Bar",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL03376",
+  "customerName": "SCUBA",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03409",
+  "customerName": "Chatrium Grand Bangkok",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03412",
+  "customerName": "Fatboy Izakaya",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03439",
+  "customerName": "Nai Lert Group",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03460",
+  "customerName": "Anantara Bophut Koh Samui",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03465",
+  "customerName": "Guillaume, Damien, Richard  CELANTE",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03500",
+  "customerName": "Juksunchae Korean Fine Dining",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03590",
+  "customerName": "Adhoc Bkk",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03651",
+  "customerName": "Staybridge Suites Bangkok Thonglor, an IHG Hotel",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL03679",
+  "customerName": "Oji Omakase",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03717",
+  "customerName": "Intercontinental Phuket Resort",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03731",
+  "customerName": "Yankii",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03771",
+  "customerName": "Su Va Na Restaurant",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL03793",
+  "customerName": "Birdies",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL03817",
+  "customerName": "Bangkok Wine Room",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03824",
+  "customerName": "Ginza Tenharu",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03825",
+  "customerName": "Sushi Top One Wada",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03835",
+  "customerName": "Sushi Saryu",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03836",
+  "customerName": "Hanazen",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03851",
+  "customerName": "Sushi Masato",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03866",
+  "customerName": "Mekong Fine Food",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL03890",
+  "customerName": "80/20",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03902",
+  "customerName": "Monster by tong",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL03904",
+  "customerName": "LENZI CASA",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03931",
+  "customerName": "Kappo Yume",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL03934",
+  "customerName": "Restaurant Int at Best Western",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL03936",
+  "customerName": "V Villas Phuket",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL03958",
+  "customerName": "Suvarnabhumi Airport",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL04009",
+  "customerName": "Locusta Dives",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04044",
+  "customerName": "The Brine & Bottles",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL04053",
+  "customerName": "Casa Teo",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04055",
+  "customerName": "Chatrium Residence Sathon Bangkok",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL04061",
+  "customerName": "Chef Gig",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL04112",
+  "customerName": "Copper Gaysorn",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL04119",
+  "customerName": "Centara Grand Mirage Beach Resort Pattaya",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04122",
+  "customerName": "Denkushiflori Bkk",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL04126",
+  "customerName": "Ricci Italian Restaurant & Crudo Bar",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04138",
+  "customerName": "Rakxa Wellness",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04206",
+  "customerName": "The Wine Merchant",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04231",
+  "customerName": "HOLEY ARTISAN",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04288",
+  "customerName": "Dusit Thani Pattaya",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04296",
+  "customerName": "Cross Bkk",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04315",
+  "customerName": "The S Bangkok",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL04353",
+  "customerName": "The Ritz Carlton Bangkok",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04429",
+  "customerName": "kappo takashi",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL04448",
+  "customerName": "Dusit Thani Bangkok",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04453",
+  "customerName": "El Willy Spanish Kitchen",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04462",
+  "customerName": "The Food School",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04466",
+  "customerName": "The Serenity Condominium",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04477",
+  "customerName": "Ember",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04491",
+  "customerName": "Le Cafe Louis Vuitton",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL04524",
+  "customerName": "SORRENTO",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04528",
+  "customerName": "Mr. Ernesto Bauer",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL04558",
+  "customerName": "I-SANG",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL04570",
+  "customerName": "Gagan Gaysorn",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04590",
+  "customerName": "Canvas Restaurant",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04640",
+  "customerName": "Saha Stainless Steel",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL04662",
+  "customerName": "MEAT MARKET",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04682",
+  "customerName": "Barra Cuda",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04717",
+  "customerName": "Harlan restaurant",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04724",
+  "customerName": "Liana",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04737",
+  "customerName": "Laferia",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04765",
+  "customerName": "Little Edo",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04771",
+  "customerName": "Marriott Resort Pattaya",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL04798",
+  "customerName": "Royce Private Residence",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL04836",
+  "customerName": "Nai Lert Park Heritage",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL04863",
+  "customerName": "Boys in Bangla",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04872",
+  "customerName": "Restaurant Belen",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04883",
+  "customerName": "Jikasei B",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04887",
+  "customerName": "Fira  Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04921",
+  "customerName": "Kappo Takashi",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL04938",
+  "customerName": "\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 \u0e2a\u0e38\u0e19\u0e17\u0e23 \u0e40\u0e17\u0e23\u0e14\u0e14\u0e34\u0e49\u0e07 \u0e08\u0e4d\u0e32\u0e01\u0e31\u0e14 (\u0e2a\u0e32\u0e02\u0e32\u0e17\u0e35\u0e48 00001)",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04952",
+  "customerName": "SOL CONCEPT",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL04993",
+  "customerName": "OKTOPUS",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL04996",
+  "customerName": "Como Point Yamu Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL05039",
+  "customerName": "AAN TRADING",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL05046",
+  "customerName": "ALIEN CONCEPT",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL05053",
+  "customerName": "Poon Manomaiphiboon",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL05085",
+  "customerName": "DELIA",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "CL05092",
+  "customerName": "The Ritz Carlton Koh Samui",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL05141",
+  "customerName": "The River Condominium",
+  "repName": "CS"
+ },
+ {
+  "customerCode": "CL05143",
+  "customerName": "WARUT KONGSUDJAI",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL05161",
+  "customerName": "Felix",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL05180",
+  "customerName": "Kata Rocks Resort",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL05236",
+  "customerName": "CUISINE BKK",
+  "repName": "Satit Chaosakul (Baitong)"
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL05256",
+  "customerName": "Park Hyatt Bangkok",
+  "repName": "Miguel Gil Diaz"
+ },
+ {
+  "customerCode": "CL05260",
+  "customerName": "CHAIYAPHLUG BROKER",
+  "repName": "Khemika\u00a0Sookarin (Baifern)"
+ },
+ {
+  "customerCode": "CL05282",
+  "customerName": "YONA Beach Club Phuket",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL05296",
+  "customerName": "Fairmont Bangkok Sukhumvit",
+  "repName": "Somkid"
+ },
+ {
+  "customerCode": "CL05302",
+  "customerName": "J NEXT CO. LTD.",
+  "repName": "Makoto Imayoshi"
+ },
+ {
+  "customerCode": "CL05314",
+  "customerName": "THE PLACE PHUKET COMPANY LIMITED HEO",
+  "repName": "Panupong Limpanon"
+ },
+ {
+  "customerCode": "CL05349",
+  "customerName": "\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 \u0e42\u0e1f\u0e23\u0e4c\u0e14\u0e35 \u0e40\u0e2d\u0e40\u0e08\u0e19\u0e0b\u0e35\u0e48 \u0e08\u0e33\u0e01\u0e31\u0e14 (\u0e2a\u0e33\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e0d\u0e4b)",
+  "repName": "Ubonwan Thanongsaksrikul"
+ },
+ {
+  "customerCode": "New",
+  "customerName": "Wana Yook",
+  "repName": "Miguel Gil Diaz"
+ }
+]

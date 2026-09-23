@@ -40,6 +40,7 @@ import {
   type CustomersChartRow,
 } from "@/components/customers/customers-chart";
 import { MultiSelect } from "@/components/customers/multi-select";
+import { RepEditor } from "@/components/customers/rep-editor";
 import type { CustomerSaleEntry } from "@/components/customers/types";
 
 type Grouping = CustomerFilters["grouping"];
@@ -75,11 +76,18 @@ function DeltaText({
 export function CustomersView({
   entries,
   years,
+  reps,
 }: {
   entries: CustomerSaleEntry[];
   /** Years present in the data, ascending. */
   years: number[];
+  /** customerCode → assigned sales rep. */
+  reps: Record<string, string>;
 }) {
+  const knownReps = React.useMemo(
+    () => [...new Set(Object.values(reps))].sort((a, b) => a.localeCompare(b)),
+    [reps]
+  );
   const latestYear = years[years.length - 1] ?? new Date().getUTCFullYear();
   const [year, setYear] = React.useState(latestYear);
   const [compareN1, setCompareN1] = React.useState(true);
@@ -263,6 +271,16 @@ export function CustomersView({
               )}
               {row.name}
             </span>
+            {grouping === "customer" ? (
+              <span className="mt-0.5 block pl-5 font-normal">
+                <RepEditor
+                  customerCode={row.key}
+                  customerName={row.name}
+                  repName={reps[row.key] ?? null}
+                  knownReps={knownReps}
+                />
+              </span>
+            ) : null}
           </TableCell>
           {renderQuantityCells(row)}
         </TableRow>

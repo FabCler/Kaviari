@@ -1402,5 +1402,18 @@
   "costPerKg": 1200,
   "currency": "EUR",
   "stockOnHand": 0
+ },
+ {
+  "prCode": "9513",
+  "name": "Kaviari Caviar En-K Oscietra (15g/tin)-CDM",
+  "caviarType": "Oscietra",
+  "category": "Caviar",
+  "unit": "Tin",
+  "packingPerBox": 10,
+  "gramsPerUnit": 15,
+  "unitCost": 14.8,
+  "costPerKg": 986.67,
+  "currency": "EUR",
+  "stockOnHand": 0
  }
 ]

@@ -17,7 +17,11 @@
  * v10 removes the stock that PO receptions had created (lots + receipt
  * movements): receiving became informational-only, stock comes exclusively
  * from Import & Analyze uploads. v11 re-syncs the catalog from the
- * 12 Sep 2026 workbook (2 new products, one grammage fix).
+ * 12 Sep 2026 workbook (2 new products, one grammage fix). v12 loads the
+ * Q4 2026 FS forecast (data/forecast_q4_2026.json, aggregated per product ×
+ * month, saved under the owner account), the sales-rep assignments from the
+ * same workbook (data/customer_reps.json → CustomerRep, editable on the
+ * Customers page afterwards), and adds product 9513 (En-K Oscietra CDM).
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -27,7 +31,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 11;
+const VERSION = 12;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -136,6 +140,74 @@ async function removePoReceiptStock(): Promise<string> {
   return `PO receipt stock removed: ${movements.count} receipt movements, ${lots.count} lots`;
 }
 
+/**
+ * One-time (v12) load of the Q4 2026 FS forecast, aggregated per product ×
+ * month and saved under the owner account (the app sums forecasts across
+ * users). Later edits go through the Consumption page's forecast editor or
+ * template upload.
+ */
+async function importQ4Forecasts(): Promise<string> {
+  const file = join(__dirname, "..", "data", "forecast_q4_2026.json");
+  if (!existsSync(file)) return "no Q4 forecast file";
+  const owner =
+    (await prisma.user.findFirst({ where: { role: "owner" } })) ??
+    (await prisma.user.findFirst());
+  if (!owner) {
+    return "no user account yet — Q4 forecasts skipped (upload the template later)";
+  }
+  const rows: MonthlyRow[] = JSON.parse(readFileSync(file, "utf8"));
+  const products = await prisma.product.findMany();
+  const byCode = new Map(products.map((p) => [p.prCode, p]));
+  let written = 0;
+  let missing = 0;
+  for (const row of rows) {
+    const product = byCode.get(row.prCode);
+    if (!product) {
+      missing += 1;
+      continue;
+    }
+    const month = new Date(`${row.month}-01T00:00:00.000Z`);
+    await prisma.forecast.upsert({
+      where: {
+        userId_productId_month: {
+          userId: owner.id,
+          productId: product.id,
+          month,
+        },
+      },
+      create: {
+        userId: owner.id,
+        productId: product.id,
+        month,
+        quantity: row.tins,
+      },
+      update: { quantity: row.tins },
+    });
+    written += 1;
+  }
+  return (
+    `Q4 2026 forecasts: ${written} saved under ${owner.email}` +
+    (missing > 0 ? ` (${missing} unknown PR codes skipped)` : "")
+  );
+}
+
+/** One-time (v12) load of the sales-rep assignments (editable in-app after). */
+async function importCustomerReps(): Promise<string> {
+  const file = join(__dirname, "..", "data", "customer_reps.json");
+  if (!existsSync(file)) return "no customer reps file";
+  const rows: { customerCode: string; repName: string }[] = JSON.parse(
+    readFileSync(file, "utf8")
+  );
+  for (const row of rows) {
+    await prisma.customerRep.upsert({
+      where: { customerCode: row.customerCode },
+      create: { customerCode: row.customerCode, repName: row.repName },
+      update: { repName: row.repName },
+    });
+  }
+  return `customer sales reps: ${rows.length} assignments loaded`;
+}
+
 async function main() {
   const done = await prisma.setting.findUnique({ where: { key: GUARD_KEY } });
   const doneVersion = done ? Number(done.value.split("|")[0]) || 1 : 0;
@@ -153,6 +225,11 @@ async function main() {
 
   if (doneVersion < 10) {
     console.log(`consumption-maintenance: ${await removePoReceiptStock()}`);
+  }
+
+  if (doneVersion < 12) {
+    console.log(`consumption-maintenance: ${await importQ4Forecasts()}`);
+    console.log(`consumption-maintenance: ${await importCustomerReps()}`);
   }
 
   if (doneVersion >= 6) {
