@@ -40,11 +40,12 @@ model Product {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  lots      StockLot[]
-  movements StockMovement[]
-  poLines   PurchaseOrderLine[]
-  campaigns CampaignProduct[]
-  forecasts Forecast[]
+  lots              StockLot[]
+  movements         StockMovement[]
+  poLines           PurchaseOrderLine[]
+  campaigns         CampaignProduct[]
+  forecasts         Forecast[]
+  customerForecasts CustomerForecast[]
 }
 
 model User {
@@ -59,8 +60,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  forecasts Forecast[]
-  chats     ChatSession[]
+  forecasts         Forecast[]
+  customerForecasts CustomerForecast[]
+  chats             ChatSession[]
 }
 
 // One assistant conversation, private to its user.
@@ -88,6 +90,8 @@ model ChatMessage {
   @@index([sessionId, createdAt])
 }
 
+// Free product-level forecast entered in the on-site editor (per user).
+// App-wide forecast totals = these rows + CustomerForecast rows.
 model Forecast {
   id        String   @id @default(cuid())
   userId    String
@@ -101,6 +105,27 @@ model Forecast {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId, month])
+  @@index([productId, month])
+}
+
+// Customer-level forecast (the FS template round-trip): one quantity per
+// customer × product × month, stamped with the user who last saved it so
+// the owner can audit who forecasted what.
+model CustomerForecast {
+  id           String   @id @default(cuid())
+  customerCode String
+  customerName String
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // First day of the forecast month (UTC midnight).
+  month        DateTime
+  quantity     Float
+  enteredById  String?
+  enteredBy    User?    @relation(fields: [enteredById], references: [id], onDelete: SetNull)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([customerCode, productId, month])
+  @@index([month])
   @@index([productId, month])
 }
 

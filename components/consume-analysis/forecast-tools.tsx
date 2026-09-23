@@ -31,9 +31,12 @@ interface UploadResult {
 export function ForecastTools({
   hasForecasts,
   editor,
+  isOwner = false,
 }: {
   hasForecasts: boolean;
   editor: ForecastEditorData;
+  /** Owners also get the audit export (who forecasted, per customer). */
+  isOwner?: boolean;
 }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -82,9 +85,10 @@ export function ForecastTools({
       <CardHeader>
         <CardTitle>Forecasts</CardTitle>
         <CardDescription>
-          Download the template, fill in monthly quantities and upload it back.
-          Uploaded forecasts are saved under your name; totals sum everyone’s
-          forecasts, and the person filter above narrows them.
+          Download the customer template — one row per customer and month,
+          with the assigned sales rep and a column per product — fill in the
+          quantities and upload it back. Uploads are recorded under your
+          name, per customer.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -93,15 +97,17 @@ export function ForecastTools({
             <div className="text-sm text-muted-foreground">
               {hasForecasts ? (
                 <p>
-                  Fix a mistake directly with “Edit forecasts”, or round-trip
-                  the template — it is prefilled with your saved forecasts for
-                  the next six months. Blank cells keep saved values, 0 clears
-                  one.
+                  The template lists every customer with its sales rep for the
+                  next three months, prefilled with the saved customer
+                  forecasts. Blank cells keep saved values, 0 clears one.
+                  “Edit forecasts” still adjusts product-level totals
+                  directly.
                 </p>
               ) : (
                 <p>
-                  No forecasts yet. Enter the first monthly quantities for the
-                  caviar and fish-roe range directly, or download the template.
+                  No forecasts yet. Download the customer template to enter
+                  the first quantities, or use “Edit forecasts” for quick
+                  product-level totals.
                 </p>
               )}
             </div>
@@ -113,6 +119,14 @@ export function ForecastTools({
                   Forecast template
                 </a>
               </Button>
+              {isOwner ? (
+                <Button variant="outline" asChild>
+                  <a href="/api/exports/forecast-data" download>
+                    <Download aria-hidden />
+                    Forecast data (admin)
+                  </a>
+                </Button>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-col gap-2">

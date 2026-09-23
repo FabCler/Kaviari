@@ -22,6 +22,10 @@
  * month, saved under the owner account), the sales-rep assignments from the
  * same workbook (data/customer_reps.json → CustomerRep, editable on the
  * Customers page afterwards), and adds product 9513 (En-K Oscietra CDM).
+ * v13 moves forecasts to customer level: wipes ALL product-level Forecast
+ * rows (v12's aggregate included) and loads the Q4 2026 file per customer
+ * into CustomerForecast (data/customer_forecasts_q4_2026.json) — app-wide
+ * totals now come from CustomerForecast + on-site editor rows.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -31,7 +35,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 12;
+const VERSION = 13;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -141,23 +145,30 @@ async function removePoReceiptStock(): Promise<string> {
 }
 
 /**
- * One-time (v12) load of the Q4 2026 FS forecast, aggregated per product ×
- * month and saved under the owner account (the app sums forecasts across
- * users). Later edits go through the Consumption page's forecast editor or
- * template upload.
+ * One-time (v13) switch to customer-level forecasting: every product-level
+ * Forecast row is removed (the v12 aggregate import and any manual entries
+ * were superseded by the Q4 2026 FS file) and the file's customer × product
+ * × month entries are loaded into CustomerForecast, attributed to the owner
+ * account. From then on the FS team maintains them via the customer
+ * template on the Consumption page.
  */
-async function importQ4Forecasts(): Promise<string> {
-  const file = join(__dirname, "..", "data", "forecast_q4_2026.json");
-  if (!existsSync(file)) return "no Q4 forecast file";
+async function moveForecastsToCustomerLevel(): Promise<string> {
+  const file = join(__dirname, "..", "data", "customer_forecasts_q4_2026.json");
+  const wiped = await prisma.forecast.deleteMany();
+  if (!existsSync(file)) return `wiped ${wiped.count} forecasts; no Q4 file`;
   const owner =
     (await prisma.user.findFirst({ where: { role: "owner" } })) ??
     (await prisma.user.findFirst());
-  if (!owner) {
-    return "no user account yet — Q4 forecasts skipped (upload the template later)";
-  }
-  const rows: MonthlyRow[] = JSON.parse(readFileSync(file, "utf8"));
+  const rows: {
+    customerCode: string;
+    customerName: string;
+    prCode: string;
+    month: string;
+    tins: number;
+  }[] = JSON.parse(readFileSync(file, "utf8"));
   const products = await prisma.product.findMany();
   const byCode = new Map(products.map((p) => [p.prCode, p]));
+  await prisma.customerForecast.deleteMany();
   let written = 0;
   let missing = 0;
   for (const row of rows) {
@@ -166,27 +177,21 @@ async function importQ4Forecasts(): Promise<string> {
       missing += 1;
       continue;
     }
-    const month = new Date(`${row.month}-01T00:00:00.000Z`);
-    await prisma.forecast.upsert({
-      where: {
-        userId_productId_month: {
-          userId: owner.id,
-          productId: product.id,
-          month,
-        },
-      },
-      create: {
-        userId: owner.id,
+    await prisma.customerForecast.create({
+      data: {
+        customerCode: row.customerCode,
+        customerName: row.customerName,
         productId: product.id,
-        month,
+        month: new Date(`${row.month}-01T00:00:00.000Z`),
         quantity: row.tins,
+        enteredById: owner?.id ?? null,
       },
-      update: { quantity: row.tins },
     });
     written += 1;
   }
   return (
-    `Q4 2026 forecasts: ${written} saved under ${owner.email}` +
+    `forecasts moved to customer level: ${wiped.count} product-level rows removed, ` +
+    `${written} customer rows loaded` +
     (missing > 0 ? ` (${missing} unknown PR codes skipped)` : "")
   );
 }
@@ -228,8 +233,11 @@ async function main() {
   }
 
   if (doneVersion < 12) {
-    console.log(`consumption-maintenance: ${await importQ4Forecasts()}`);
     console.log(`consumption-maintenance: ${await importCustomerReps()}`);
+  }
+
+  if (doneVersion < 13) {
+    console.log(`consumption-maintenance: ${await moveForecastsToCustomerLevel()}`);
   }
 
   if (doneVersion >= 6) {

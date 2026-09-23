@@ -1,0 +1,1528 @@
+[
+ {
+  "customerCode": "CL05039",
+  "customerName": "AAN TRADING",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL05039",
+  "customerName": "AAN TRADING",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL05046",
+  "customerName": "ALIEN CONCEPT",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL05046",
+  "customerName": "ALIEN CONCEPT",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL05046",
+  "customerName": "ALIEN CONCEPT",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 4
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "prCode": "3133",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 4
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 12
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 6
+ },
+ {
+  "customerCode": "CL04370",
+  "customerName": "Aman Nai Lert Bangkok Hotel",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 12
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 6
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 6
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 6
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "4160",
+  "month": "2026-12",
+  "tins": 1
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 19
+ },
+ {
+  "customerCode": "CL01128",
+  "customerName": "AMANPURI RESORT PHUKET",
+  "prCode": "4298",
+  "month": "2026-12",
+  "tins": 16
+ },
+ {
+  "customerCode": "CL00210",
+  "customerName": "Anantara Siam",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL00210",
+  "customerName": "Anantara Siam",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL00210",
+  "customerName": "Anantara Siam",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3112",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3112",
+  "month": "2026-11",
+  "tins": 35
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02364",
+  "customerName": "Blue by Alain Ducasse",
+  "prCode": "3112",
+  "month": "2026-12",
+  "tins": 35
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "prCode": "9513",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "prCode": "9513",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL03349",
+  "customerName": "Cafe Del Mar Phuket",
+  "prCode": "9513",
+  "month": "2026-12",
+  "tins": 70
+ },
+ {
+  "customerCode": "CL01980",
+  "customerName": "Cagette",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL01980",
+  "customerName": "Cagette",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL01980",
+  "customerName": "Cagette",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 6
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "7715",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "3112",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "9011",
+  "month": "2026-10",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "7715",
+  "month": "2026-11",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "3112",
+  "month": "2026-11",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "9011",
+  "month": "2026-11",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "4298",
+  "month": "2026-12",
+  "tins": 1
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "7715",
+  "month": "2026-12",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "3112",
+  "month": "2026-12",
+  "tins": 45
+ },
+ {
+  "customerCode": "CL02895",
+  "customerName": "Capella Hotel Bangkok",
+  "prCode": "9011",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL03362",
+  "customerName": "CASTELLO DE BELLAGIO (PATTAYA)",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03362",
+  "customerName": "CASTELLO DE BELLAGIO (PATTAYA)",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03362",
+  "customerName": "CASTELLO DE BELLAGIO (PATTAYA)",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL03165",
+  "customerName": "Chatrium Hotel Riverside Bangkok",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL03165",
+  "customerName": "Chatrium Hotel Riverside Bangkok",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL04055",
+  "customerName": "Chatrium Residence Sathon Bangkok",
+  "prCode": "3148",
+  "month": "2026-11",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL04055",
+  "customerName": "Chatrium Residence Sathon Bangkok",
+  "prCode": "3148",
+  "month": "2026-12",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL03339",
+  "customerName": "Cloud i BKK",
+  "prCode": "3133",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03339",
+  "customerName": "Cloud i BKK",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03339",
+  "customerName": "Cloud i BKK",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "prCode": "3127",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL02937",
+  "customerName": "Four Seasons Bangkok Hotel",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL03465",
+  "customerName": "Guillaume, Damien, Richard  CELANTE",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03465",
+  "customerName": "Guillaume, Damien, Richard  CELANTE",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL02114",
+  "customerName": "Intercontinental Bangkok & Holiday Inn Bangkok",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 1
+ },
+ {
+  "customerCode": "CL02114",
+  "customerName": "Intercontinental Bangkok & Holiday Inn Bangkok",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL02114",
+  "customerName": "Intercontinental Bangkok & Holiday Inn Bangkok",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "prCode": "3127",
+  "month": "2026-10",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03416",
+  "customerName": "iODE",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 4
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 22
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 35
+ },
+ {
+  "customerCode": "CL03242",
+  "customerName": "L Ar\u00f4me by the sea",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 19
+ },
+ {
+  "customerCode": "CL02559",
+  "customerName": "L'executif Chef\u201d Private Dining",
+  "prCode": "3133",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02559",
+  "customerName": "L'executif Chef\u201d Private Dining",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02559",
+  "customerName": "L'executif Chef\u201d Private Dining",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3133",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3193",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3127",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3193",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3193",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03322",
+  "customerName": "Lady L Garden Bistro",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL04491",
+  "customerName": "Le Cafe Louis Vuitton",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 55
+ },
+ {
+  "customerCode": "CL04491",
+  "customerName": "Le Cafe Louis Vuitton",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 55
+ },
+ {
+  "customerCode": "CL04491",
+  "customerName": "Le Cafe Louis Vuitton",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 75
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3343",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "9011",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 35
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3343",
+  "month": "2026-11",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "9011",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3343",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL04785",
+  "customerName": "Lebua at State Tower",
+  "prCode": "9011",
+  "month": "2026-12",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03174",
+  "customerName": "Maison Dunand Restaurant",
+  "prCode": "3127",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03174",
+  "customerName": "Maison Dunand Restaurant",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL03174",
+  "customerName": "Maison Dunand Restaurant",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "3133",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "3193",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "9011",
+  "month": "2026-10",
+  "tins": 60
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "3193",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "9011",
+  "month": "2026-11",
+  "tins": 65
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "3193",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02010",
+  "customerName": "Mandarin Oriental",
+  "prCode": "9011",
+  "month": "2026-12",
+  "tins": 120
+ },
+ {
+  "customerCode": "CL04662",
+  "customerName": "MEAT MARKET",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04662",
+  "customerName": "MEAT MARKET",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL04662",
+  "customerName": "MEAT MARKET",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 40
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL04403",
+  "customerName": "Nobu",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL05256",
+  "customerName": "Park Hyatt Bangkok",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL05256",
+  "customerName": "Park Hyatt Bangkok",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL05256",
+  "customerName": "Park Hyatt Bangkok",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL04872",
+  "customerName": "Restaurant Belen",
+  "prCode": "3193",
+  "month": "2026-10",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL04872",
+  "customerName": "Restaurant Belen",
+  "prCode": "3193",
+  "month": "2026-11",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL04872",
+  "customerName": "Restaurant Belen",
+  "prCode": "3193",
+  "month": "2026-12",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL03376",
+  "customerName": "SCUBA",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03376",
+  "customerName": "SCUBA",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03376",
+  "customerName": "SCUBA",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03771",
+  "customerName": "Su Va Na Restaurant",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03771",
+  "customerName": "Su Va Na Restaurant",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03771",
+  "customerName": "Su Va Na Restaurant",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "3112",
+  "month": "2026-10",
+  "tins": 50
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "9011",
+  "month": "2026-10",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "3112",
+  "month": "2026-11",
+  "tins": 70
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "9011",
+  "month": "2026-11",
+  "tins": 45
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "3112",
+  "month": "2026-12",
+  "tins": 85
+ },
+ {
+  "customerCode": "CL02307",
+  "customerName": "Suhring Twins Co.,Ltd.",
+  "prCode": "9011",
+  "month": "2026-12",
+  "tins": 65
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "prCode": "3133",
+  "month": "2026-10",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL05254",
+  "customerName": "The Consul Club",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02687",
+  "customerName": "The Siam Hotel",
+  "prCode": "3193",
+  "month": "2026-12",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 15
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03137",
+  "customerName": "The Standard Bangkok Mahanakhon",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL04206",
+  "customerName": "The Wine Merchant",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL04206",
+  "customerName": "The Wine Merchant",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL04206",
+  "customerName": "The Wine Merchant",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3133",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 22
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 1
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 12
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3133",
+  "month": "2026-12",
+  "tins": 8
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3192",
+  "month": "2026-12",
+  "tins": 4
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "4160",
+  "month": "2026-12",
+  "tins": 1
+ },
+ {
+  "customerCode": "CL03474",
+  "customerName": "Trisara",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 13
+ },
+ {
+  "customerCode": "CL02857",
+  "customerName": "W Bangkok",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL02857",
+  "customerName": "W Bangkok",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 2
+ },
+ {
+  "customerCode": "CL02857",
+  "customerName": "W Bangkok",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 3
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "prCode": "1216",
+  "month": "2026-10",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 7
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "prCode": "1216",
+  "month": "2026-11",
+  "tins": 5
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "prCode": "1216",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03731",
+  "customerName": "Yankii",
+  "prCode": "3126",
+  "month": "2026-10",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03731",
+  "customerName": "Yankii",
+  "prCode": "3126",
+  "month": "2026-11",
+  "tins": 10
+ },
+ {
+  "customerCode": "CL03731",
+  "customerName": "Yankii",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "prCode": "3127",
+  "month": "2026-10",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "prCode": "3134",
+  "month": "2026-10",
+  "tins": 4
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "prCode": "3127",
+  "month": "2026-11",
+  "tins": 25
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "prCode": "3134",
+  "month": "2026-11",
+  "tins": 4
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 30
+ },
+ {
+  "customerCode": "CL03580",
+  "customerName": "YONA Beach Club Phuket",
+  "prCode": "3134",
+  "month": "2026-12",
+  "tins": 6
+ },
+ {
+  "customerCode": "New",
+  "customerName": "Wana Yook",
+  "prCode": "8992",
+  "month": "2026-10",
+  "tins": 120
+ },
+ {
+  "customerCode": "New",
+  "customerName": "Wana Yook",
+  "prCode": "8992",
+  "month": "2026-11",
+  "tins": 120
+ },
+ {
+  "customerCode": "New",
+  "customerName": "Wana Yook",
+  "prCode": "8992",
+  "month": "2026-12",
+  "tins": 120
+ }
+]

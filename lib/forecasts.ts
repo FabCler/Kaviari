@@ -1,9 +1,10 @@
-import { prisma } from "@/lib/db";
+import { getForecastRows } from "@/lib/forecast-data";
 
 /**
- * Team forecasts for the upcoming months (summed across users), used by the
- * Inventory and Order Planner tables. Months start at the NEXT calendar
- * month: in August, index 0 = September, 1 = October, 2 = November.
+ * Team forecasts for the upcoming months (customer-level template rows and
+ * on-site editor rows summed together), used by the Inventory and Order
+ * Planner tables. Months start at the NEXT calendar month: in August,
+ * index 0 = September, 1 = October, 2 = November.
  */
 
 export interface UpcomingForecasts {
@@ -37,10 +38,7 @@ export async function getUpcomingForecasts(
     );
   }
 
-  const forecasts = await prisma.forecast.findMany({
-    where: { month: { gte: start, lt: end } },
-    select: { productId: true, month: true, quantity: true },
-  });
+  const forecasts = await getForecastRows({ gte: start, lt: end });
 
   const byProduct = new Map<string, number[]>();
   for (const forecast of forecasts) {

@@ -101,6 +101,7 @@ export default async function ConsumePage({
         data={data}
         forecastEditor={forecastEditor}
         now={now.toISOString()}
+        isOwner={user?.role === "owner"}
       />
     </div>
   );

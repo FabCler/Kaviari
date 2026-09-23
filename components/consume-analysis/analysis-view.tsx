@@ -50,10 +50,12 @@ export function AnalysisView({
   data,
   forecastEditor,
   now,
+  isOwner = false,
 }: {
   data: AnalysisData;
   forecastEditor: ForecastEditorData;
   now: string;
+  isOwner?: boolean;
 }) {
   const nowDate = useMemo(() => new Date(now), [now]);
 
@@ -286,6 +288,7 @@ export function AnalysisView({
       <ForecastTools
         hasForecasts={data.forecasts.length > 0}
         editor={forecastEditor}
+        isOwner={isOwner}
       />
     </div>
   );

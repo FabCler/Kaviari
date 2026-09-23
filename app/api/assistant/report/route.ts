@@ -7,6 +7,7 @@ import {
   isAiConfigured,
 } from "@/lib/ai";
 import { buildBusinessSummary } from "@/lib/data-summary";
+import { getForecastRows } from "@/lib/forecast-data";
 import { formatDate } from "@/lib/format";
 
 /**
@@ -79,10 +80,8 @@ async function extraContext(type: ReportType, now: Date): Promise<string> {
         },
         _sum: { quantityTins: true, gramsEquivalent: true },
       }),
-      prisma.forecast.findMany({
-        where: { month: { gte: new Date(now.getFullYear(), now.getMonth(), 1) } },
-        include: { product: true },
-        orderBy: { month: "asc" },
+      getForecastRows({
+        gte: new Date(now.getFullYear(), now.getMonth(), 1),
       }),
     ]);
     const products = await prisma.product.findMany({
@@ -99,11 +98,23 @@ async function extraContext(type: ReportType, now: Date): Promise<string> {
       );
     }
     lines.push("");
-    lines.push("## Uploaded demand forecasts (product | month | forecast units)");
+    lines.push("## Demand forecasts (product | month | forecast units)");
     if (forecasts.length === 0) lines.push("None uploaded.");
+    const forecastTotals = new Map<string, number>();
     for (const f of forecasts) {
+      const key = `${f.productId}|${f.month.toISOString()}`;
+      forecastTotals.set(key, (forecastTotals.get(key) ?? 0) + f.quantity);
+    }
+    const allProducts = await prisma.product.findMany({
+      select: { id: true, name: true },
+    });
+    const productName = new Map(allProducts.map((p) => [p.id, p.name]));
+    for (const [key, quantity] of [...forecastTotals.entries()].sort((a, b) =>
+      a[0].split("|")[1].localeCompare(b[0].split("|")[1])
+    )) {
+      const [productId, monthIso] = key.split("|");
       lines.push(
-        `${f.product.name} | ${formatDate(f.month)} | ${f.quantity}`
+        `${productName.get(productId) ?? productId} | ${formatDate(monthIso)} | ${Math.round(quantity * 100) / 100}`
       );
     }
   }

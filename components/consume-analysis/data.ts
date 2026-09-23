@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { DEMAND_MOVEMENT_TYPES } from "@/lib/domain";
+import { getForecastRows } from "@/lib/forecast-data";
 import { shortProductName } from "@/lib/format";
 import { HISTORY_START_MS, monthKeyOf, round2 } from "@/components/consume-analysis/aggregate";
 import type { AnalysisData, ForecastEditorData } from "@/components/consume-analysis/types";
@@ -51,19 +52,13 @@ export async function loadAnalysisData(now: Date = new Date()): Promise<Analysis
         date: true,
       },
     }),
-    prisma.forecast.findMany({
-      select: {
-        userId: true,
-        productId: true,
-        month: true,
-        quantity: true,
-        user: { select: { name: true } },
-      },
-    }),
+    getForecastRows(),
   ]);
 
   const people = new Map<string, string>();
-  for (const f of forecasts) people.set(f.userId, f.user.name);
+  for (const f of forecasts) {
+    if (f.userId) people.set(f.userId, f.userName ?? "Unknown");
+  }
 
   return {
     products: products.map((p) => ({
@@ -84,8 +79,8 @@ export async function loadAnalysisData(now: Date = new Date()): Promise<Analysis
       grams: round2(Math.max(0, -m.gramsEquivalent)),
     })),
     forecasts: forecasts.map((f) => ({
-      userId: f.userId,
-      userName: f.user.name,
+      userId: f.userId ?? "unknown",
+      userName: f.userName ?? "Unknown",
       productId: f.productId,
       month: monthKeyOf(f.month),
       quantity: f.quantity,

@@ -8,6 +8,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getForecastRows } from "@/lib/forecast-data";
 import { getStockOverview } from "@/lib/stock";
 import { getPlannerData } from "@/lib/planner";
 import {
@@ -129,11 +130,7 @@ export default async function DashboardPage() {
         },
         select: { date: true, quantityTins: true, channel: true },
       }),
-      prisma.forecast.groupBy({
-        by: ["month"],
-        where: { month: { gte: forecastMonthGte, lte: forecastMonthLte } },
-        _sum: { quantity: true },
-      }),
+      getForecastRows({ gte: forecastMonthGte, lte: forecastMonthLte }),
     ]);
 
   const { settings, totals } = overview;
@@ -149,13 +146,18 @@ export default async function DashboardPage() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, units]) => ({ date, units: Math.round(units * 100) / 100 }));
 
-  // --- Forecast: monthly totals summed across ALL users ---------------------
-  const forecast: ForecastMonthPoint[] = forecastMonths
-    .map((row) => ({
-      month: `${row.month.getUTCFullYear()}-${String(
-        row.month.getUTCMonth() + 1
-      ).padStart(2, "0")}`,
-      units: Math.round((row._sum.quantity ?? 0) * 100) / 100,
+  // --- Forecast: monthly totals summed across all sources -------------------
+  const unitsByMonth = new Map<string, number>();
+  for (const row of forecastMonths) {
+    const key = `${row.month.getUTCFullYear()}-${String(
+      row.month.getUTCMonth() + 1
+    ).padStart(2, "0")}`;
+    unitsByMonth.set(key, (unitsByMonth.get(key) ?? 0) + row.quantity);
+  }
+  const forecast: ForecastMonthPoint[] = [...unitsByMonth.entries()]
+    .map(([month, units]) => ({
+      month,
+      units: Math.round(units * 100) / 100,
     }))
     .sort((a, b) => a.month.localeCompare(b.month));
 

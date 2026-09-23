@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getForecastRows } from "@/lib/forecast-data";
 import { getPlannerData } from "@/lib/planner";
 import { roundUpToBox } from "@/lib/replenishment";
 import { shortProductName } from "@/lib/format";
@@ -105,17 +106,16 @@ export async function POST() {
   const monthEnd = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 4, 1)
   );
-  const forecastRows = await prisma.forecast.groupBy({
-    by: ["productId", "month"],
-    where: { month: { gte: monthStart, lt: monthEnd } },
-    _sum: { quantity: true },
+  const forecastRows = await getForecastRows({
+    gte: monthStart,
+    lt: monthEnd,
   });
   const forecastByProduct = new Map<string, Record<string, number>>();
   for (const f of forecastRows) {
-    const qty = f._sum.quantity ?? 0;
-    if (qty <= 0) continue;
+    if (f.quantity <= 0) continue;
     const entry = forecastByProduct.get(f.productId) ?? {};
-    entry[monthKey(f.month)] = Math.round(qty * 100) / 100;
+    const key = monthKey(f.month);
+    entry[key] = Math.round(((entry[key] ?? 0) + f.quantity) * 100) / 100;
     forecastByProduct.set(f.productId, entry);
   }
 
