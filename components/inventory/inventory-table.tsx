@@ -1,10 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  Download,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { CAVIAR_TYPES, PRODUCT_CATEGORIES } from "@/lib/domain";
 import { formatUnits } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -23,70 +31,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CoverBadge } from "@/components/inventory/badges";
+import {
+  ALL,
+  applyInventoryView,
+  isDormant,
+  TEXT_SORT_KEYS,
+  type InventoryView,
+  type SortKey,
+  type SortState,
+} from "@/components/inventory/lib";
 import type { InventoryRow } from "@/components/inventory/types";
 
-const ALL = "all";
-
-/**
- * Sortable columns. Text columns start ascending; numeric columns start
- * descending (largest first). "forecast0/1/2" are the per-month columns;
- * cover treats ∞ (no demand) as larger than any finite value.
- */
-type SortKey =
-  | "prCode"
-  | "name"
-  | "onHand"
-  | "onOrder"
-  | "consumed"
-  | "cover"
-  | "forecast0"
-  | "forecast1"
-  | "forecast2";
-
-type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
-
-const TEXT_SORT_KEYS: SortKey[] = ["prCode", "name"];
-
-function sortValue(row: InventoryRow, key: SortKey): string | number {
-  switch (key) {
-    case "prCode":
-      return row.prCode;
-    case "name":
-      return row.name;
-    case "onHand":
-      return row.onHandUnits;
-    case "onOrder":
-      return row.onOrderUnits;
-    case "consumed":
-      return row.consumed30dUnits;
-    case "cover":
-      return row.weeksOfCover ?? Number.POSITIVE_INFINITY;
-    case "forecast0":
-    case "forecast1":
-    case "forecast2":
-      return row.forecastMonths[Number(key.slice(-1))] ?? 0;
-  }
-}
-
-function sortRows(rows: InventoryRow[], sort: SortState): InventoryRow[] {
-  if (!sort) return rows;
-  const factor = sort.dir === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => {
-    const va = sortValue(a, sort.key);
-    const vb = sortValue(b, sort.key);
-    const cmp =
-      typeof va === "string" || typeof vb === "string"
-        ? String(va).localeCompare(String(vb), undefined, { numeric: true })
-        : va - vb;
-    return cmp !== 0 ? factor * cmp : a.name.localeCompare(b.name);
-  });
-}
-
-function isDormant(row: InventoryRow): boolean {
-  return (
-    row.onHandUnits <= 0 && row.aduUnitsPerDay <= 0 && row.onOrderUnits <= 0
-  );
-}
+// Filtering, dormant split and sorting live in components/inventory/lib.ts,
+// shared with the Excel export so the workbook mirrors the on-screen view.
 
 export function InventoryTable({
   rows,
@@ -100,6 +57,7 @@ export function InventoryTable({
   const [caviarType, setCaviarType] = React.useState<string>(ALL);
   const [showDormant, setShowDormant] = React.useState(false);
   const [sort, setSort] = React.useState<SortState>(null);
+  const [exporting, setExporting] = React.useState(false);
 
   const toggleSort = (key: SortKey) => {
     setSort((current) => {
@@ -115,19 +73,54 @@ export function InventoryTable({
   // Caviar type only applies when the category filter can contain caviar.
   const typeFilterEnabled = category === ALL || category === "Caviar";
 
-  const filtered = rows.filter((row) => {
-    if (category !== ALL && row.category !== category) return false;
-    if (typeFilterEnabled && caviarType !== ALL && row.caviarType !== caviarType)
-      return false;
-    return true;
-  });
-  const activeRows = filtered.filter((row) => !isDormant(row));
-  const dormantRows = filtered.filter(isDormant);
-  // Sorting spans the whole visible list (dormant rows included when shown).
-  const visibleRows = sortRows(
-    showDormant ? [...activeRows, ...dormantRows] : activeRows,
-    sort
-  );
+  const view: InventoryView = {
+    category,
+    caviarType: typeFilterEnabled ? caviarType : ALL,
+    forecastHorizon,
+    showDormant,
+    sort,
+  };
+  const visibleRows = applyInventoryView(rows, view);
+  const dormantCount = rows.filter(
+    (row) =>
+      (category === ALL || row.category === category) &&
+      (!typeFilterEnabled ||
+        caviarType === ALL ||
+        row.caviarType === caviarType) &&
+      isDormant(row)
+  ).length;
+
+  async function downloadExcel() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/exports/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(view),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.error ?? "The export failed — please try again.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `inventory_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "The export failed — please try again."
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div>
@@ -200,21 +193,36 @@ export function InventoryTable({
             </SelectContent>
           </Select>
         </div>
-        {dormantRows.length > 0 ? (
-          <div className="flex items-center gap-2">
-            <Switch
-              id="show-dormant"
-              checked={showDormant}
-              onCheckedChange={setShowDormant}
-            />
-            <Label
-              htmlFor="show-dormant"
-              className="text-sm text-muted-foreground"
-            >
-              Show dormant ({dormantRows.length})
-            </Label>
-          </div>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {dormantCount > 0 ? (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-dormant"
+                checked={showDormant}
+                onCheckedChange={setShowDormant}
+              />
+              <Label
+                htmlFor="show-dormant"
+                className="text-sm text-muted-foreground"
+              >
+                Show dormant ({dormantCount})
+              </Label>
+            </div>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadExcel}
+            disabled={exporting || visibleRows.length === 0}
+          >
+            {exporting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            Export Excel
+          </Button>
+        </div>
       </div>
 
       <ProductsTable
