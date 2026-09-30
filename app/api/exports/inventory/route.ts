@@ -28,7 +28,8 @@ const SORT_LABELS: Record<(typeof SORT_KEYS)[number], string> = {
   name: "Product",
   onHand: "Stock on hand",
   onOrder: "On order",
-  consumed: "Consumed (30 d)",
+  consumed: "Consumed (current month)",
+  consumedPrev: "Consumed (previous month)",
   cover: "Cover",
   forecast0: "Forecast (month 1)",
   forecast1: "Forecast (month 2)",
@@ -61,7 +62,8 @@ export async function POST(request: Request) {
   const view = parsed.data;
 
   const now = new Date();
-  const { rows, forecastMonthLabels } = await loadInventoryRows(now);
+  const { rows, forecastMonthLabels, consumedMonthLabels } =
+    await loadInventoryRows(now);
   const visible = applyInventoryView(rows, view);
   const months = forecastMonthLabels.slice(0, view.forecastHorizon);
 
@@ -92,7 +94,8 @@ export async function POST(request: Request) {
     { header: "Unit", width: 8 },
     numCol("Stock on hand"),
     numCol("On order"),
-    numCol("Consumed (30 d)"),
+    numCol(`Consumed ${consumedMonthLabels.previous}`),
+    numCol(`Consumed ${consumedMonthLabels.current}`),
     ...months.map((label) => numCol(`Forecast ${label}`)),
     { header: "Cover (weeks)", width: 13, align: "right" },
   ];
@@ -117,7 +120,8 @@ export async function POST(request: Request) {
       row.unit,
       row.onHandUnits,
       row.onOrderUnits,
-      row.consumed30dUnits,
+      row.consumedPrevMonthUnits,
+      row.consumedThisMonthUnits,
       ...months.map((_, i) => row.forecastMonths[i] ?? 0),
       row.weeksOfCover === null
         ? "∞"
@@ -137,7 +141,8 @@ export async function POST(request: Request) {
     "",
     sum((r) => r.onHandUnits),
     sum((r) => r.onOrderUnits),
-    sum((r) => r.consumed30dUnits),
+    sum((r) => r.consumedPrevMonthUnits),
+    sum((r) => r.consumedThisMonthUnits),
     ...months.map((_, i) => sum((r) => r.forecastMonths[i] ?? 0)),
     "",
   ]);

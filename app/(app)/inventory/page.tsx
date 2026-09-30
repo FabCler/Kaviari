@@ -3,7 +3,8 @@ import { InventoryTable } from "@/components/inventory/inventory-table";
 import { loadInventoryRows } from "@/components/inventory/data";
 
 export default async function InventoryPage() {
-  const { rows, forecastMonthLabels } = await loadInventoryRows();
+  const { rows, forecastMonthLabels, consumedMonthLabels } =
+    await loadInventoryRows();
 
   return (
     <div>
@@ -11,7 +12,11 @@ export default async function InventoryPage() {
         title="Inventory"
         description="On-hand stock, lots and weekly cover across the cellar"
       />
-      <InventoryTable rows={rows} forecastMonthLabels={forecastMonthLabels} />
+      <InventoryTable
+        rows={rows}
+        forecastMonthLabels={forecastMonthLabels}
+        consumedMonthLabels={consumedMonthLabels}
+      />
     </div>
   );
 }

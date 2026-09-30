@@ -12,8 +12,10 @@ export interface InventoryRow {
   unitCost: number;
   onHandUnits: number;
   onOrderUnits: number;
-  /** Units consumed over the last 30 days (demand movements, positive). */
-  consumed30dUnits: number;
+  /** Units consumed in the current calendar month (demand movements, positive). */
+  consumedThisMonthUnits: number;
+  /** Units consumed in the previous calendar month. */
+  consumedPrevMonthUnits: number;
   /** Team forecast per upcoming month (index 0 = next month), 3 entries. */
   forecastMonths: number[];
   aduUnitsPerDay: number;

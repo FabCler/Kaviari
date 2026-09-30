@@ -48,9 +48,11 @@ import type { InventoryRow } from "@/components/inventory/types";
 export function InventoryTable({
   rows,
   forecastMonthLabels,
+  consumedMonthLabels,
 }: {
   rows: InventoryRow[];
   forecastMonthLabels: string[];
+  consumedMonthLabels: { current: string; previous: string };
 }) {
   const [category, setCategory] = React.useState<string>(ALL);
   const [forecastHorizon, setForecastHorizon] = React.useState(1);
@@ -229,6 +231,7 @@ export function InventoryTable({
         rows={visibleRows}
         forecastHorizon={forecastHorizon}
         forecastMonthLabels={forecastMonthLabels}
+        consumedMonthLabels={consumedMonthLabels}
         sort={sort}
         onToggleSort={toggleSort}
       />
@@ -282,12 +285,14 @@ function ProductsTable({
   rows,
   forecastHorizon,
   forecastMonthLabels,
+  consumedMonthLabels,
   sort,
   onToggleSort,
 }: {
   rows: InventoryRow[];
   forecastHorizon: number;
   forecastMonthLabels: string[];
+  consumedMonthLabels: { current: string; previous: string };
   sort: SortState;
   onToggleSort: (key: SortKey) => void;
 }) {
@@ -333,7 +338,14 @@ function ProductsTable({
               align="right"
             />
             <SortableHead
-              label="Consumed (30 d)"
+              label={`Consumed ${consumedMonthLabels.previous}`}
+              sortKey="consumedPrev"
+              sort={sort}
+              onToggleSort={onToggleSort}
+              align="right"
+            />
+            <SortableHead
+              label={`Consumed ${consumedMonthLabels.current}`}
               sortKey="consumed"
               sort={sort}
               onToggleSort={onToggleSort}
@@ -364,7 +376,7 @@ function ProductsTable({
               <TableCell className="tnum text-muted-foreground">
                 {row.prCode}
               </TableCell>
-              <TableCell className="max-w-72 whitespace-normal">
+              <TableCell>
                 <span className="font-medium">{row.name}</span>
               </TableCell>
               <TableCell>
@@ -392,8 +404,15 @@ function ProductsTable({
                 )}
               </TableCell>
               <TableCell className="tnum text-right">
-                {row.consumed30dUnits > 0 ? (
-                  formatUnits(row.consumed30dUnits, row.unit)
+                {row.consumedPrevMonthUnits > 0 ? (
+                  formatUnits(row.consumedPrevMonthUnits, row.unit)
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </TableCell>
+              <TableCell className="tnum text-right">
+                {row.consumedThisMonthUnits > 0 ? (
+                  formatUnits(row.consumedThisMonthUnits, row.unit)
                 ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
