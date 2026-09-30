@@ -18,9 +18,11 @@ export const EXCEL_COLORS = {
   red: "FFB3261E",
 } as const;
 
-export const NUM_FMT = "#,##0.0";
-export const INT_FMT = "#,##0";
-export const KG_FMT = '#,##0.00" kg"';
+// Third section = zero: shown as "-" so filled cells stand out (the cell
+// stays numeric, so Excel formulas keep working).
+export const NUM_FMT = '#,##0.0;-#,##0.0;"-"';
+export const INT_FMT = '#,##0;-#,##0;"-"';
+export const KG_FMT = '#,##0.00" kg";-#,##0.00" kg";"-"';
 export const PCT_FMT = '0.0"%"';
 
 export function solidFill(argb: string): ExcelJS.Fill {
