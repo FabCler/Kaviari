@@ -21,6 +21,7 @@ export const SORT_KEYS = [
   "onOrder",
   "consumed",
   "consumedPrev",
+  "consumed30",
   "cover",
   "forecast0",
   "forecast1",
@@ -47,6 +48,8 @@ export function sortValue(row: InventoryRow, key: SortKey): string | number {
       return row.consumedThisMonthUnits;
     case "consumedPrev":
       return row.consumedPrevMonthUnits;
+    case "consumed30":
+      return row.consumed30dUnits;
     case "cover":
       return row.weeksOfCover ?? Number.POSITIVE_INFINITY;
     case "forecast0":

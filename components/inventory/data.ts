@@ -1,3 +1,4 @@
+import { subDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { getStockOverview } from "@/lib/stock";
 import { DEMAND_MOVEMENT_TYPES } from "@/lib/domain";
@@ -44,12 +45,13 @@ export async function loadInventoryRows(now = new Date()): Promise<{
     );
   };
 
-  const [overview, forecasts, consumedThisMonth, consumedPrevMonth] =
+  const [overview, forecasts, consumedThisMonth, consumedPrevMonth, consumed30d] =
     await Promise.all([
       getStockOverview({ now }),
       getUpcomingForecasts(3, now),
       consumedByProduct(currentMonthStart, now),
       consumedByProduct(prevMonthStart, currentMonthStart),
+      consumedByProduct(subDays(now, 30), now),
     ]);
 
   const rows: InventoryRow[] = overview.rows.map((row) => ({
@@ -66,6 +68,7 @@ export async function loadInventoryRows(now = new Date()): Promise<{
     onOrderUnits: row.onOrderUnits,
     consumedThisMonthUnits: consumedThisMonth.get(row.product.id) ?? 0,
     consumedPrevMonthUnits: consumedPrevMonth.get(row.product.id) ?? 0,
+    consumed30dUnits: consumed30d.get(row.product.id) ?? 0,
     forecastMonths: forecasts.byProduct.get(row.product.id) ?? [0, 0, 0],
     aduUnitsPerDay: row.aduUnitsPerDay,
     aduIsOverride: row.aduIsOverride,

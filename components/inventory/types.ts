@@ -16,6 +16,8 @@ export interface InventoryRow {
   consumedThisMonthUnits: number;
   /** Units consumed in the previous calendar month. */
   consumedPrevMonthUnits: number;
+  /** Units consumed over the rolling last 30 days. */
+  consumed30dUnits: number;
   /** Team forecast per upcoming month (index 0 = next month), 3 entries. */
   forecastMonths: number[];
   aduUnitsPerDay: number;

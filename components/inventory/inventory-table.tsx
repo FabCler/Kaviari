@@ -306,7 +306,8 @@ function ProductsTable({
   }
   return (
     <div className="overflow-x-auto rounded-xl border bg-card">
-      <Table>
+      {/* Compact cells: many columns, every row must stay on one line. */}
+      <Table className="[&_td]:px-2 [&_th]:px-2">
         <TableHeader>
           <TableRow>
             <SortableHead
@@ -324,15 +325,15 @@ function ProductsTable({
             <TableHead>Type</TableHead>
             <TableHead>Unit</TableHead>
             <SortableHead
-              label="Stock on hand"
-              sortKey="onHand"
+              label="Order"
+              sortKey="onOrder"
               sort={sort}
               onToggleSort={onToggleSort}
               align="right"
             />
             <SortableHead
-              label="On order"
-              sortKey="onOrder"
+              label="Stock on hand"
+              sortKey="onHand"
               sort={sort}
               onToggleSort={onToggleSort}
               align="right"
@@ -347,6 +348,13 @@ function ProductsTable({
             <SortableHead
               label={`Consumed ${consumedMonthLabels.current}`}
               sortKey="consumed"
+              sort={sort}
+              onToggleSort={onToggleSort}
+              align="right"
+            />
+            <SortableHead
+              label="Consumed (30 d)"
+              sortKey="consumed30"
               sort={sort}
               onToggleSort={onToggleSort}
               align="right"
@@ -377,7 +385,11 @@ function ProductsTable({
                 {row.prCode}
               </TableCell>
               <TableCell>
-                <span className="font-medium">{row.name}</span>
+                {/* Short name keeps every row on a single line; the full
+                    name shows on hover. */}
+                <span className="font-medium" title={row.name}>
+                  {row.shortName}
+                </span>
               </TableCell>
               <TableCell>
                 {row.caviarType ? (
@@ -389,18 +401,18 @@ function ProductsTable({
               <TableCell className="text-muted-foreground">
                 {row.unit}
               </TableCell>
-              <TableCell className="tnum text-right font-medium">
-                {row.onHandUnits > 0 ? (
-                  formatUnits(row.onHandUnits, row.unit)
-                ) : (
-                  <span className="font-normal text-muted-foreground">-</span>
-                )}
-              </TableCell>
               <TableCell className="tnum text-right">
                 {row.onOrderUnits > 0 ? (
                   formatUnits(row.onOrderUnits, row.unit)
                 ) : (
                   <span className="text-muted-foreground">-</span>
+                )}
+              </TableCell>
+              <TableCell className="tnum text-right font-medium">
+                {row.onHandUnits > 0 ? (
+                  formatUnits(row.onHandUnits, row.unit)
+                ) : (
+                  <span className="font-normal text-muted-foreground">-</span>
                 )}
               </TableCell>
               <TableCell className="tnum text-right">
@@ -413,6 +425,13 @@ function ProductsTable({
               <TableCell className="tnum text-right">
                 {row.consumedThisMonthUnits > 0 ? (
                   formatUnits(row.consumedThisMonthUnits, row.unit)
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </TableCell>
+              <TableCell className="tnum text-right">
+                {row.consumed30dUnits > 0 ? (
+                  formatUnits(row.consumed30dUnits, row.unit)
                 ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
