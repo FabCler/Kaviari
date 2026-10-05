@@ -25,7 +25,10 @@
  * v13 moves forecasts to customer level: wipes ALL product-level Forecast
  * rows (v12's aggregate included) and loads the Q4 2026 file per customer
  * into CustomerForecast (data/customer_forecasts_q4_2026.json) — app-wide
- * totals now come from CustomerForecast + on-site editor rows.
+ * totals now come from CustomerForecast + on-site editor rows. v14 reloads
+ * the Oct–Dec 2026 customer forecasts from the 5 Oct 2026 revision of the
+ * same workbook (Su Va Na moves to Oscietra 30g; new CL00395 and Waldorf
+ * entries), replacing only those three months.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -35,7 +38,7 @@ import { spreadMonthlyQuantity } from "../lib/import/period";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 13;
+const VERSION = 14;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -196,6 +199,59 @@ async function moveForecastsToCustomerLevel(): Promise<string> {
   );
 }
 
+/**
+ * One-time (v14) reload of the Oct–Dec 2026 customer forecasts from the
+ * revised workbook: only the months covered by the file are replaced, and
+ * rows are attributed to the owner account. (A fresh database never runs
+ * this — the v13 path already loads the same revised JSON.)
+ */
+async function reloadQ4CustomerForecasts(): Promise<string> {
+  const file = join(__dirname, "..", "data", "customer_forecasts_q4_2026.json");
+  if (!existsSync(file)) return "no Q4 forecast file";
+  const rows: {
+    customerCode: string;
+    customerName: string;
+    prCode: string;
+    month: string;
+    tins: number;
+  }[] = JSON.parse(readFileSync(file, "utf8"));
+  const owner =
+    (await prisma.user.findFirst({ where: { role: "owner" } })) ??
+    (await prisma.user.findFirst());
+  const months = [...new Set(rows.map((r) => r.month))].map(
+    (m) => new Date(`${m}-01T00:00:00.000Z`)
+  );
+  const removed = await prisma.customerForecast.deleteMany({
+    where: { month: { in: months } },
+  });
+  const products = await prisma.product.findMany();
+  const byCode = new Map(products.map((p) => [p.prCode, p]));
+  let written = 0;
+  let missing = 0;
+  for (const row of rows) {
+    const product = byCode.get(row.prCode);
+    if (!product) {
+      missing += 1;
+      continue;
+    }
+    await prisma.customerForecast.create({
+      data: {
+        customerCode: row.customerCode,
+        customerName: row.customerName,
+        productId: product.id,
+        month: new Date(`${row.month}-01T00:00:00.000Z`),
+        quantity: row.tins,
+        enteredById: owner?.id ?? null,
+      },
+    });
+    written += 1;
+  }
+  return (
+    `Q4 customer forecasts reloaded: ${removed.count} removed, ${written} written` +
+    (missing > 0 ? ` (${missing} unknown PR codes skipped)` : "")
+  );
+}
+
 /** One-time (v12) load of the sales-rep assignments (editable in-app after). */
 async function importCustomerReps(): Promise<string> {
   const file = join(__dirname, "..", "data", "customer_reps.json");
@@ -238,6 +294,8 @@ async function main() {
 
   if (doneVersion < 13) {
     console.log(`consumption-maintenance: ${await moveForecastsToCustomerLevel()}`);
+  } else if (doneVersion < 14) {
+    console.log(`consumption-maintenance: ${await reloadQ4CustomerForecasts()}`);
   }
 
   if (doneVersion >= 6) {

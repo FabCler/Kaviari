@@ -1115,21 +1115,21 @@
  {
   "customerCode": "CL03771",
   "customerName": "Su Va Na Restaurant",
-  "prCode": "1216",
+  "prCode": "3126",
   "month": "2026-10",
   "tins": 20
  },
  {
   "customerCode": "CL03771",
   "customerName": "Su Va Na Restaurant",
-  "prCode": "1216",
+  "prCode": "3126",
   "month": "2026-11",
   "tins": 20
  },
  {
   "customerCode": "CL03771",
   "customerName": "Su Va Na Restaurant",
-  "prCode": "1216",
+  "prCode": "3126",
   "month": "2026-12",
   "tins": 20
  },
@@ -1237,6 +1237,20 @@
   "prCode": "3133",
   "month": "2026-12",
   "tins": 5
+ },
+ {
+  "customerCode": "CL00395",
+  "customerName": "The Nai Harn Phuket",
+  "prCode": "3126",
+  "month": "2026-12",
+  "tins": 20
+ },
+ {
+  "customerCode": "CL00395",
+  "customerName": "The Nai Harn Phuket",
+  "prCode": "3127",
+  "month": "2026-12",
+  "tins": 12
  },
  {
   "customerCode": "CL02687",
@@ -1409,6 +1423,13 @@
  {
   "customerCode": "CL02047",
   "customerName": "Waldrof",
+  "prCode": "3192",
+  "month": "2026-10",
+  "tins": 7
+ },
+ {
+  "customerCode": "CL02047",
+  "customerName": "Waldrof",
   "prCode": "3134",
   "month": "2026-10",
   "tins": 7
@@ -1508,13 +1529,6 @@
   "customerCode": "New",
   "customerName": "Wana Yook",
   "prCode": "8992",
-  "month": "2026-10",
-  "tins": 120
- },
- {
-  "customerCode": "New",
-  "customerName": "Wana Yook",
-  "prCode": "8992",
   "month": "2026-11",
   "tins": 120
  },
@@ -1523,6 +1537,13 @@
   "customerName": "Wana Yook",
   "prCode": "8992",
   "month": "2026-12",
+  "tins": 120
+ },
+ {
+  "customerCode": "New",
+  "customerName": "Wana Yook",
+  "prCode": "8992",
+  "month": "2026-10",
   "tins": 120
  }
 ]
