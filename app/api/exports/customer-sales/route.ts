@@ -51,14 +51,17 @@ export async function POST(request: Request) {
   }
   const filters = parsed.data;
 
-  const { entries, years, reps } = await loadCustomerSalesEntries();
+  const { entries, forecastEntries, years, reps } =
+    await loadCustomerSalesEntries();
   const byCustomer = filters.grouping === "customer";
   const compare = filters.compareN1 && years.includes(filters.year - 1);
-  const analysis = buildCustomerAnalysis(entries, {
-    ...filters,
-    compareN1: compare,
-  });
-  const { maxDataMonth, groupRows, monthTotals } = analysis;
+  const analysis = buildCustomerAnalysis(
+    entries,
+    { ...filters, compareN1: compare },
+    forecastEntries
+  );
+  const { maxDataMonth, forecastMonthIndexes, groupRows, monthTotals } =
+    analysis;
   const visibleMonths = MONTH_LABELS.slice(0, maxDataMonth);
   const prevLabel = samePeriodLabel(filters.year, maxDataMonth);
 
@@ -137,6 +140,7 @@ export async function POST(request: Request) {
         ]
       : []),
     ...visibleMonths.map((label) => numCol(label)),
+    ...forecastMonthIndexes.map((i) => numCol(`${MONTH_LABELS[i]} FC`)),
     numCol(`Total ${filters.year}`),
     ...(compare
       ? [
@@ -154,10 +158,12 @@ export async function POST(request: Request) {
 
   const quantityCells = (row: {
     months: number[];
+    forecastMonths: number[];
     total: number;
     prevTotal: number;
   }) => [
     ...visibleMonths.map((_, i) => row.months[i] || 0),
+    ...forecastMonthIndexes.map((i) => row.forecastMonths[i] || 0),
     row.total,
     ...(compare
       ? [
@@ -222,6 +228,7 @@ export async function POST(request: Request) {
     "",
     ...(byCustomer ? [""] : []),
     ...visibleMonths.map((_, i) => monthTotals[i].current),
+    ...forecastMonthIndexes.map((i) => monthTotals[i].forecast),
     analysis.currentTotal,
     ...(compare
       ? [

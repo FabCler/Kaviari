@@ -75,10 +75,13 @@ function DeltaText({
 
 export function CustomersView({
   entries,
+  forecastEntries,
   years,
   reps,
 }: {
   entries: CustomerSaleEntry[];
+  /** Customer forecasts in the same shape (quantity = forecast units). */
+  forecastEntries: CustomerSaleEntry[];
   /** Years present in the data, ascending. */
   years: number[];
   /** customerCode → assigned sales rep. */
@@ -158,12 +161,13 @@ export function CustomersView({
   );
 
   const analysis = React.useMemo(
-    () => buildCustomerAnalysis(entries, filters),
-    [entries, filters]
+    () => buildCustomerAnalysis(entries, filters, forecastEntries),
+    [entries, filters, forecastEntries]
   );
 
   const {
     maxDataMonth,
+    forecastMonthIndexes,
     monthTotals,
     currentTotal,
     previousSameTotal,
@@ -217,6 +221,7 @@ export function CustomersView({
 
   const renderQuantityCells = (row: {
     months: number[];
+    forecastMonths: number[];
     total: number;
     prevTotal: number;
   }) => (
@@ -228,6 +233,17 @@ export function CustomersView({
           ) : (
             <span className="text-muted-foreground">-</span>
           )}
+        </TableCell>
+      ))}
+      {/* Forecast months continue the year in a muted italic tone. */}
+      {forecastMonthIndexes.map((index) => (
+        <TableCell
+          key={`fc-${index}`}
+          className="tnum text-right text-muted-foreground italic"
+        >
+          {row.forecastMonths[index] > 0
+            ? formatNumber(row.forecastMonths[index])
+            : "-"}
         </TableCell>
       ))}
       <TableCell className="tnum text-right font-medium">
@@ -502,6 +518,14 @@ export function CustomersView({
                       {label}
                     </TableHead>
                   ))}
+                  {forecastMonthIndexes.map((index) => (
+                    <TableHead
+                      key={`fc-${index}`}
+                      className="text-right italic"
+                    >
+                      {MONTH_LABELS[index]} FC
+                    </TableHead>
+                  ))}
                   <TableHead className="text-right">Total {year}</TableHead>
                   {compare ? (
                     <>
@@ -520,6 +544,14 @@ export function CustomersView({
                   {visibleMonths.map((label, index) => (
                     <TableCell key={label} className="tnum text-right">
                       {formatNumber(monthTotals[index].current)}
+                    </TableCell>
+                  ))}
+                  {forecastMonthIndexes.map((index) => (
+                    <TableCell
+                      key={`fc-${index}`}
+                      className="tnum text-right italic"
+                    >
+                      {formatNumber(monthTotals[index].forecast)}
                     </TableCell>
                   ))}
                   <TableCell className="tnum text-right">
@@ -549,6 +581,9 @@ export function CustomersView({
           {grouping === "customer" ? "caviars and products" : "customers"}.
           N-1 totals cover the same months as the selected year (Jan–
           {MONTH_LABELS[maxDataMonth - 1]}).
+          {forecastMonthIndexes.length > 0
+            ? ` Italic "FC" columns show the customer forecasts for the rest of ${year}; they are not counted in the totals.`
+            : ""}
         </p>
       </div>
     </div>

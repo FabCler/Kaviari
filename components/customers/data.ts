@@ -10,14 +10,23 @@ import type {
  */
 export async function loadCustomerSalesEntries(): Promise<{
   entries: CustomerSaleEntry[];
+  /** Customer forecasts in the same shape (quantity = forecast units). */
+  forecastEntries: CustomerSaleEntry[];
   years: number[];
   meta: CustomerSalesMeta;
   /** customerCode → assigned sales rep. */
   reps: Record<string, string>;
 }> {
-  const [sales, products, metaRow, repRows] = await Promise.all([
+  const [sales, forecasts, products, metaRow, repRows] = await Promise.all([
     prisma.customerSale.findMany({
       orderBy: [{ year: "asc" }, { month: "asc" }],
+    }),
+    prisma.customerForecast.findMany({
+      include: {
+        product: {
+          select: { prCode: true, name: true, caviarType: true, category: true },
+        },
+      },
     }),
     prisma.product.findMany({
       select: { prCode: true, name: true, caviarType: true, category: true },
@@ -64,5 +73,17 @@ export async function loadCustomerSalesEntries(): Promise<{
     repRows.map((row) => [row.customerCode, row.repName])
   );
 
-  return { entries, years, meta, reps };
+  const forecastEntries: CustomerSaleEntry[] = forecasts.map((row) => ({
+    customerCode: row.customerCode,
+    customerName: row.customerName,
+    prCode: row.product.prCode,
+    productName: row.product.name,
+    caviarType: row.product.caviarType,
+    category: row.product.category,
+    year: row.month.getUTCFullYear(),
+    month: row.month.getUTCMonth() + 1,
+    quantity: row.quantity,
+  }));
+
+  return { entries, forecastEntries, years, meta, reps };
 }

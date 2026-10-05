@@ -10,7 +10,8 @@ export const metadata = {
 };
 
 export default async function CustomersPage() {
-  const { entries, years, meta, reps } = await loadCustomerSalesEntries();
+  const { entries, forecastEntries, years, meta, reps } =
+    await loadCustomerSalesEntries();
 
   return (
     <div>
@@ -25,7 +26,12 @@ export default async function CustomersPage() {
           export with the button above.
         </div>
       ) : (
-        <CustomersView entries={entries} years={years} reps={reps} />
+        <CustomersView
+          entries={entries}
+          forecastEntries={forecastEntries}
+          years={years}
+          reps={reps}
+        />
       )}
     </div>
   );

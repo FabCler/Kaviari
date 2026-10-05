@@ -15,12 +15,16 @@ import { formatNumber } from "@/lib/format";
 /** N-1 overlay: same muted navy as the consumption analysis chart. */
 const N1_COLOR = "#8fa1bd";
 const BAR_COLOR = "var(--chart-1)";
+/** Forecast months: a washed-out tint of the main bar color. */
+const FORECAST_BAR_COLOR = "#d9c98f";
 const AXIS_TICK = { fontSize: 12, fill: "var(--muted-foreground)" } as const;
 
 export interface CustomersChartRow {
   label: string;
   current: number;
   prev: number;
+  /** Forecast for months after the actuals (0 elsewhere). */
+  forecast: number;
 }
 
 export function CustomersChart({
@@ -34,8 +38,10 @@ export function CustomersChart({
   yearLabel: string;
   prevYearLabel: string;
 }) {
+  const hasForecast = data.some((row) => row.forecast > 0);
   const hasAny = data.some(
-    (row) => row.current > 0 || (compareN1 && row.prev > 0)
+    (row) =>
+      row.current > 0 || row.forecast > 0 || (compareN1 && row.prev > 0)
   );
   if (!hasAny) {
     return (
@@ -84,7 +90,21 @@ export function CustomersChart({
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
               isAnimationActive={false}
+              stackId="units"
             />
+            {hasForecast ? (
+              // Stacked on the same axis: actual months carry no forecast
+              // and forecast months no actuals, so bars never mix.
+              <Bar
+                dataKey="forecast"
+                name="Forecast"
+                fill={FORECAST_BAR_COLOR}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={40}
+                isAnimationActive={false}
+                stackId="units"
+              />
+            ) : null}
             {compareN1 ? (
               <Line
                 type="monotone"
@@ -110,6 +130,16 @@ export function CustomersChart({
           />
           {yearLabel}
         </span>
+        {hasForecast ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
+            <span
+              aria-hidden
+              className="inline-block size-2.5 rounded-full align-middle"
+              style={{ backgroundColor: FORECAST_BAR_COLOR }}
+            />
+            Forecast
+          </span>
+        ) : null}
         {compareN1 ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
             <span

@@ -58,6 +58,8 @@ export interface DetailRow {
   code: string;
   name: string;
   months: number[];
+  /** Forecast units per month (filled for months after the actuals). */
+  forecastMonths: number[];
   total: number;
   prevTotal: number;
 }
@@ -68,6 +70,8 @@ export interface GroupRow {
   name: string;
   /** Per-month quantity for the selected year (index 0 = January). */
   months: number[];
+  /** Forecast units per month (filled for months after the actuals). */
+  forecastMonths: number[];
   total: number;
   /** Previous year, same months as the selected year has data for. */
   prevTotal: number;
@@ -79,10 +83,14 @@ export interface MonthTotal {
   label: string;
   current: number;
   prev: number;
+  /** Forecast for months after the actuals (0 elsewhere). */
+  forecast: number;
 }
 
 export interface CustomerAnalysis {
   maxDataMonth: number;
+  /** 0-based month indexes shown as forecast columns (after the actuals). */
+  forecastMonthIndexes: number[];
   monthTotals: MonthTotal[];
   currentTotal: number;
   previousSameTotal: number;
@@ -100,9 +108,10 @@ function sortRows<T extends { total: number; prevTotal: number }>(
 
 export function buildCustomerAnalysis(
   entries: CustomerSaleEntry[],
-  filters: CustomerFilters
+  filters: CustomerFilters,
+  forecastEntries: CustomerSaleEntry[] = []
 ): CustomerAnalysis {
-  const filtered = entries.filter((entry) => {
+  const matchesFilters = (entry: CustomerSaleEntry): boolean => {
     if (
       filters.customers.length > 0 &&
       !filters.customers.includes(entry.customerCode)
@@ -117,7 +126,8 @@ export function buildCustomerAnalysis(
       return false;
     }
     return true;
-  });
+  };
+  const filtered = entries.filter(matchesFilters);
 
   const current = filtered.filter((e) => e.year === filters.year);
   const previous = filtered.filter((e) => e.year === filters.year - 1);
@@ -129,12 +139,29 @@ export function buildCustomerAnalysis(
     : 12;
   const previousSame = previous.filter((e) => e.month <= maxDataMonth);
 
+  // Forecast columns continue the year after the actuals: the customer
+  // forecasts for the selected year's remaining months.
+  const forecastCurrent = forecastEntries.filter(
+    (e) =>
+      matchesFilters(e) && e.year === filters.year && e.month > maxDataMonth
+  );
+  const maxForecastMonth = forecastCurrent.length
+    ? Math.max(...forecastCurrent.map((e) => e.month))
+    : maxDataMonth;
+  const forecastMonthIndexes: number[] = [];
+  for (let m = maxDataMonth + 1; m <= maxForecastMonth; m += 1) {
+    forecastMonthIndexes.push(m - 1);
+  }
+
   const monthTotals: MonthTotal[] = MONTH_LABELS.map((label, index) => ({
     label,
     current: current
       .filter((e) => e.month === index + 1)
       .reduce((sum, e) => sum + e.quantity, 0),
     prev: previous
+      .filter((e) => e.month === index + 1)
+      .reduce((sum, e) => sum + e.quantity, 0),
+    forecast: forecastCurrent
       .filter((e) => e.month === index + 1)
       .reduce((sum, e) => sum + e.quantity, 0),
   }));
@@ -161,6 +188,7 @@ export function buildCustomerAnalysis(
             ? entry.customerName
             : entry.productName,
         months: Array.from({ length: 12 }, () => 0),
+        forecastMonths: Array.from({ length: 12 }, () => 0),
         total: 0,
         prevTotal: 0,
         details: [],
@@ -187,6 +215,7 @@ export function buildCustomerAnalysis(
             ? entry.productName
             : entry.customerName,
         months: Array.from({ length: 12 }, () => 0),
+        forecastMonths: Array.from({ length: 12 }, () => 0),
         total: 0,
         prevTotal: 0,
       };
@@ -206,6 +235,10 @@ export function buildCustomerAnalysis(
   for (const entry of previousSame) {
     groupFor(entry).prevTotal += entry.quantity;
     detailFor(entry).prevTotal += entry.quantity;
+  }
+  for (const entry of forecastCurrent) {
+    groupFor(entry).forecastMonths[entry.month - 1] += entry.quantity;
+    detailFor(entry).forecastMonths[entry.month - 1] += entry.quantity;
   }
 
   const groupRows = sortRows([...byKey.values()]);
@@ -238,6 +271,7 @@ export function buildCustomerAnalysis(
 
   return {
     maxDataMonth,
+    forecastMonthIndexes,
     monthTotals,
     currentTotal: current.reduce((sum, e) => sum + e.quantity, 0),
     previousSameTotal: previousSame.reduce((sum, e) => sum + e.quantity, 0),
