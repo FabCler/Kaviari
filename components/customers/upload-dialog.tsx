@@ -19,9 +19,9 @@ import { formatDate } from "@/lib/format";
 import type { CustomerSalesMeta } from "@/components/customers/types";
 
 /**
- * Replace the customer-sales data with a fresh "Top 90% sales" export.
- * The file is a full snapshot, so every upload replaces everything —
- * uploading the same file twice is harmless.
+ * Update the customer-sales data from an Excel export: a full "Top 90%
+ * sales" snapshot, or an invoice-line export covering a few months.
+ * Either way, uploading the same file twice is harmless.
  */
 export function UploadDialog({ meta }: { meta: CustomerSalesMeta }) {
   const router = useRouter();
@@ -44,9 +44,29 @@ export function UploadDialog({ meta }: { meta: CustomerSalesMeta }) {
         toast.error(body?.error ?? "The upload failed. Try again.");
         return;
       }
-      toast.success(
-        `Data replaced: ${body.rows} rows, ${body.customers} customers (${body.years.join(", ")}).`
-      );
+      if (body.mode === "replace-months") {
+        const months = body.months as { year: number; month: number }[];
+        const label = (m: { year: number; month: number }) =>
+          new Date(Date.UTC(m.year, m.month - 1, 1)).toLocaleDateString(
+            "en-GB",
+            { month: "short", year: "numeric", timeZone: "UTC" }
+          );
+        const span =
+          months.length > 1
+            ? `${label(months[0])} – ${label(months[months.length - 1])}`
+            : label(months[0]);
+        toast.success(
+          `${span} updated: ${body.rows} rows, ${body.customers} customers` +
+            (body.repsAdded > 0
+              ? `, ${body.repsAdded} new sales-rep assignments.`
+              : ".") +
+            " Earlier months are kept."
+        );
+      } else {
+        toast.success(
+          `Data replaced: ${body.rows} rows, ${body.customers} customers (${body.years.join(", ")}).`
+        );
+      }
       setOpen(false);
       setFile(null);
       router.refresh();
@@ -77,9 +97,11 @@ export function UploadDialog({ meta }: { meta: CustomerSalesMeta }) {
         <DialogHeader>
           <DialogTitle>Update customer sales</DialogTitle>
           <DialogDescription>
-            Upload the latest &ldquo;Top 90% sales&rdquo; Excel export. It
-            replaces all customer data on this page — consumption, stock and
-            accounts are not affected.
+            Two exports are accepted. The &ldquo;Top 90% sales&rdquo; pivot
+            replaces all customer data. The invoice-line export (a
+            &ldquo;Data&rdquo; sheet with CardCode, PR Code, Month, Quantity)
+            replaces only the months it covers and keeps earlier history.
+            Consumption, stock and accounts are not affected.
           </DialogDescription>
         </DialogHeader>
         <Input
@@ -97,7 +119,7 @@ export function UploadDialog({ meta }: { meta: CustomerSalesMeta }) {
         <DialogFooter>
           <Button onClick={upload} disabled={!file || busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            {busy ? "Replacing data…" : "Upload & replace"}
+            {busy ? "Updating data…" : "Upload"}
           </Button>
         </DialogFooter>
       </DialogContent>

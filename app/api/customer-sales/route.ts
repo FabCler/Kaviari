@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { applyCustomerSales } from "@/lib/customer-sales/apply";
 import {
   CustomerSalesParseError,
   parseCustomerSalesWorkbook,
@@ -8,8 +9,8 @@ import { MAX_FILE_BYTES } from "@/lib/import/types";
 
 /**
  * POST /api/customer-sales — multipart/form-data { file }.
- * Replaces the whole customer-sales table with the uploaded "Top 90% sales"
- * pivot export (the file is a full snapshot, re-exported twice a month).
+ * A "Top 90% sales" pivot replaces all customer data; an invoice-line
+ * export (e.g. Caviar_Item_Sep-Nov-26) replaces only the months it covers.
  * Parsing is deterministic — no AI involved.
  */
 export async function POST(request: Request) {
@@ -50,9 +51,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const caviarProducts = await prisma.product.findMany({
+    where: { category: "Caviar" },
+    select: { prCode: true },
+  });
+
   let parsed;
   try {
-    parsed = parseCustomerSalesWorkbook(Buffer.from(await file.arrayBuffer()));
+    parsed = parseCustomerSalesWorkbook(
+      Buffer.from(await file.arrayBuffer()),
+      { caviarPrCodes: new Set(caviarProducts.map((p) => p.prCode)) }
+    );
   } catch (error) {
     if (error instanceof CustomerSalesParseError) {
       return Response.json({ error: error.message }, { status: 400 });
@@ -60,25 +69,15 @@ export async function POST(request: Request) {
     throw error;
   }
 
-  const meta = JSON.stringify({
-    fileName: file.name,
-    uploadedAt: new Date().toISOString(),
-    rows: parsed.rows.length,
-  });
-  await prisma.$transaction([
-    prisma.customerSale.deleteMany(),
-    prisma.customerSale.createMany({ data: parsed.rows }),
-    prisma.setting.upsert({
-      where: { key: "customerSalesMeta" },
-      create: { key: "customerSalesMeta", value: meta },
-      update: { value: meta },
-    }),
-  ]);
+  const result = await applyCustomerSales(prisma, parsed, file.name);
 
   return Response.json({
     ok: true,
+    mode: parsed.mode,
     rows: parsed.rows.length,
     customers: parsed.customers,
     years: parsed.years,
+    months: parsed.mode === "replace-months" ? parsed.months : null,
+    repsAdded: result.repsAdded,
   });
 }

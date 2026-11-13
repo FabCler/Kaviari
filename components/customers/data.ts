@@ -35,6 +35,13 @@ export async function loadCustomerSalesEntries(): Promise<{
     prisma.customerRep.findMany(),
   ]);
 
+  // Customers get renamed between exports: show each code under the name
+  // from its most recent sales month everywhere (sales are year/month asc).
+  const latestName = new Map<string, string>();
+  for (const sale of sales) latestName.set(sale.customerCode, sale.customerName);
+  const nameOf = (code: string, fallback: string) =>
+    latestName.get(code) ?? fallback;
+
   // Enrich each sale with the catalog product (matched by PR code) so the
   // caviar-type filter and product names stay consistent with the rest of
   // the app; unmatched codes keep the file's own description.
@@ -43,7 +50,7 @@ export async function loadCustomerSalesEntries(): Promise<{
     const product = sale.prCode ? byCode.get(sale.prCode) : undefined;
     return {
       customerCode: sale.customerCode,
-      customerName: sale.customerName,
+      customerName: nameOf(sale.customerCode, sale.customerName),
       prCode: sale.prCode,
       productName: product?.name ?? sale.productName,
       caviarType: product?.caviarType ?? null,
@@ -75,7 +82,7 @@ export async function loadCustomerSalesEntries(): Promise<{
 
   const forecastEntries: CustomerSaleEntry[] = forecasts.map((row) => ({
     customerCode: row.customerCode,
-    customerName: row.customerName,
+    customerName: nameOf(row.customerCode, row.customerName),
     prCode: row.product.prCode,
     productName: row.product.name,
     caviarType: row.product.caviarType,

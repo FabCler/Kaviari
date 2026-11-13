@@ -28,17 +28,23 @@
  * totals now come from CustomerForecast + on-site editor rows. v14 reloads
  * the Oct–Dec 2026 customer forecasts from the 5 Oct 2026 revision of the
  * same workbook (Su Va Na moves to Oscietra 30g; new CL00395 and Waldorf
- * entries), replacing only those three months.
+ * entries), replacing only those three months. v15 applies the invoice-line
+ * export data/Caviar_Item_Sep-Nov-26.xlsx (Sep 2026 – 9 Nov 2026, every
+ * caviar customer) to CustomerSale: those months are replaced, earlier
+ * history kept, missing sales reps filled — the same code path as the
+ * Customers page upload.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { spreadMonthlyQuantity } from "../lib/import/period";
+import { parseCustomerSalesWorkbook } from "../lib/customer-sales/parse";
+import { applyCustomerSales } from "../lib/customer-sales/apply";
 
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 14;
+const VERSION = 15;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -252,6 +258,32 @@ async function reloadQ4CustomerForecasts(): Promise<string> {
   );
 }
 
+/**
+ * One-time (v15) merge of the Sep – 9 Nov 2026 caviar invoice lines into
+ * CustomerSale, through the same parser and writer as the website upload.
+ */
+async function applySepNovCustomerSales(): Promise<string> {
+  const file = join(__dirname, "..", "data", "Caviar_Item_Sep-Nov-26.xlsx");
+  if (!existsSync(file)) return "no Sep–Nov 2026 customer sales file";
+  const caviar = await prisma.product.findMany({
+    where: { category: "Caviar" },
+    select: { prCode: true },
+  });
+  const parsed = parseCustomerSalesWorkbook(readFileSync(file), {
+    caviarPrCodes: new Set(caviar.map((p) => p.prCode)),
+  });
+  const result = await applyCustomerSales(
+    prisma,
+    parsed,
+    "Caviar_Item_Sep-Nov-26_20262212.xlsx"
+  );
+  return (
+    `Sep–Nov 2026 customer sales merged: ${result.removed} rows replaced, ` +
+    `${result.written} written, ${parsed.customers} customers, ` +
+    `${result.repsAdded} sales reps added`
+  );
+}
+
 /** One-time (v12) load of the sales-rep assignments (editable in-app after). */
 async function importCustomerReps(): Promise<string> {
   const file = join(__dirname, "..", "data", "customer_reps.json");
@@ -296,6 +328,10 @@ async function main() {
     console.log(`consumption-maintenance: ${await moveForecastsToCustomerLevel()}`);
   } else if (doneVersion < 14) {
     console.log(`consumption-maintenance: ${await reloadQ4CustomerForecasts()}`);
+  }
+
+  if (doneVersion < 15) {
+    console.log(`consumption-maintenance: ${await applySepNovCustomerSales()}`);
   }
 
   if (doneVersion >= 6) {
