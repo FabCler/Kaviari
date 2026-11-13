@@ -16,9 +16,11 @@ import * as XLSX from "xlsx";
  * 2. Invoice-line export ("Caviar_Item_Sep-Nov-26": a "Data" sheet with one
  *    row per invoice / credit-note line — CardCode, Commercial Name, PR Code,
  *    Year, Month, Quantity, Sale Rep …) — a partial period that replaces only
- *    the months it covers. All products are listed; only the caller's caviar
- *    PR codes are kept. Credit notes carry negative quantities and are
- *    netted, as the export's own pivot does.
+ *    the months it covers. All products are listed; the lines kept are those
+ *    of the products the file's own pivot sheet lists (the caller's caviar
+ *    PR codes when there is no pivot), so the result matches that pivot to
+ *    the unit. Credit notes carry negative quantities and are netted, as the
+ *    pivot does.
  */
 
 export class CustomerSalesParseError extends Error {}
@@ -56,8 +58,9 @@ export type CustomerSalesParseResult =
 
 export interface ParseOptions {
   /**
-   * PR codes counted as caviar. Required to read the invoice-line export,
-   * which lists every product the company sells.
+   * PR codes counted as caviar. The invoice-line export lists every product
+   * the company sells: its own pivot sheet says which ones to keep, and this
+   * set is the fallback for a file without a pivot.
    */
   caviarPrCodes?: Set<string>;
 }
@@ -121,23 +124,60 @@ export function parseCustomerSalesWorkbook(
     if (headerIndex !== -1) return parseGrid(grid, headerIndex);
   }
 
-  // Invoice-line export: a header row naming every required column.
+  // Invoice-line export: a header row naming every required column. The
+  // products kept are the ones the file's own pivot lists, so the app
+  // matches that pivot to the unit; without a pivot, the catalog's caviar.
   for (const grid of grids) {
     for (let i = 0; i < Math.min(grid.length, 10); i++) {
       const columns = lineColumns(grid[i] ?? []);
       if (!columns) continue;
-      if (!options.caviarPrCodes) {
+      const caviar = options.caviarPrCodes;
+      const scope =
+        pivotScope(grids) ??
+        (caviar ? (prCode: string) => caviar.has(prCode) : null);
+      if (!scope) {
         throw new CustomerSalesParseError(
-          "The invoice-line export needs the product catalog to pick out caviar lines."
+          "The invoice-line export needs a pivot sheet or the product catalog to pick out caviar lines."
         );
       }
-      return parseLines(grid, i, columns, options.caviarPrCodes);
+      return parseLines(grid, i, columns, scope);
     }
   }
 
   throw new CustomerSalesParseError(
     `The customer sales table was not found in this file. ${FORMAT_HINT}`
   );
+}
+
+/** Whether an invoice line (PR code as text, item name) is kept. */
+type LineScope = (prCode: string, itemName: string) => boolean;
+
+/**
+ * The products the file's pivot sheet lists (a "PR Code" header on a sheet
+ * that is not the invoice-line table), or null when there is none. Products
+ * are matched on PR code AND item name: items without a PR code all carry
+ * code 0, and the pivot keeps only some of them.
+ */
+function pivotScope(grids: Cell[][][]): LineScope | null {
+  for (const grid of grids) {
+    for (let i = 0; i < Math.min(grid.length, 10); i++) {
+      const headers = (grid[i] ?? []).map((c) => asText(c).toLowerCase());
+      const prColumn = headers.indexOf("pr code");
+      if (prColumn === -1 || headers.includes("cardcode")) continue;
+      const itemColumn = headers.indexOf("itemname");
+      const products = new Set<string>();
+      for (const row of grid.slice(i + 1)) {
+        const prCode = asText(row?.[prColumn] ?? null);
+        if (prCode === "") continue; // subtotal and grand-total rows
+        const item = itemColumn === -1 ? "" : asText(row?.[itemColumn] ?? null);
+        products.add(`${prCode}\u0000${item}`);
+      }
+      if (products.size === 0) continue;
+      return (prCode, itemName) =>
+        products.has(`${prCode}\u0000${itemColumn === -1 ? "" : itemName}`);
+    }
+  }
+  return null;
 }
 
 type LineColumns = Record<keyof typeof LINE_COLUMNS, number>;
@@ -166,7 +206,7 @@ function parseLines(
   grid: Cell[][],
   headerIndex: number,
   columns: LineColumns,
-  caviarPrCodes: Set<string>
+  inScope: LineScope
 ): CustomerSalesParseResult {
   const cell = (row: Cell[], key: keyof LineColumns) =>
     columns[key] === -1 ? null : (row[columns[key]] ?? null);
@@ -193,22 +233,26 @@ function parseLines(
     // month without caviar sales still replaces stale data.
     months.set(`${year}-${month}`, { year, month });
 
-    const prCode = asText(cell(row, "prCode"));
+    const rawPrCode = asText(cell(row, "prCode"));
+    const itemName = asText(cell(row, "itemName"));
     const customerCode = asText(cell(row, "code"));
     const quantity = Number(cell(row, "quantity"));
-    if (!caviarPrCodes.has(prCode) || !customerCode) continue;
+    if (!inScope(rawPrCode, itemName) || !customerCode) continue;
     if (!Number.isFinite(quantity) || quantity === 0) continue;
 
+    // Items without a PR code are exported with code 0: store them with no
+    // code, told apart by their name.
+    const prCode = rawPrCode === "" || rawPrCode === "0" ? null : rawPrCode;
     const customerName =
       asText(cell(row, "commercialName")) ||
       asText(cell(row, "cardName")) ||
       customerCode;
-    const key = `${customerCode}|${prCode}|${year}|${month}`;
+    const key = `${customerCode}|${prCode ?? `name:${itemName}`}|${year}|${month}`;
     const entry = totals.get(key) ?? {
       customerCode,
       customerName,
       prCode,
-      productName: asText(cell(row, "itemName")) || prCode,
+      productName: itemName || prCode || "Unspecified product",
       year,
       month,
       quantity: 0,

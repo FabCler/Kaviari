@@ -32,7 +32,10 @@
  * export data/Caviar_Item_Sep-Nov-26.xlsx (Sep 2026 – 9 Nov 2026, every
  * caviar customer) to CustomerSale: those months are replaced, earlier
  * history kept, missing sales reps filled — the same code path as the
- * Customers page upload.
+ * Customers page upload. v16 re-applies that file so it matches its pivot to
+ * the unit (products are now the ones the pivot lists) and so customers are
+ * re-linked by commercial name: Wana Yook (forecast under the placeholder
+ * code "New") and YONA Beach Club (new customer code) each become one row.
  */
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, existsSync } from "fs";
@@ -44,7 +47,7 @@ import { applyCustomerSales } from "../lib/customer-sales/apply";
 const prisma = new PrismaClient();
 
 const GUARD_KEY = "consumption2025Imported";
-const VERSION = 15;
+const VERSION = 16;
 const NOTE_PREFIX = "Historical consumption import";
 
 interface MonthlyRow {
@@ -259,8 +262,10 @@ async function reloadQ4CustomerForecasts(): Promise<string> {
 }
 
 /**
- * One-time (v15) merge of the Sep – 9 Nov 2026 caviar invoice lines into
- * CustomerSale, through the same parser and writer as the website upload.
+ * One-time merge of the Sep – 9 Nov 2026 caviar invoice lines into
+ * CustomerSale, through the same parser and writer as the website upload
+ * (first run as v15; v16 runs it again with the pivot scope and the
+ * re-linking of customers by name — applying it twice is harmless).
  */
 async function applySepNovCustomerSales(): Promise<string> {
   const file = join(__dirname, "..", "data", "Caviar_Item_Sep-Nov-26.xlsx");
@@ -280,6 +285,7 @@ async function applySepNovCustomerSales(): Promise<string> {
   return (
     `Sep–Nov 2026 customer sales merged: ${result.removed} rows replaced, ` +
     `${result.written} written, ${parsed.customers} customers, ` +
+    `${result.relinked} customer codes re-linked, ` +
     `${result.repsAdded} sales reps added`
   );
 }
@@ -330,7 +336,7 @@ async function main() {
     console.log(`consumption-maintenance: ${await reloadQ4CustomerForecasts()}`);
   }
 
-  if (doneVersion < 15) {
+  if (doneVersion < 16) {
     console.log(`consumption-maintenance: ${await applySepNovCustomerSales()}`);
   }
 

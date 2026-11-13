@@ -71,6 +71,42 @@ describe("parseCustomerSalesWorkbook — invoice-line export", () => {
     expect(parsed.reps).toEqual({ CL001: "Rep A", CL002: "Rep B" });
   });
 
+  it("keeps exactly the products the file's pivot lists", () => {
+    const item = (prCode: string | number, name: string, month = 9) => {
+      const row = line(month, 5, String(prCode));
+      row[9] = name;
+      row[15] = prCode;
+      return row;
+    };
+    const buffer = workbook({
+      Pivot: [
+        ["Performance by customers"],
+        [],
+        ["Commercial Name", "PR Code", "ItemName", 9, "Grand Total"],
+        ["Name CL001", "1216", "Kristal 30g", 5, 5],
+        [null, 0, "Other Brand Caviar 100g", 5, 5],
+        ["Name CL001 Total", null, null, 10, 10],
+        ["Grand Total", null, null, 10, 10],
+      ],
+      Data: [
+        LINE_HEADER,
+        item("1216", "Kristal 30g"),
+        item(0, "Other Brand Caviar 100g"), // no PR code, listed by the pivot
+        item(0, "Fresh seafood"), // no PR code, not in the pivot
+        item("3126", "Oscietra 30g"), // catalog caviar the pivot leaves out
+      ],
+    });
+
+    const parsed = parseCustomerSalesWorkbook(buffer, { caviarPrCodes });
+
+    expect(
+      parsed.rows.map((r) => [r.prCode, r.productName, r.quantity])
+    ).toEqual([
+      ["1216", "Kristal 30g", 5],
+      [null, "Other Brand Caviar 100g", 5],
+    ]);
+  });
+
   it("needs the caviar PR codes to read the line export", () => {
     const buffer = workbook({ Data: [LINE_HEADER, line(9, 1, "1216")] });
     expect(() => parseCustomerSalesWorkbook(buffer)).toThrow(

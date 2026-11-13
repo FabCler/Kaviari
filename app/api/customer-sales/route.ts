@@ -79,5 +79,6 @@ export async function POST(request: Request) {
     years: parsed.years,
     months: parsed.mode === "replace-months" ? parsed.months : null,
     repsAdded: result.repsAdded,
+    relinked: result.relinked,
   });
 }
